@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useAppStore } from '@/store'
+import { selectFolderWorkspaces, selectWorktreesByRepo } from '@/store/workspace-record-selectors'
 import { Button } from '@/components/ui/button'
 import { callRuntimeRpc } from '@/runtime/runtime-rpc-client'
 import { translate } from '@/i18n/i18n'
@@ -17,8 +18,8 @@ export default function PortfolioPage(): React.JSX.Element {
   const [busy, setBusy] = useState(false)
   const changing = useRef(false)
   const repos = useAppStore((s) => s.repos)
-  const worktrees = useAppStore((s) => s.worktreesByRepo)
-  const folders = useAppStore((s) => s.folderWorkspaces)
+  const worktrees = useAppStore(selectWorktreesByRepo)
+  const folders = useAppStore(selectFolderWorkspaces)
   const groups = useAppStore((s) => s.projectGroups)
   const activity = useAppStore((s) => s.agentStatusByPaneKey)
   const setActiveWorktree = useAppStore((s) => s.setActiveWorktree)
