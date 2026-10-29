@@ -1,3 +1,10 @@
+# Fork Development Workflow
+
+- `origin` is `hyomea/orca-workbench`. Keep `stablyai/orca` as a read-only `upstream`.
+- `dev` is the integration branch. Start new feature branches from `dev` and merge completed work back into `dev`.
+- Keep `main` stable; promote from `dev` only when explicitly requested.
+- Use Git commits and merges for this workflow. Do not create pull requests unless explicitly requested, and do not submit changes to upstream unless explicitly authorized.
+
 # Useful Commands
 
 - **Before handoff**: `pnpm check:changed --maxWorkers=2` (format, lint, typecheck, affected tests, ratchets; cached when nothing changed)
