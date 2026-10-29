@@ -4,7 +4,11 @@ import { selectFolderWorkspaces, selectWorktreesByRepo } from '@/store/workspace
 import { Button } from '@/components/ui/button'
 import { callRuntimeRpc } from '@/runtime/runtime-rpc-client'
 import { translate } from '@/i18n/i18n'
-import { PortfolioState, type PortfolioCommand } from '../../../../shared/portfolio'
+import {
+  parsePortfolioState,
+  type PortfolioState,
+  type PortfolioCommand
+} from '../../../../shared/portfolio'
 import {
   folderWorkspaceRepoId,
   folderWorkspaceToWorktree
@@ -27,7 +31,7 @@ export default function PortfolioPage(): React.JSX.Element {
   const setActiveWorktree = useAppStore((s) => s.setActiveWorktree)
   const setActiveView = useAppStore((s) => s.setActiveView)
   const accept = useCallback((value: unknown) => {
-    const next = PortfolioState.parse(value)
+    const next = parsePortfolioState(value)
     setState((current) => (!current || next.revision >= current.revision ? next : current))
   }, [])
   const refresh = useCallback(async () => {

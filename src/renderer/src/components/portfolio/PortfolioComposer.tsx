@@ -25,6 +25,7 @@ export function PortfolioComposer({
   kind,
   state,
   projectId,
+  workItemId,
   busy,
   saveError,
   onClose,
@@ -33,6 +34,7 @@ export function PortfolioComposer({
   kind: 'role' | 'task' | 'organization'
   state: PortfolioState
   projectId: string
+  workItemId?: string
   busy: boolean
   saveError: string
   onClose: () => void
@@ -44,6 +46,15 @@ export function PortfolioComposer({
   const [roleId, setRoleId] = useState(state.roles[0]?.id ?? '')
   const [agent, setAgent] = useState('codex')
   const [error, setError] = useState('')
+  const [platform, setPlatform] = useState('shared')
+  const [linkedItem, setLinkedItem] = useState(workItemId ?? 'none')
+  const items = state.workItems.filter(
+    (item) =>
+      item.status !== 'accepted' &&
+      state.features.some(
+        (feature) => feature.id === item.featureId && feature.projectId === projectId
+      )
+  )
   const title =
     kind === 'role'
       ? translate('portfolio.newRole', 'New role')
@@ -60,7 +71,9 @@ export function PortfolioComposer({
               kind: 'task.create',
               task: {
                 projectId,
+                ...(linkedItem !== 'none' ? { workItemId: linkedItem } : {}),
                 roleId,
+                platform,
                 title: name,
                 instructions: description,
                 acceptanceCriteria: criteria
@@ -155,6 +168,36 @@ export function PortfolioComposer({
             )}
             {kind === 'task' && (
               <>
+                <PortfolioSelect
+                  label={translate('portfolio.targetPlatform', 'Target platform')}
+                  value={platform}
+                  onChange={setPlatform}
+                  disabled={busy}
+                  options={[
+                    {
+                      id: 'shared',
+                      name: translate('portfolio.sharedWork', 'Shared / discovery / QA')
+                    },
+                    { id: 'ios', name: 'iOS' },
+                    { id: 'android', name: 'Android' }
+                  ]}
+                />
+                <PortfolioSelect
+                  label={translate('portfolio.workItem', 'Work item')}
+                  value={linkedItem}
+                  onChange={setLinkedItem}
+                  disabled={busy}
+                  options={[
+                    {
+                      id: 'none',
+                      name: translate('portfolio.projectTask', 'Project task without a work item')
+                    },
+                    ...items.map((item) => ({
+                      id: item.id,
+                      name: `${state.features.find((feature) => feature.id === item.featureId)?.name} / ${item.title}`
+                    }))
+                  ]}
+                />
                 <PortfolioSelect
                   label={translate('portfolio.assignedRole', 'Assigned role')}
                   value={roleId}

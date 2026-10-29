@@ -8,7 +8,8 @@ export function PortfolioProjectSetupFooter({
   saving,
   showSave,
   onClose,
-  onDiscard
+  onDiscard,
+  discardPrompt
 }: {
   disabled: boolean
   canSave: boolean
@@ -16,16 +17,18 @@ export function PortfolioProjectSetupFooter({
   showSave: boolean
   onClose: () => void
   onDiscard: () => void
+  discardPrompt?: string
 }): React.JSX.Element {
   const [confirmDiscard, setConfirmDiscard] = useState(false)
   return (
     <div className="space-y-3">
       {confirmDiscard && (
         <p role="alert" className="text-sm">
-          {translate(
-            'portfolio.discardDraftPrompt',
-            'Discard this draft and its AI analysis? Imported directories will remain in Orca.'
-          )}
+          {discardPrompt ??
+            translate(
+              'portfolio.discardDraftPrompt',
+              'Discard this draft and its AI analysis? Imported directories will remain in Orca.'
+            )}
         </p>
       )}
       <div className="flex flex-wrap justify-end gap-2">

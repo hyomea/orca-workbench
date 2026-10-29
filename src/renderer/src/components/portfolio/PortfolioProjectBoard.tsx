@@ -1,3 +1,4 @@
+import { useState, type ReactNode } from 'react'
 import {
   Circle,
   CircleCheck,
@@ -25,7 +26,8 @@ export function PortfolioProjectBoard({
   onCreateTask,
   onEditProject,
   onCreateRole,
-  onSelectTask
+  onSelectTask,
+  featureContent
 }: {
   project: PortfolioState['projects'][number]
   tasks: readonly PortfolioTask[]
@@ -35,7 +37,9 @@ export function PortfolioProjectBoard({
   onEditProject: () => void
   onCreateRole: () => void
   onSelectTask: (id: string) => void
+  featureContent?: ReactNode
 }): React.JSX.Element {
+  const [view, setView] = useState('tasks')
   const progress = portfolioProgress(tasks)
   const columns = [
     { id: 'todo', name: translate('portfolio.planned', 'Planned'), icon: CircleDashed },
@@ -66,7 +70,7 @@ export function PortfolioProjectBoard({
           <Button variant="outline" size="sm" onClick={onEditProject}>
             {translate('portfolio.editProject', 'Edit project')}
           </Button>
-          {tasks.length > 0 && roles.length > 0 && (
+          {view === 'tasks' && tasks.length > 0 && roles.length > 0 && (
             <Button size="sm" onClick={onCreateTask}>
               <Plus aria-hidden="true" />
               {translate('portfolio.newTask', 'New task')}
@@ -74,7 +78,33 @@ export function PortfolioProjectBoard({
           )}
         </div>
       </div>
-      {tasks.length > 0 ? (
+      {featureContent && (
+        <div
+          className="mb-5 flex gap-2"
+          role="group"
+          aria-label={translate('portfolio.projectViews', 'Project views')}
+        >
+          <Button
+            variant={view === 'features' ? 'secondary' : 'ghost'}
+            size="sm"
+            aria-pressed={view === 'features'}
+            onClick={() => setView('features')}
+          >
+            {translate('portfolio.features', 'Features')}
+          </Button>
+          <Button
+            variant={view === 'tasks' ? 'secondary' : 'ghost'}
+            size="sm"
+            aria-pressed={view === 'tasks'}
+            onClick={() => setView('tasks')}
+          >
+            {translate('portfolio.tasks', 'Tasks')}
+          </Button>
+        </div>
+      )}
+      {view === 'features' ? (
+        featureContent
+      ) : tasks.length > 0 ? (
         <>
           <div className="mb-6 space-y-2 border-y border-border py-4">
             <div className="flex flex-wrap items-center justify-between gap-2 text-xs">

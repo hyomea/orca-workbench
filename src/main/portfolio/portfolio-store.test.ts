@@ -204,7 +204,7 @@ describe('portfolio persistence and execution', () => {
 
   it('preserves corrupt or newer-version data instead of replacing it', async () => {
     const { store, file } = await fixture()
-    const newer = JSON.stringify({ ...(await store.read()), schemaVersion: 2 })
+    const newer = JSON.stringify({ ...(await store.read()), schemaVersion: 4 })
     for (const contents of ['{broken', newer]) {
       await writeFile(file, contents)
       await expect(

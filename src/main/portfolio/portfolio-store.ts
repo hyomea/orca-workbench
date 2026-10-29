@@ -1,7 +1,7 @@
-import { mkdir, readFile } from 'node:fs/promises'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname } from 'node:path'
 import { lock } from 'proper-lockfile'
-import { PortfolioState, emptyPortfolio } from '../../shared/portfolio'
+import { PortfolioState, emptyPortfolio, parsePortfolioState } from '../../shared/portfolio'
 import { writePluginFileAtomically } from '../plugins/installation/plugin-atomic-file-write'
 
 export class PortfolioStore {
@@ -9,7 +9,7 @@ export class PortfolioStore {
 
   async read(): Promise<PortfolioState> {
     try {
-      return PortfolioState.parse(JSON.parse(await readFile(this.file, 'utf8')))
+      return parsePortfolioState(JSON.parse(await readFile(this.file, 'utf8')))
     } catch (error) {
       if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
         return emptyPortfolio()
@@ -37,6 +37,27 @@ export class PortfolioStore {
       change(state)
       state.revision += 1
       const validated = PortfolioState.parse(state)
+      const contents = await readFile(this.file, 'utf8').catch((error: unknown) => {
+        if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
+          return null
+        }
+        throw error
+      })
+      if (contents && [1, 2].includes(JSON.parse(contents).schemaVersion)) {
+        const backup = `${this.file}.v${JSON.parse(contents).schemaVersion}.bak`
+        await writeFile(backup, contents, { flag: 'wx', mode: 0o600 }).catch(
+          async (error: unknown) => {
+            if (!(error instanceof Error && 'code' in error && error.code === 'EEXIST')) {
+              throw error
+            }
+            if ((await readFile(backup, 'utf8')) !== contents) {
+              throw new Error(
+                'An existing migration backup differs from the current file. Project data has been preserved.'
+              )
+            }
+          }
+        )
+      }
       await writePluginFileAtomically(this.file, JSON.stringify(validated, null, 2), {
         mode: 0o600
       })

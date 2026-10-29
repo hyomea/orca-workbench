@@ -1,4 +1,8 @@
 import { z } from 'zod'
+import { PortfolioFeature, PortfolioWorkItem, PortfolioFeatureCommands } from './portfolio-features'
+import { applyPortfolioFeatureCommand, workItemForTask } from './portfolio-feature-commands'
+import { PortfolioVerification, PortfolioVerificationCommands } from './portfolio-verification'
+import { applyPortfolioVerificationCommand } from './portfolio-verification-commands'
 
 const Id = z.string().trim().min(1).max(4096)
 const Name = z.string().trim().min(1).max(200)
@@ -21,13 +25,15 @@ export const PortfolioTaskInput = z.object({
   roleId: Id,
   title: Name,
   instructions: Description,
-  acceptanceCriteria: Description
+  acceptanceCriteria: Description,
+  workItemId: Id.optional(),
+  platform: z.enum(['ios', 'android', 'shared']).optional()
 })
 export const PortfolioAttempt = z.object({
   operationId: Id,
   worktreeId: Id,
   agent: PortfolioAgent,
-  prompt: z.string().min(1).max(100000),
+  prompt: z.string().min(1).max(400000),
   createdAt: z.number(),
   state: z.enum(['pending', 'launched', 'unknown', 'closed']),
   handle: z.string().optional(),
@@ -45,13 +51,43 @@ export const PortfolioTask = PortfolioTaskInput.extend({
   )
 })
 export const PortfolioState = z.object({
-  schemaVersion: z.literal(1),
+  schemaVersion: z.literal(3),
+  verification: z.array(PortfolioVerification),
+  features: z.array(PortfolioFeature),
+  workItems: z.array(PortfolioWorkItem),
   revision: z.number().int().nonnegative(),
   organization: Name,
   projects: z.array(PortfolioProjectInput.extend({ id: Id })),
   roles: z.array(PortfolioRoleInput.extend({ id: Id })),
   tasks: z.array(PortfolioTask)
 })
+const LegacyPortfolioState = PortfolioState.omit({
+  features: true,
+  workItems: true,
+  verification: true
+}).extend({
+  schemaVersion: z.literal(1)
+})
+export function parsePortfolioState(value: unknown): PortfolioState {
+  const version = z.object({ schemaVersion: z.number() }).parse(value).schemaVersion
+  if (version === 1) {
+    const legacy = LegacyPortfolioState.parse(value)
+    return PortfolioState.parse({
+      ...legacy,
+      schemaVersion: 3,
+      features: [],
+      workItems: [],
+      verification: []
+    })
+  }
+  if (version === 2) {
+    const legacy = PortfolioState.omit({ verification: true })
+      .extend({ schemaVersion: z.literal(2) })
+      .parse(value)
+    return PortfolioState.parse({ ...legacy, schemaVersion: 3, verification: [] })
+  }
+  return PortfolioState.parse(value)
+}
 export type PortfolioState = z.infer<typeof PortfolioState>
 export type PortfolioTask = z.infer<typeof PortfolioTask>
 export type PortfolioAttempt = z.infer<typeof PortfolioAttempt>
@@ -59,6 +95,8 @@ export type PortfolioAttempt = z.infer<typeof PortfolioAttempt>
 const ProjectDetails = PortfolioProjectInput
 
 export const PortfolioCommand = z.discriminatedUnion('kind', [
+  ...PortfolioFeatureCommands,
+  ...PortfolioVerificationCommands,
   z.object({ kind: z.literal('organization.rename'), name: Name }),
   z.object({ kind: z.literal('project.create'), project: PortfolioProjectInput }),
   z.object({
@@ -81,7 +119,10 @@ export type PortfolioCommand = z.infer<typeof PortfolioCommand>
 
 export function emptyPortfolio(): PortfolioState {
   return {
-    schemaVersion: 1,
+    schemaVersion: 3,
+    verification: [],
+    features: [],
+    workItems: [],
     revision: 0,
     organization: 'My organization',
     projects: [],
@@ -104,6 +145,12 @@ export function applyPortfolioCommand(
   id: string,
   now: number
 ): void {
+  if (
+    applyPortfolioVerificationCommand(state, command, id, now) ||
+    applyPortfolioFeatureCommand(state, command, id, now)
+  ) {
+    return
+  }
   switch (command.kind) {
     case 'organization.rename':
       state.organization = command.name
@@ -144,6 +191,9 @@ export function applyPortfolioCommand(
       ) {
         throw new Error('Choose an existing project and role.')
       }
+      if (command.task.workItemId) {
+        workItemForTask(state, command.task.projectId, command.task.workItemId)
+      }
       state.tasks.push({
         ...command.task,
         id,
@@ -177,6 +227,9 @@ export function applyPortfolioCommand(
     }
     case 'task.transition': {
       const task = portfolioTask(state, command.taskId)
+      if (task.workItemId) {
+        workItemForTask(state, task.projectId, task.workItemId)
+      }
       const attempt = task.attempts.at(-1)
       if (attempt && (attempt.state === 'pending' || attempt.state === 'unknown')) {
         throw new Error('Resolve the uncertain launch before changing this task.')
@@ -217,70 +270,4 @@ export function portfolioProgress(tasks: readonly PortfolioTask[]): {
   }
 }
 
-export function preparePortfolioAttempt(
-  state: PortfolioState,
-  taskId: string,
-  worktreeId: string,
-  repoId: string,
-  operationId: string,
-  now: number
-): PortfolioAttempt {
-  const task = portfolioTask(state, taskId)
-  const previous = task.attempts.at(-1)
-  if (previous && (previous.state === 'pending' || previous.state === 'unknown')) {
-    if (previous.worktreeId !== worktreeId) {
-      throw new Error('Retry the original workspace to resolve this launch.')
-    }
-    previous.state = 'pending'
-    return previous
-  }
-  if (task.status !== 'todo') {
-    throw new Error('Only a planned task can start a new execution.')
-  }
-  if (previous && previous.state !== 'closed') {
-    throw new Error('Stop and close the previous execution before starting another.')
-  }
-  const project = state.projects.find((entry) => entry.id === task.projectId)
-  const role = state.roles.find((entry) => entry.id === task.roleId)
-  if (!project || !role || !project.repoIds.includes(repoId)) {
-    throw new Error('Choose a workspace from a repository linked to this project.')
-  }
-  if (
-    state.tasks.some(
-      (entry) =>
-        entry.id !== taskId &&
-        entry.attempts.at(-1)?.state !== 'closed' &&
-        entry.attempts.at(-1)?.worktreeId === worktreeId
-    )
-  ) {
-    throw new Error(
-      'Another project task is running in this workspace. Choose a separate workspace.'
-    )
-  }
-  const attempt: PortfolioAttempt = {
-    operationId,
-    worktreeId,
-    agent: role.agent,
-    createdAt: now,
-    state: 'pending',
-    prompt: [
-      `Project: ${project.name}`,
-      `Objective: ${project.objective}`,
-      `Role: ${role.name}`,
-      `Responsibility: ${role.responsibility}`,
-      `Task: ${task.title}`,
-      task.instructions,
-      `Acceptance criteria:\n${task.acceptanceCriteria}`,
-      'Report changes, verification evidence, and blockers. Completion requires user review.'
-    ].join('\n\n')
-  }
-  task.attempts.push(attempt)
-  task.status = 'running'
-  task.history.push({
-    id: `${task.id}:${task.history.length}`,
-    at: now,
-    status: 'running',
-    note: `Execution requested (${role.agent})`
-  })
-  return attempt
-}
+export { preparePortfolioAttempt } from './portfolio-attempt'

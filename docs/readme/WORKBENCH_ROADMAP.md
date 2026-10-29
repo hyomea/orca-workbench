@@ -1,32 +1,60 @@
 # Orca Workbench roadmap
 
-## Shared context and personal focus
+## Product direction
 
-Planned work: help operators develop across related repositories using a shared understanding of the product, while keeping each operator's focus and each task's deliverable separate. Linking a repository provides context; it does not automatically make that repository a development or migration target.
+Make Orca Workbench a platform for developing and verifying feature parity between iOS and Android. Use Jira acceptance criteria and design documents or screenshots as shared context when available; allow ideas to produce locally reviewed AC and design before development. Organize the workflow around three questions: what should behave consistently, what can be shared, and how both implementations will be tested. Web, API, legacy, and internal-tool repositories provide supporting context where relevant.
 
-All items below are pending. The order is a proposed implementation sequence, not a release schedule.
+The [first-version feature parity design](FEATURE_PARITY_V1.md) defines source intake, baseline review, the feature page, platform comparison, and test evidence. It is the target design; the manual delivery and verification loop is implemented as documented in [Workbench projects](WORKBENCH.md#shared-scenarios-parity-and-rework).
 
-### First milestone — separate the three layers
+Parity means meeting an agreed capability and behavior specification. Native navigation, permissions, presentation, and hardware interactions can differ intentionally. Two implementations behaving the same way is not sufficient if both violate the expected behavior.
 
-- [ ] **Define Shared project context, My focus, and Task objective.** Shared context describes the product, business rules, repository relationships, API contracts, and dependencies. My focus describes the operator's responsibilities and current development scope. A task defines a concrete deliverable and acceptance criteria.
-- [ ] **Persist an independent focus for each operator and project.** Decide how an operator is identified before implementing storage; an Orca runtime profile must not silently stand in for a person. Changing one operator's focus must leave other operators' focus and the shared project context unchanged. Start with local use; cross-device synchronization and organization accounts are separate work.
-- [ ] **Distinguish development targets from reference sources.** Let operators identify the repositories relevant to their focus and use other linked repositories for reference. For example, mobile and its supporting APIs can be development targets while legacy and internal tools explain current behavior. Treat this distinction as context for planning, not a filesystem access-control boundary.
-- [ ] **Update AI discovery and refinement.** Draft the observed shared project context separately from the operator's intended focus. Ask for missing scope in Chinese or English; do not infer a platform rewrite or migration objective from migration files alone. Keep evidence, inference, and user-confirmed intent distinguishable.
-- [ ] **Update project setup and editing.** Present Shared project context and My focus as separate, editable sections with clear ownership. Keep task objectives in the task workflow. Preserve unconfirmed edits and let the operator review both sections before saving.
-- [ ] **Migrate existing projects without losing their objective.** Retain the original objective and ask the operator to classify or refine it when adopting the new fields. Do not silently treat an existing objective as everyone's focus. Preserve task history and previously captured execution instructions.
+The usable manual increment provides feature/work-item records, shared AC and design references, versioned test scenarios, separate iOS/Android result and review states, role-assigned platform tasks, failed-result fix tasks, evidence invalidation after work changes, acceptance gates, and explicit specification publication. Discovery tasks can produce AC before the scope is frozen. Test execution remains in existing platform tools.
 
-Acceptance example: two operators use the same project and repository relationships. One focuses on mobile and API development; the other focuses on web workflows. Updating either focus does not change the shared project description or the other operator's scope.
+The checklist below describes broader targets; unchecked items can be partially implemented. There are no committed release dates.
 
-### Second milestone — use the context in agent work
+## Discovery and agent workflow
 
-- [ ] **Compose and preview execution context.** Combine the shared project context, the initiating operator's focus, the assigned role, and the task objective and acceptance criteria. Show which repositories are development targets or reference sources, and resolve conflicting instructions before launch.
-- [ ] **Snapshot context for each execution.** Record the context and focus used at launch. Later edits affect new executions; retries use the original snapshot so an existing task does not silently change direction.
-- [ ] **Maintain shared context across repositories.** Keep source references and review status for business rules, API contracts, and dependencies. Allow targeted refreshes and propose updates for review instead of silently replacing confirmed context with a new scan.
+- [ ] **Provide two feature entry paths.** Start from an idea or import existing Jira AC and design. Both paths converge on a reviewed baseline; a Jira issue is optional during exploration.
+- [ ] **Support problem framing and solution design.** Preserve briefs, flows, prototypes, scope choices, assumptions, and decisions as editable artifacts rather than chat-only history.
+- [ ] **Add role templates and explicit handoffs.** Product Analyst, Product Designer, iOS Engineer, Android Engineer, and Parity QA operate on versioned inputs and return reviewable outputs. Use stored workflow state and dependencies rather than requiring a Manager Agent.
+- [ ] **Make review and rework visible.** Support direction selection, development-baseline confirmation, and final acceptance, with lightweight review for small features. Route defects to implementation and ambiguity to definition; preserve history and flag affected evidence after changes.
 
-Acceptance example: an agent working on a mobile feature receives the relevant API contract and legacy compatibility constraints, without interpreting reference repositories as authorization for unrelated changes. The operator can inspect the context used for that execution.
+## First milestone — define parity per feature
+
+- [ ] **Create a feature record spanning iOS and Android.** Describe the user outcome, relevant workflows, platform implementation locations, and current behavior. Organize around capabilities rather than files, screens alone, or API dependencies.
+- [ ] **Define the parity agreement.** Record shared business rules, displayed data and their meaning, permissions, state transitions, error handling, and applicable offline or recovery behavior. Specify which outcomes must match and which native differences are accepted. Keep unresolved requirements visible.
+- [ ] **Show a reviewed parity matrix.** Give each platform separate implementation and verification statuses, linked evidence, and build or revision information. Distinguish unknown, missing, partial, implemented, and intentionally different behavior. An AI code scan proposes an assessment; it does not establish verified parity.
+- [ ] **Link confirmed gaps to tasks.** Reuse existing roles and tasks for platform changes and verification. Give each task the feature agreement and relevant scenarios as acceptance criteria. Track API work when a feature needs it, without making API readiness the organizing principle of the parity workflow.
+
+Acceptance example: a reporting feature has an agreed definition for seats sold and seats remaining. The feature record compares the meaning and behavior on iOS and Android, identifies any intended differences, and links unresolved gaps to tasks. Existing web behavior is supporting evidence, not an automatic specification.
+
+## Second milestone — make shared material reusable
+
+- [x] **Maintain one shared feature specification.** Keep terminology, business rules, acceptance criteria, and decisions accessible to both platform implementations and their agents. Preserve source references and distinguish observed behavior from confirmed requirements.
+- [ ] **Record what can be shared and how.** Classify specifications, test scenarios, fixtures, test data, assets, contracts, and potential code reuse separately. Record the canonical source, consumers, and platform exceptions. Shared behavior does not require shared implementation code; assess code reuse against the existing stacks before choosing an architecture.
+- [ ] **Expose changes that need cross-platform review.** When a shared rule, resource, or implementation changes, identify the related feature records, platform tasks, and scenarios for review. Propose updates rather than silently replacing confirmed requirements or invalidating results without explanation.
+- [ ] **Supply feature context to agent tasks.** Compose and preview shared project context, the feature agreement, reusable resources, the assigned role, and task acceptance criteria. Snapshot this context for execution and retries. Keep changes in different repositories traceable through separate execution records.
+
+Acceptance example: a business-rule clarification updates a shared specification and fixture. Both platform tasks reference that same material, while platform-specific code and test drivers remain separate where appropriate.
+
+## Third milestone — test the same expectations on both platforms
+
+- [x] **Define a common scenario catalog per feature.** Scenarios are currently versioned per work item. Record preconditions, initial data, user actions, and expected outcomes. Include relevant success, boundary, failure, permission, offline, and recovery cases. Assign stable scenario identifiers so iOS and Android results can be compared.
+- [ ] **Separate shared scenarios from platform execution.** Reuse expected outcomes and fixtures where practical, with platform-specific unit, integration, and UI tests or manual steps. Map each scenario to its implementation on both platforms; do not assume one test script can drive both apps.
+- [ ] **Record comparable test runs.** Capture the scenario and specification version, app build or revision, device and OS, environment, test data, outcome, and evidence. Show passed, failed, blocked, and not-run results independently for each platform. Flag incompatible environments or stale evidence before comparing results.
+- [x] **Review results against the specification.** Current evidence is recorded as text and references, with explicit operator approval. Compare each platform with the agreed outcomes, then show cross-platform differences. Retain screenshots, logs, and assertions as appropriate. A matching screenshot, completed task, or agent self-report alone must not mark a feature verified.
+- [ ] **Add targeted execution and regression support.** Begin with linked test commands and manual evidence. Add supported simulator, emulator, and device runs incrementally. Select regression scenarios from changed features and shared resources; use broader suites for integration or release checks.
+
+Acceptance example: the same reporting scenario and seed data run on iOS and Android. Each platform must produce the expected counts and update behavior. The comparison shows both results and accepted presentation differences, with build and environment evidence sufficient to reproduce failures.
+
+## Deferred — operator-specific focus
+
+My focus is outside the near-term scope. If introduced later, treat it primarily as a stable responsibility associated with an operator's identity or role, rather than a field changed for every task. Resolve operator identity and ownership before adding personal focus storage. Shared feature context and parity tracking must work without this feature.
 
 ## Delivery checks
 
-- Validate operator isolation, legacy-project migration, draft recovery, and execution snapshots with focused regression tests as those features are implemented.
-- Keep Git repositories and ordinary folders supported; explicitly document remote-client and mobile-client availability for each milestone.
+- Preserve existing project objectives, directory links, task history, and execution snapshots when extending the data model.
+- Keep feature implementation progress separate from verified parity. Show scope, unknown cases, and accepted exclusions in any aggregate report.
+- Add focused checks for feature persistence, shared-resource references, scenario mapping, and stale or incomparable evidence as those capabilities are implemented.
+- Distinguish developing mobile apps with Workbench from exposing Workbench itself through its mobile client. Keep Git repositories and ordinary folders supported and document execution-host limitations.
 - Review the local workflow before pushing changes to the fork.

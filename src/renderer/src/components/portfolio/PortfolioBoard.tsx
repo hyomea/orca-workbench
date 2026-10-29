@@ -14,6 +14,7 @@ import { PortfolioComposer, type PortfolioComposerKind } from './PortfolioCompos
 import { PortfolioTaskDetail, type PortfolioWorkspace } from './PortfolioTaskDetail'
 import { PortfolioWelcome } from './PortfolioWelcome'
 import { PortfolioNavigation } from './PortfolioNavigation'
+import { PortfolioFeatures } from './PortfolioFeatures'
 import { PortfolioProjectBoard } from './PortfolioProjectBoard'
 import { PortfolioProjectSetup } from './PortfolioProjectSetup'
 import type { PortfolioSetupActions } from './portfolio-project-setup-types'
@@ -48,6 +49,7 @@ export function PortfolioBoard({
   useTranslation()
   const [selectedProjectId, setSelectedProjectId] = useState('')
   const [selectedTaskId, setSelectedTaskId] = useState('')
+  const [taskWorkItemId, setTaskWorkItemId] = useState('')
   const [composer, setComposer] = useState<PortfolioComposerKind | null>(null)
   const project =
     state.projects.find((entry) => entry.id === selectedProjectId) ?? state.projects[0]
@@ -139,14 +141,35 @@ export function PortfolioBoard({
               onCreateRole={() => setComposer('role')}
             />
             <PortfolioProjectBoard
+              key={project.id}
               project={project}
               tasks={tasks}
               roles={state.roles}
               repos={repos}
               onEditProject={() => setComposer('project.edit')}
-              onCreateTask={() => setComposer('task')}
+              onCreateTask={() => {
+                setTaskWorkItemId('')
+                setComposer('task')
+              }}
               onCreateRole={() => setComposer('role')}
               onSelectTask={setSelectedTaskId}
+              featureContent={
+                <PortfolioFeatures
+                  key={project.id}
+                  state={state}
+                  projectId={project.id}
+                  draftScope={draftScope}
+                  busy={busy}
+                  error={error}
+                  onSave={onSave}
+                  onCreateTask={(id) => {
+                    setTaskWorkItemId(id)
+                    setComposer('task')
+                  }}
+                  onSelectTask={setSelectedTaskId}
+                  onCreateRole={() => setComposer('role')}
+                />
+              }
             />
           </>
         ) : (
@@ -182,6 +205,7 @@ export function PortfolioBoard({
           <PortfolioComposer
             key={`${composer}:${project?.id ?? ''}`}
             kind={composer}
+            workItemId={taskWorkItemId || undefined}
             state={state}
             projectId={project?.id ?? ''}
             busy={busy}
