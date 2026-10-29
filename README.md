@@ -1,3 +1,5 @@
+> **Orca Workbench** is a fork of [stablyai/orca](https://github.com/stablyai/orca) with a desktop Projects page for work across repositories, persistent agent roles, and evidence-based task review. See [Workbench projects](docs/readme/WORKBENCH.md) for usage and current limitations. The upstream Orca documentation follows below; upstream downloads do not include Workbench features.
+
 <h1 align="center">
   <a href="https://onOrca.dev"><img src="resources/build/icon.png" alt="Orca" width="64" valign="middle" /></a> Orca
 </h1>

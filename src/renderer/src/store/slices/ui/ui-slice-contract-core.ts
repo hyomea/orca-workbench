@@ -113,6 +113,7 @@ export type NewWorkspaceDraft = {
 }
 
 export type UiViewHistory =
+  | 'portfolio'
   | 'terminal'
   | 'settings'
   | 'tasks'

@@ -496,6 +496,7 @@ import {
   PluginSetEnabledParams,
   PluginsPanelActionParams
 } from './plugins-params'
+import { PortfolioLaunch, PortfolioMutate, PortfolioRead } from './portfolio-params'
 import {
   PreflightAgentDetection,
   PreflightCheck,
@@ -1290,6 +1291,9 @@ export const RPC_PARAMS_BY_METHOD = {
   'plugins.panelAction': PluginsPanelActionParams,
   'plugins.readPanelEntry': PluginReadPanelEntryParams,
   'plugins.setEnabled': PluginSetEnabledParams,
+  'portfolio.launch': PortfolioLaunch,
+  'portfolio.mutate': PortfolioMutate,
+  'portfolio.read': PortfolioRead,
   'preflight.check': PreflightCheck,
   'preflight.detectAgents': PreflightProjectAgentDetection,
   'preflight.detectRemoteAgents': PreflightDetectRemoteAgents,
