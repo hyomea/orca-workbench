@@ -19,6 +19,7 @@ const AGENT_LAUNCHES = [
   'terminal.createAgentSession',
   'agentSession.create',
   'git.generateCommitMessage',
+  'portfolio.launch',
   'orchestration.workerStart',
   'orchestration.federationAttachStart'
 ]

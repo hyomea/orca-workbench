@@ -49,6 +49,7 @@ export const HOST_OPERATION_OWNERSHIP = {
   orchestration: 'host',
   pairing: 'host',
   plugins: 'host',
+  portfolio: 'host',
   preflight: 'host',
   project: 'host',
   projectGroup: 'host',
