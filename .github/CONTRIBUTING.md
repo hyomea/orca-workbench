@@ -120,6 +120,22 @@ Affected tests use Vitest's static import graph. Run suites explicitly for compu
 dynamic imports, fixture files, subprocess inputs, or other dependencies outside that
 graph. Local affected tests do not replace CI.
 
+For iterative UI work, use the component's test file or directory, format and lint
+the edited files, and run the relevant typechecks. Check localization when copy
+changes and render component fixtures when layout changes. For example:
+
+```bash
+pnpm test src/renderer/src/components/portfolio --maxWorkers=2
+```
+
+Expand coverage to persistence, execution, and dependent consumers when changing
+backend code or shared contracts. Before integrating a feature into `dev`, run
+`pnpm check:changed --base=dev --maxWorkers=2`. This command selects all changes
+since the branch's merge base, including earlier uncommitted work; it is not a
+check of only the most recent edit. Its cache is written only after every selected
+check passes. Use scoped feedback during iteration without treating that result
+as a passing integration check. Report unresolved baseline failures explicitly.
+
 To reduce main-process rebuild CPU and memory when you do not need its source maps,
 set `ORCA_DEV_MAIN_SOURCEMAPS=0` before `pnpm dev`. In Bash/zsh:
 

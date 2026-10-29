@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { PortfolioCommand } from '../portfolio'
+export { PortfolioDiscover, PortfolioCancelDiscovery } from '../portfolio-discovery'
 
 export const PortfolioRead = z.object({})
 export const PortfolioMutate = z.object({

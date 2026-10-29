@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { Checkbox } from '@/components/ui/checkbox'
 import {
   Sheet,
   SheetContent,
@@ -14,22 +13,26 @@ import { translate } from '@/i18n/i18n'
 import { PortfolioAgent, PortfolioCommand, type PortfolioState } from '../../../../shared/portfolio'
 import { PortfolioField, PortfolioSelect } from './portfolio-controls'
 
-export type PortfolioComposerKind = 'project' | 'role' | 'task' | 'organization'
+export type PortfolioComposerKind =
+  | 'project'
+  | 'project.idea'
+  | 'project.edit'
+  | 'role'
+  | 'task'
+  | 'organization'
 
 export function PortfolioComposer({
   kind,
   state,
   projectId,
-  repos,
   busy,
   saveError,
   onClose,
   onSave
 }: {
-  kind: PortfolioComposerKind
+  kind: 'role' | 'task' | 'organization'
   state: PortfolioState
   projectId: string
-  repos: readonly { id: string; name: string }[]
   busy: boolean
   saveError: string
   onClose: () => void
@@ -38,43 +41,38 @@ export function PortfolioComposer({
   const [name, setName] = useState(kind === 'organization' ? state.organization : '')
   const [description, setDescription] = useState('')
   const [criteria, setCriteria] = useState('')
-  const [repoIds, setRepoIds] = useState<string[]>([])
   const [roleId, setRoleId] = useState(state.roles[0]?.id ?? '')
   const [agent, setAgent] = useState('codex')
   const [error, setError] = useState('')
   const title =
-    kind === 'project'
-      ? translate('portfolio.newProject', 'New project')
-      : kind === 'role'
-        ? translate('portfolio.newRole', 'New role')
-        : kind === 'task'
-          ? translate('portfolio.newTask', 'New task')
-          : translate('portfolio.renameOrganization', 'Rename organization')
+    kind === 'role'
+      ? translate('portfolio.newRole', 'New role')
+      : kind === 'task'
+        ? translate('portfolio.newTask', 'New task')
+        : translate('portfolio.renameOrganization', 'Rename organization')
 
   async function submit(): Promise<void> {
     const candidate =
-      kind === 'project'
-        ? { kind: 'project.create', project: { name, objective: description, repoIds } }
-        : kind === 'role'
-          ? { kind: 'role.create', role: { name, responsibility: description, agent } }
-          : kind === 'task'
-            ? {
-                kind: 'task.create',
-                task: {
-                  projectId,
-                  roleId,
-                  title: name,
-                  instructions: description,
-                  acceptanceCriteria: criteria
-                }
+      kind === 'role'
+        ? { kind: 'role.create', role: { name, responsibility: description, agent } }
+        : kind === 'task'
+          ? {
+              kind: 'task.create',
+              task: {
+                projectId,
+                roleId,
+                title: name,
+                instructions: description,
+                acceptanceCriteria: criteria
               }
-            : { kind: 'organization.rename', name }
+            }
+          : { kind: 'organization.rename', name }
     const parsed = PortfolioCommand.safeParse(candidate)
     if (!parsed.success) {
       setError(
         translate(
           'portfolio.completeFields',
-          'Complete all fields and choose the required repositories or role.'
+          'Complete the required fields and choose a role if needed.'
         )
       )
       return
@@ -94,15 +92,25 @@ export function PortfolioComposer({
         }
       }}
     >
-      <SheetContent>
+      <SheetContent className="w-full sm:max-w-lg">
         <div className="min-h-0 overflow-y-auto scrollbar-sleek">
           <SheetHeader>
             <SheetTitle>{title}</SheetTitle>
             <SheetDescription>
-              {translate(
-                'portfolio.composerDescription',
-                'Define the outcome, ownership, and evidence needed to finish the work.'
-              )}
+              {kind === 'role'
+                ? translate(
+                    'portfolio.roleStep',
+                    'Choose an agent and a responsibility for each role.'
+                  )
+                : kind === 'task'
+                  ? translate(
+                      'portfolio.firstTaskHint',
+                      'Describe the work, assign a role, and define what a successful result looks like.'
+                    )
+                  : translate(
+                      'portfolio.organizationHint',
+                      'Choose the name shown above your projects.'
+                    )}
             </SheetDescription>
           </SheetHeader>
           <form
@@ -123,11 +131,9 @@ export function PortfolioComposer({
             {kind !== 'organization' && (
               <PortfolioField
                 label={
-                  kind === 'project'
-                    ? translate('portfolio.objective', 'Objective')
-                    : kind === 'role'
-                      ? translate('portfolio.responsibility', 'Responsibility')
-                      : translate('portfolio.instructions', 'Instructions')
+                  kind === 'role'
+                    ? translate('portfolio.responsibility', 'Responsibility')
+                    : translate('portfolio.instructions', 'Instructions')
                 }
               >
                 <Textarea
@@ -138,36 +144,6 @@ export function PortfolioComposer({
                   rows={5}
                 />
               </PortfolioField>
-            )}
-            {kind === 'project' && (
-              <fieldset className="space-y-3">
-                <legend className="mb-2 text-sm font-medium">
-                  {translate('portfolio.repositories', 'Repositories and folders')}
-                </legend>
-                {repos.length === 0 && (
-                  <p className="text-sm text-muted-foreground">
-                    {translate(
-                      'portfolio.addRepoFirst',
-                      'Add a repository or folder in the sidebar first.'
-                    )}
-                  </p>
-                )}
-                {repos.map((repo) => (
-                  <label key={repo.id} className="flex items-center gap-2 text-sm">
-                    <Checkbox
-                      checked={repoIds.includes(repo.id)}
-                      onCheckedChange={(checked) =>
-                        setRepoIds((current) =>
-                          checked === true
-                            ? [...current, repo.id]
-                            : current.filter((id) => id !== repo.id)
-                        )
-                      }
-                    />
-                    {repo.name}
-                  </label>
-                ))}
-              </fieldset>
             )}
             {kind === 'role' && (
               <PortfolioSelect

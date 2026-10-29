@@ -10,6 +10,7 @@ import {
   folderWorkspaceToWorktree
 } from '../../../../shared/folder-workspace-worktree'
 import { PortfolioBoard } from './PortfolioBoard'
+import { portfolioSetupActions } from './portfolio-setup-actions'
 
 export default function PortfolioPage(): React.JSX.Element {
   const [state, setState] = useState<PortfolioState | null>(null)
@@ -17,6 +18,7 @@ export default function PortfolioPage(): React.JSX.Element {
   const [loadError, setLoadError] = useState('')
   const [busy, setBusy] = useState(false)
   const changing = useRef(false)
+  const profileId = useAppStore((s) => s.activeOrcaProfileId)
   const repos = useAppStore((s) => s.repos)
   const worktrees = useAppStore(selectWorktreesByRepo)
   const folders = useAppStore(selectFolderWorkspaces)
@@ -120,6 +122,8 @@ export default function PortfolioPage(): React.JSX.Element {
     .map((worktree) => ({ id: worktree.id, repoId: worktree.repoId, name: worktree.displayName }))
   return (
     <PortfolioBoard
+      draftScope={profileId ?? 'local-default'}
+      setupActions={portfolioSetupActions}
       state={state}
       repos={[
         ...localRepos.map((repo) => ({ id: repo.id, name: repo.displayName })),

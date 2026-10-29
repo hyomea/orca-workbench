@@ -3,14 +3,20 @@
 - `origin` is `hyomea/orca-workbench`. Keep `stablyai/orca` as a read-only `upstream`.
 - `dev` is the integration branch. Start new feature branches from `dev` and merge completed work back into `dev`.
 - Keep `main` stable; promote from `dev` only when explicitly requested.
+- Before pushing changes, let the user run the local build and confirm it. Push only after that confirmation.
 - Use Git commits and merges for this workflow. Do not create pull requests unless explicitly requested, and do not submit changes to upstream unless explicitly authorized.
 
 # Useful Commands
 
-- **Before handoff**: `pnpm check:changed --maxWorkers=2` (format, lint, typecheck, affected tests, ratchets; cached when nothing changed)
+- **During iteration and local preview handoff**: validate the current edit with file- or directory-scoped tests, changed-file formatting/lint, and relevant typechecks. Run localization checks when UI copy changes and component fixtures when layout changes. A small UI edit does not require repeating branch-wide tests.
+- **Before integration into `dev`**: run `pnpm check:changed --base=dev --maxWorkers=2` (format, lint, typecheck, affected tests, ratchets). It includes all branch changes, including earlier uncommitted work; reserve it for integration readiness or changes whose impact requires that coverage.
 - **Typecheck**: `pnpm tc` (or `tc:node` / `tc:cli` / `tc:web`)
 - **Test**: `pnpm test [path/to/file.test.ts]`; affected only: `pnpm test:changed [path] --maxWorkers=2` ([details](.github/CONTRIBUTING.md#targeting-local-tests))
 - **Lint**: `oxlint`; format: `pnpm format`
+
+For example, Projects UI changes use `pnpm test src/renderer/src/components/portfolio --maxWorkers=2`; portfolio persistence or execution changes also use `pnpm test src/main/portfolio --maxWorkers=2`. Shared schemas, RPC, authentication, and agent execution require their consumer or integration suites as appropriate. Do not limit those changes to UI tests.
+
+Reuse passing checks while their inputs remain unchanged. Reproduce a suspected baseline failure separately before classifying it as pre-existing; record unresolved failures in the handoff instead of repeatedly running the whole suite after unrelated edits. Scoped passes are not a branch-wide pass, and baseline failures are not silently waived for integration.
 
 # Ensure main is always releasable
 

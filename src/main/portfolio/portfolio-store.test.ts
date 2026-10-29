@@ -3,7 +3,7 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { PortfolioStore } from './portfolio-store'
-import { applyPortfolioCommand, portfolioProgress } from '../../shared/portfolio'
+import { applyPortfolioCommand, PortfolioCommand, portfolioProgress } from '../../shared/portfolio'
 import { launchPortfolioTask, portfolioExecutionInFlight } from './portfolio-execution'
 import type { AgentLaunchResult } from '../../shared/agent-launch-intent'
 
@@ -72,6 +72,84 @@ function receipt(): AgentLaunchResult {
 }
 
 describe('portfolio persistence and execution', () => {
+  it('persists idea-only projects and allows directory links to be added later', async () => {
+    const { store, file } = await fixture()
+    const before = await store.read()
+    const project = {
+      name: 'Arts lab',
+      objective: 'Explore ideas for the performing arts.',
+      repoIds: []
+    }
+    await store.update(before.revision, (state) =>
+      applyPortfolioCommand(
+        state,
+        PortfolioCommand.parse({ kind: 'project.create', project }),
+        'idea',
+        4
+      )
+    )
+    const created = await new PortfolioStore(file).read()
+    expect(created.projects.find((entry) => entry.id === 'idea')?.repoIds).toEqual([])
+    await store.update(created.revision, (state) =>
+      applyPortfolioCommand(
+        state,
+        PortfolioCommand.parse({
+          kind: 'project.update',
+          projectId: 'idea',
+          expected: project,
+          project: { ...project, repoIds: ['api'] }
+        }),
+        '',
+        5
+      )
+    )
+    const linked = await new PortfolioStore(file).read()
+    expect(linked.projects.find((entry) => entry.id === 'idea')?.repoIds).toEqual(['api'])
+    expect(linked.tasks).toEqual(before.tasks)
+  })
+
+  it('persists project edits without losing tasks, rejects stale drafts, and uses the new objective for launches', async () => {
+    const { store, file } = await fixture()
+    const before = await store.read()
+    const command = PortfolioCommand.parse({
+      kind: 'project.update',
+      projectId: 'project',
+      expected: { name: 'Identity', objective: 'Unify sign in', repoIds: ['api', 'mobile'] },
+      project: {
+        name: 'Identity platform',
+        objective: 'Unify web and mobile sessions',
+        repoIds: ['api', 'mobile']
+      }
+    })
+    if (command.kind !== 'project.update') {
+      throw new Error('Expected a project update command')
+    }
+    await store.update(before.revision, (state) => applyPortfolioCommand(state, command, '', 4))
+    const reopened = await new PortfolioStore(file).read()
+    expect(reopened.projects).toEqual([
+      { id: 'project', ...command.project, repoIds: ['api', 'mobile'] }
+    ])
+    expect(reopened.tasks).toEqual(before.tasks)
+    expect(reopened.roles).toEqual(before.roles)
+    await expect(
+      store.update(reopened.revision, (state) => applyPortfolioCommand(state, command, '', 5))
+    ).rejects.toThrow('Close and reopen')
+    await expect(
+      store.update(reopened.revision, (state) =>
+        applyPortfolioCommand(state, { ...command, projectId: 'missing' }, '', 5)
+      )
+    ).rejects.toThrow('no longer exists')
+    expect(await store.read()).toEqual(reopened)
+    const launched = await launchPortfolioTask(
+      store,
+      { revision: reopened.revision, taskId: 'task', worktreeId: 'workspace', repoId: 'api' },
+      async () => receipt()
+    )
+    expect(launched.tasks[0].attempts[0].prompt).toContain(
+      'Objective: Unify web and mobile sessions'
+    )
+  })
+
   it('refuses a second window while the original launch is still in flight', async () => {
     const { store, file } = await fixture()
     const started = Promise.withResolvers<void>()
@@ -149,11 +227,28 @@ describe('portfolio persistence and execution', () => {
     )
     const original = first.tasks[0].attempts[0]
     expect(original.state).toBe('unknown')
+    const edited = await store.update(first.revision, (state) =>
+      applyPortfolioCommand(
+        state,
+        {
+          kind: 'project.update',
+          projectId: 'project',
+          expected: { name: 'Identity', objective: 'Unify sign in', repoIds: ['api', 'mobile'] },
+          project: {
+            name: 'Identity',
+            objective: 'Updated objective after dispatch',
+            repoIds: ['api', 'mobile']
+          }
+        },
+        '',
+        4
+      )
+    )
     let replayId = ''
     let replayPrompt = ''
     const recovered = await launchPortfolioTask(
       new PortfolioStore(file),
-      { revision: first.revision, taskId: 'task', worktreeId: 'workspace', repoId: 'api' },
+      { revision: edited.revision, taskId: 'task', worktreeId: 'workspace', repoId: 'api' },
       async (attempt) => {
         replayId = attempt.operationId
         replayPrompt = attempt.prompt

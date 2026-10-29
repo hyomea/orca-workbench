@@ -9,7 +9,7 @@ export const PortfolioTaskStatus = z.enum(['todo', 'running', 'blocked', 'review
 export const PortfolioProjectInput = z.object({
   name: Name,
   objective: Description,
-  repoIds: z.array(Id).min(1).max(100)
+  repoIds: z.array(Id).max(100)
 })
 export const PortfolioRoleInput = z.object({
   name: Name,
@@ -56,9 +56,17 @@ export type PortfolioState = z.infer<typeof PortfolioState>
 export type PortfolioTask = z.infer<typeof PortfolioTask>
 export type PortfolioAttempt = z.infer<typeof PortfolioAttempt>
 
+const ProjectDetails = PortfolioProjectInput
+
 export const PortfolioCommand = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('organization.rename'), name: Name }),
   z.object({ kind: z.literal('project.create'), project: PortfolioProjectInput }),
+  z.object({
+    kind: z.literal('project.update'),
+    projectId: Id,
+    project: ProjectDetails,
+    expected: ProjectDetails
+  }),
   z.object({ kind: z.literal('role.create'), role: PortfolioRoleInput }),
   z.object({ kind: z.literal('task.create'), task: PortfolioTaskInput }),
   z.object({ kind: z.literal('task.closeExecution'), taskId: Id, note: Description }),
@@ -107,6 +115,25 @@ export function applyPortfolioCommand(
         id
       })
       return
+    case 'project.update': {
+      const project = state.projects.find((entry) => entry.id === command.projectId)
+      if (!project) {
+        throw new Error('Project no longer exists. Close this form and refresh.')
+      }
+      if (
+        project.name !== command.expected.name ||
+        project.objective !== command.expected.objective ||
+        JSON.stringify(project.repoIds) !== JSON.stringify(command.expected.repoIds)
+      ) {
+        throw new Error(
+          'Project details changed. Close and reopen this form to review the latest version.'
+        )
+      }
+      project.name = command.project.name
+      project.objective = command.project.objective
+      project.repoIds = [...new Set(command.project.repoIds)]
+      return
+    }
     case 'role.create':
       state.roles.push({ ...command.role, id })
       return

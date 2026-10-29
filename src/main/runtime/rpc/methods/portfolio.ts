@@ -16,6 +16,7 @@ import {
 } from '../../../portfolio/portfolio-execution'
 import { defineMethod } from '../core'
 import { AGENT_LAUNCH_METHODS } from './agent-launch'
+import { PORTFOLIO_DISCOVERY_METHODS } from './portfolio-discovery'
 
 function store(): PortfolioStore {
   return new PortfolioStore(
@@ -24,6 +25,7 @@ function store(): PortfolioStore {
 }
 
 export const PORTFOLIO_METHODS = [
+  ...PORTFOLIO_DISCOVERY_METHODS,
   defineMethod({
     name: 'portfolio.read',
     permission: 'workspace',
