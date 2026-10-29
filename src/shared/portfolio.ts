@@ -51,7 +51,7 @@ export const PortfolioTask = PortfolioTaskInput.extend({
   )
 })
 export const PortfolioState = z.object({
-  schemaVersion: z.literal(3),
+  schemaVersion: z.literal(4),
   verification: z.array(PortfolioVerification),
   features: z.array(PortfolioFeature),
   workItems: z.array(PortfolioWorkItem),
@@ -74,7 +74,7 @@ export function parsePortfolioState(value: unknown): PortfolioState {
     const legacy = LegacyPortfolioState.parse(value)
     return PortfolioState.parse({
       ...legacy,
-      schemaVersion: 3,
+      schemaVersion: 4,
       features: [],
       workItems: [],
       verification: []
@@ -84,7 +84,11 @@ export function parsePortfolioState(value: unknown): PortfolioState {
     const legacy = PortfolioState.omit({ verification: true })
       .extend({ schemaVersion: z.literal(2) })
       .parse(value)
-    return PortfolioState.parse({ ...legacy, schemaVersion: 3, verification: [] })
+    return PortfolioState.parse({ ...legacy, schemaVersion: 4, verification: [] })
+  }
+  if (version === 3) {
+    const legacy = PortfolioState.extend({ schemaVersion: z.literal(3) }).parse(value)
+    return PortfolioState.parse({ ...legacy, schemaVersion: 4 })
   }
   return PortfolioState.parse(value)
 }
@@ -119,7 +123,7 @@ export type PortfolioCommand = z.infer<typeof PortfolioCommand>
 
 export function emptyPortfolio(): PortfolioState {
   return {
-    schemaVersion: 3,
+    schemaVersion: 4,
     verification: [],
     features: [],
     workItems: [],

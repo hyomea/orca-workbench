@@ -63,7 +63,8 @@ function parseJiraSite(value: unknown): JiraSite | null {
     displayName: value.displayName,
     accountId: value.accountId,
     authType: isJiraAuthType(value.authType) ? value.authType : undefined,
-    apiBaseUrl: typeof value.apiBaseUrl === 'string' ? value.apiBaseUrl : undefined
+    apiBaseUrl: typeof value.apiBaseUrl === 'string' ? value.apiBaseUrl : undefined,
+    oauthGrantId: typeof value.oauthGrantId === 'string' ? value.oauthGrantId : undefined
   }
   return site
 }

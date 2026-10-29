@@ -38,7 +38,7 @@ export function getTokenDir(): string {
   return join(getOrcaDir(), 'jira-tokens')
 }
 
-function getTokenPath(siteId: string): string {
+export function getTokenPath(siteId: string): string {
   return join(getTokenDir(), `${Buffer.from(siteId).toString('base64url')}.enc`)
 }
 
@@ -97,6 +97,12 @@ function normalizeSite(input: unknown): JiraSite | null {
     accountId: record.accountId,
     // Sites saved before self-hosted support have no authType; they are Cloud.
     authType: record.authType === 'server' ? 'server' : 'cloud',
+    ...(record.authType !== 'server' &&
+    typeof record.oauthGrantId === 'string' &&
+    /^oauth-grant:[A-Za-z0-9_-]+$/.test(record.oauthGrantId) &&
+    isJiraGatewayBaseUrl(record.apiBaseUrl)
+      ? { oauthGrantId: record.oauthGrantId }
+      : {}),
     ...(record.authType !== 'server' && isJiraGatewayBaseUrl(record.apiBaseUrl)
       ? { apiBaseUrl: record.apiBaseUrl }
       : {})
@@ -138,7 +144,7 @@ export function getSiteFile(): JiraSiteFile {
 }
 
 function selectableSiteFile(file: JiraSiteFile): JiraSiteFile {
-  const sites = file.sites.filter((site) => hasStoredToken(site.id))
+  const sites = file.sites.filter((site) => hasStoredToken(site.oauthGrantId ?? site.id))
   const activeSiteId =
     file.activeSiteId && sites.some((site) => site.id === file.activeSiteId)
       ? file.activeSiteId

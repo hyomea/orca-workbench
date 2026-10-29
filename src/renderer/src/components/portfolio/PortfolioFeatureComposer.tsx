@@ -1,3 +1,6 @@
+import { PortfolioIntakeReview } from './PortfolioIntakeReview'
+import { usePortfolioIntake } from './use-portfolio-intake'
+import { PortfolioContextSources } from './PortfolioContextSources'
 import { useState } from 'react'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -10,7 +13,7 @@ import {
 } from '@/components/ui/sheet'
 import { translate } from '@/i18n/i18n'
 import { PortfolioCommand } from '../../../../shared/portfolio'
-import type { PortfolioWorkItem } from '../../../../shared/portfolio-features'
+import type { PortfolioWorkItem, PortfolioFeature } from '../../../../shared/portfolio-features'
 import { PortfolioField, PortfolioSelect } from './portfolio-controls'
 import { PortfolioProjectSetupFooter } from './PortfolioProjectSetupFooter'
 import { workItemKinds } from './portfolio-feature-labels'
@@ -22,6 +25,7 @@ export function PortfolioFeatureComposer({
   item,
   draftKey,
   hasSpecification,
+  specification,
   busy,
   saveError,
   onSave,
@@ -32,20 +36,26 @@ export function PortfolioFeatureComposer({
   item?: PortfolioWorkItem
   draftKey: string
   hasSpecification?: boolean
+  specification?: PortfolioFeature['versions'][number]
   busy: boolean
   saveError: string
   onSave: (command: PortfolioCommand) => Promise<boolean>
   onClose: () => void
 }): React.JSX.Element {
-  const { draft, field, discard } = useFeatureDraft(
+  const [importing, setImporting] = useState(false)
+  const editor = useFeatureDraft(
     draftKey,
     item,
-    hasSpecification ? 'improvement' : 'initial'
+    hasSpecification ? 'improvement' : 'initial',
+    specification
   )
+  const { draft, field, discard, preview } = editor
+  const intake = usePortfolioIntake(editor)
+  const working = busy || importing || intake.pending
   const [error, setError] = useState('')
   const isItem = !!featureId
   async function save(): Promise<void> {
-    if (busy) {
+    if (working) {
       return
     }
     const workItem = {
@@ -61,7 +71,7 @@ export function PortfolioFeatureComposer({
       isItem
         ? item
           ? { kind: 'workItem.update', workItemId: item.id, workItem, expected: draft.expected }
-          : { kind: 'workItem.create', workItem }
+          : { kind: 'workItem.create', workItem, expectedBaseVersion: draft.baseVersion ?? 0 }
         : {
             kind: 'feature.create',
             feature: { projectId, name: draft.name, description: draft.description }
@@ -80,7 +90,7 @@ export function PortfolioFeatureComposer({
     <Sheet
       open
       onOpenChange={(open) => {
-        if (!open && !busy) {
+        if (!open && !working) {
           onClose()
         }
       }}
@@ -109,7 +119,23 @@ export function PortfolioFeatureComposer({
               void save()
             }}
           >
-            <fieldset disabled={busy} className="space-y-5">
+            {isItem && <PortfolioIntakeReview editor={editor} intake={intake} busy={working} />}
+            {isItem && (
+              <PortfolioContextSources
+                mode={draft.contextKind ?? ''}
+                url={draft.contextUrl ?? ''}
+                preview={draft.contextPreview}
+                designReferences={draft.designReferences}
+                busy={busy || intake.pending}
+                onMode={(value) => field('contextKind', value)}
+                onUrl={(value) => field('contextUrl', value)}
+                onPreview={preview}
+                onAnalyze={intake.analyze}
+                onDesignReferences={editor.reference}
+                onPending={setImporting}
+              />
+            )}
+            <fieldset disabled={working} className="space-y-5">
               {isItem && (
                 <PortfolioSelect
                   label={translate('portfolio.workItemType', 'Work type')}
@@ -118,7 +144,7 @@ export function PortfolioFeatureComposer({
                   options={workItemKinds().filter(
                     (kind) => !hasSpecification || kind.id !== 'initial'
                   )}
-                  disabled={busy}
+                  disabled={working}
                 />
               )}
               <PortfolioField label={translate('portfolio.name', 'Name')}>
@@ -176,8 +202,8 @@ export function PortfolioFeatureComposer({
                   </PortfolioField>
                   <p className="text-xs text-muted-foreground">
                     {translate(
-                      'portfolio.referenceOnlyHint',
-                      'Paste requirements and reference links here. Links are not imported or analyzed automatically. An improvement should describe the complete proposed specification before publication.'
+                      'portfolio.referenceReviewHint',
+                      'Review imported requirements and design references before saving. Design links are references until inspected. An improvement should describe the complete proposed specification before publication.'
                     )}
                   </p>
                 </>
@@ -193,7 +219,7 @@ export function PortfolioFeatureComposer({
                 'portfolio.discardFeatureDraft',
                 'Discard this form draft? Saved features and work items will remain.'
               )}
-              disabled={busy}
+              disabled={working}
               canSave={!!(isItem ? draft.title : draft.name).trim()}
               saving={busy}
               showSave

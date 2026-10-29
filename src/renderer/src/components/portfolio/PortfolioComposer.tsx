@@ -1,3 +1,4 @@
+import { portfolioRoleTemplates } from './portfolio-role-templates'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -40,6 +41,8 @@ export function PortfolioComposer({
   onClose: () => void
   onSave: (command: PortfolioCommand) => Promise<boolean>
 }): React.JSX.Element {
+  const [templateId, setTemplateId] = useState('analyst')
+  const templates = portfolioRoleTemplates()
   const [name, setName] = useState(kind === 'organization' ? state.organization : '')
   const [description, setDescription] = useState('')
   const [criteria, setCriteria] = useState('')
@@ -133,6 +136,38 @@ export function PortfolioComposer({
               void submit()
             }}
           >
+            {kind === 'role' && (
+              <section className="space-y-3 rounded-md border border-border p-3">
+                <PortfolioSelect
+                  label={translate('portfolio.roleTemplate', 'Role template')}
+                  value={templateId}
+                  onChange={setTemplateId}
+                  disabled={busy}
+                  options={templates.map(({ id, name }) => ({ id, name }))}
+                />
+                <p className="text-xs text-muted-foreground">
+                  {translate(
+                    'portfolio.roleTemplateHint',
+                    'Apply a template to replace the name and responsibility below, then customize it and choose an agent. Tasks are assigned and launched manually.'
+                  )}
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={busy}
+                  onClick={() => {
+                    const template = templates.find((entry) => entry.id === templateId)
+                    if (template) {
+                      setName(template.name)
+                      setDescription(template.responsibility)
+                    }
+                  }}
+                >
+                  {translate('portfolio.applyTemplate', 'Apply template')}
+                </Button>
+              </section>
+            )}
             <PortfolioField label={translate('portfolio.name', 'Name')}>
               <Input
                 value={name}

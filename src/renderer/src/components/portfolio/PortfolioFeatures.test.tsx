@@ -10,6 +10,7 @@ import {
 } from '../../../../shared/portfolio'
 import { PortfolioFeatures } from './PortfolioFeatures'
 import { PortfolioFeatureComposer } from './PortfolioFeatureComposer'
+import { PortfolioProjectBoard } from './PortfolioProjectBoard'
 import { PortfolioComposer } from './PortfolioComposer'
 
 vi.mock('@/i18n/i18n', () => ({
@@ -85,7 +86,7 @@ it('creates a feature and a separate initial delivery, then requires explicit re
   await click('In review')
   enter('Evidence or review note', 'Reviewed evidence')
   expect(screen.getByRole('button', { name: 'Accepted' })).toHaveProperty('disabled', true)
-  await tab('Parity & tests')
+  await click('Open parity & tests')
   await click('Create test plan')
   enter('AC covered by this scenario', 'Show sold and remaining counts')
   enter('Preconditions and shared test data', 'Event with 20 seats and 5 sales')
@@ -220,4 +221,132 @@ it('creates an agent task linked to the selected work item', async () => {
       acceptanceCriteria: 'Regression case passes'
     }
   })
+})
+
+it('starts an improvement with the current specification and preserves that baseline when a newer version arrives', async () => {
+  const specification = {
+    version: 1,
+    workItemId: 'previous',
+    description: 'Report inventory',
+    acceptanceCriteria: 'Show sold and remaining',
+    designReferences: 'Count design',
+    sourceReference: 'AC-1',
+    at: 1,
+    note: 'Baseline'
+  }
+  const onSave = vi.fn(async () => true)
+  const props = {
+    projectId: 'project',
+    featureId: 'feature',
+    draftKey: createBrowserUuid(),
+    hasSpecification: true,
+    specification,
+    busy: false,
+    saveError: '',
+    onSave,
+    onClose: () => {}
+  }
+  const editor = render(<PortfolioFeatureComposer {...props} />)
+  expect(screen.getByLabelText('Acceptance criteria')).toHaveProperty(
+    'value',
+    specification.acceptanceCriteria
+  )
+  expect(screen.getByLabelText('Design references and notes')).toHaveProperty(
+    'value',
+    specification.designReferences
+  )
+  enter('Name', 'Add ticket types')
+  enter('Acceptance criteria', `${specification.acceptanceCriteria}; include ticket types`)
+  editor.rerender(
+    <PortfolioFeatureComposer
+      {...props}
+      specification={{ ...specification, version: 2, acceptanceCriteria: 'A newer baseline' }}
+    />
+  )
+  await click('Confirm and save')
+  expect(onSave).toHaveBeenCalledWith(
+    expect.objectContaining({
+      kind: 'workItem.create',
+      expectedBaseVersion: 1,
+      workItem: expect.objectContaining({
+        acceptanceCriteria: 'Show sold and remaining; include ticket types'
+      })
+    })
+  )
+})
+
+it('applies an editable role template without assigning or launching a task', async () => {
+  const onSave = vi.fn(async () => true)
+  render(
+    <PortfolioComposer
+      kind="role"
+      state={initialState()}
+      projectId="project"
+      busy={false}
+      saveError=""
+      onSave={onSave}
+      onClose={() => {}}
+    />
+  )
+  await click('Apply template')
+  expect(screen.getByLabelText('Name')).toHaveProperty('value', 'Product Analyst')
+  expect(screen.getByLabelText('Responsibility')).toHaveProperty(
+    'value',
+    expect.stringContaining('testable acceptance criteria')
+  )
+  enter('Name', 'Mobile Product Analyst')
+  await click('Save')
+  expect(onSave).toHaveBeenCalledWith(
+    expect.objectContaining({
+      kind: 'role.create',
+      role: expect.objectContaining({ name: 'Mobile Product Analyst', agent: 'codex' })
+    })
+  )
+})
+
+it('keeps the selected feature when switching project views and discloses full project context on demand', async () => {
+  const state = initialState()
+  state.features.push({
+    id: 'feature',
+    projectId: 'project',
+    name: 'Report counts',
+    description: 'Consistent mobile reporting',
+    versions: []
+  })
+  const noop = () => {}
+  render(
+    <PortfolioProjectBoard
+      project={state.projects[0]}
+      tasks={[]}
+      roles={[]}
+      repos={[]}
+      onCreateTask={noop}
+      onEditProject={noop}
+      onCreateRole={noop}
+      onSelectTask={noop}
+      featureContent={
+        <PortfolioFeatures
+          state={state}
+          projectId="project"
+          draftScope="switch-test"
+          busy={false}
+          error=""
+          onSave={async () => true}
+          onCreateTask={noop}
+          onSelectTask={noop}
+          onCreateRole={noop}
+        />
+      }
+    />
+  )
+  fireEvent.click(screen.getByRole('button', { name: /Report counts/ }))
+  expect(screen.getByRole('heading', { name: 'Start with the first work item' })).toBeTruthy()
+  await click('Tasks')
+  expect(screen.queryByRole('heading', { name: 'Report counts' })).toBeNull()
+  await click('Features')
+  expect(screen.getByRole('heading', { name: 'Report counts' })).toBeTruthy()
+  const context = screen.getByText('Project context · {{count}} sources').closest('details')
+  expect(context?.open).toBe(false)
+  fireEvent.click(screen.getByText('Project context · {{count}} sources'))
+  expect(context?.open).toBe(true)
 })

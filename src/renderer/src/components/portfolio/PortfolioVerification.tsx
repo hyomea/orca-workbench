@@ -227,6 +227,7 @@ export function PortfolioVerification({
                   key={cell.result.id}
                   result={cell.result}
                   current={cell.current}
+                  allowFix
                   workItemId={item.id}
                   state={state}
                   busy={busy}

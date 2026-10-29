@@ -37,11 +37,20 @@ export function applyPortfolioFeatureCommand(
     if (!feature) {
       throw new Error('Feature no longer exists.')
     }
+    if (
+      command.expectedBaseVersion !== undefined &&
+      command.expectedBaseVersion !== (feature.versions.at(-1)?.version ?? 0)
+    ) {
+      throw new Error(
+        'The feature specification changed. Keep your notes and start a new draft against the current version.'
+      )
+    }
     if (command.workItem.kind === 'initial' && feature.versions.length > 0) {
       throw new Error('This feature already has a specification. Create an improvement instead.')
     }
     state.workItems.push({
       ...command.workItem,
+      designAttachments: structuredClone(feature.versions.at(-1)?.designAttachments),
       id,
       baseVersion: feature.versions.at(-1)?.version ?? 0,
       status: 'planned',
@@ -57,8 +66,17 @@ export function applyPortfolioFeatureCommand(
     if (hasOpenExecution(task) || task.status !== 'todo') {
       throw new Error('Only a planned task with no open execution can be linked.')
     }
+    if (task.workItemId === command.workItemId) {
+      return true
+    }
     if (task.workItemId) {
       workItemForTask(state, task.projectId, task.workItemId)
+      const { verification, plan } = verificationProgress(state, task.workItemId)
+      if (verification?.results.some((result) => result.planVersion === plan?.version)) {
+        throw new Error(
+          'Revise the test plan before moving a task with recorded results. This prevents old evidence from becoming current again.'
+        )
+      }
     }
     if (command.workItemId) {
       workItemForTask(state, task.projectId, command.workItemId)
@@ -143,6 +161,7 @@ export function applyPortfolioFeatureCommand(
       description: item.description,
       acceptanceCriteria: item.acceptanceCriteria,
       designReferences: item.designReferences,
+      designAttachments: structuredClone(item.designAttachments),
       sourceReference: item.sourceReference,
       at: now,
       note: command.note

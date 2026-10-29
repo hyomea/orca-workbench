@@ -7,7 +7,8 @@ export function preparePortfolioAttempt(
   worktreeId: string,
   repoId: string,
   operationId: string,
-  now: number
+  now: number,
+  designContext = ''
 ): PortfolioAttempt {
   const task = portfolioTask(state, taskId)
   const previous = task.attempts.at(-1)
@@ -51,6 +52,7 @@ export function preparePortfolioAttempt(
       `Project: ${project.name}`,
       `Objective: ${project.objective}`,
       ...portfolioFeaturePrompt(state, task),
+      ...(designContext ? [designContext] : []),
       `Role: ${role.name}`,
       `Responsibility: ${role.responsibility}`,
       `Task: ${task.title}`,

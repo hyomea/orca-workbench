@@ -2057,6 +2057,18 @@
       "unsupportedFile": "Unsupported file. Pick a PNG, APNG, JPG, GIF, WebP, or SVG."
     }
   },
+  "portfolio": {
+    "attachDesignLink": "Attach design link",
+    "featureCounts": "{{count}} work items · specification v{{version}}",
+    "jiraApplyWithAC": "Applying replaces the name, description, acceptance criteria, and Jira reference below. Review these fields before saving.",
+    "jiraApplyWithoutAC": "Applying replaces the name, description, and Jira reference below. No labeled AC section was found; your existing acceptance criteria will be kept.",
+    "jiraContentApplied": "Ticket content applied. Review the draft below before saving.",
+    "noWorkItems": "Add an initial delivery, bug, improvement, or issue that needs triage.",
+    "referenceOnlyHint": "Paste requirements and reference links here. Links are not imported or analyzed automatically. An improvement should describe the complete proposed specification before publication.",
+    "selectWorkItem": "Select a work item to review its context, tasks, and history.",
+    "specificationHint": "Draft requirements in an initial delivery work item. Review and accept the work, then explicitly publish its specification.",
+    "useTicketContent": "Use ticket content"
+  },
   "projectViews": {
     "error": {
       "tooLargeCount_one": "This view has {{count}} item — too large to render in Orca. Narrow the view's filter on GitHub.",

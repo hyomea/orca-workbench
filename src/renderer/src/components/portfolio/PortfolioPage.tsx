@@ -1,3 +1,6 @@
+import { z } from 'zod'
+import { MAX_PORTFOLIO_IMAGE_BYTES } from '../../../../shared/portfolio-design'
+import { PortfolioDesignContext, portfolioImageBase64 } from './portfolio-design-actions'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useAppStore } from '@/store'
 import { selectFolderWorkspaces, selectWorktreesByRepo } from '@/store/workspace-record-selectors'
@@ -125,29 +128,60 @@ export default function PortfolioPage(): React.JSX.Element {
     )
     .map((worktree) => ({ id: worktree.id, repoId: worktree.repoId, name: worktree.displayName }))
   return (
-    <PortfolioBoard
-      draftScope={profileId ?? 'local-default'}
-      setupActions={portfolioSetupActions}
-      state={state}
-      repos={[
-        ...localRepos.map((repo) => ({ id: repo.id, name: repo.displayName })),
-        ...folderGroups
-      ]}
-      workspaces={workspaces}
-      activity={activity}
-      busy={busy}
-      error={error || loadError}
-      onRefresh={() => {
-        setError('')
-        void refresh()
-      }}
-      onSave={(command: PortfolioCommand) => mutate('portfolio.mutate', { command })}
-      onLaunch={(taskId, worktreeId) => mutate('portfolio.launch', { taskId, worktreeId })}
-      onOpenWorkspace={(id) => {
-        if (setActiveWorktree(id, 'local')) {
-          setActiveView('terminal')
+    <PortfolioDesignContext
+      value={{
+        attach: async (workItemId, file) => {
+          if (file.size > MAX_PORTFOLIO_IMAGE_BYTES) {
+            throw new Error(
+              translate('portfolio.imageTooLarge', 'Choose an image no larger than 5 MiB.')
+            )
+          }
+          return mutate('portfolio.attachDesign', {
+            workItemId,
+            name: file.name,
+            mimeType: file.type,
+            base64: await portfolioImageBase64(file)
+          })
+        },
+        remove: (workItemId, attachmentId) =>
+          mutate('portfolio.removeDesign', { workItemId, attachmentId }),
+        read: async (attachmentId) => {
+          const image = z
+            .object({
+              mimeType: z.enum(['image/png', 'image/jpeg', 'image/webp']),
+              base64: z.string()
+            })
+            .parse(
+              await callRuntimeRpc({ kind: 'local' }, 'portfolio.readDesign', { attachmentId })
+            )
+          return `data:${image.mimeType};base64,${image.base64}`
         }
       }}
-    />
+    >
+      <PortfolioBoard
+        draftScope={profileId ?? 'local-default'}
+        setupActions={portfolioSetupActions}
+        state={state}
+        repos={[
+          ...localRepos.map((repo) => ({ id: repo.id, name: repo.displayName })),
+          ...folderGroups
+        ]}
+        workspaces={workspaces}
+        activity={activity}
+        busy={busy}
+        error={error || loadError}
+        onRefresh={() => {
+          setError('')
+          void refresh()
+        }}
+        onSave={(command: PortfolioCommand) => mutate('portfolio.mutate', { command })}
+        onLaunch={(taskId, worktreeId) => mutate('portfolio.launch', { taskId, worktreeId })}
+        onOpenWorkspace={(id) => {
+          if (setActiveWorktree(id, 'local')) {
+            setActiveView('terminal')
+          }
+        }}
+      />
+    </PortfolioDesignContext>
   )
 }

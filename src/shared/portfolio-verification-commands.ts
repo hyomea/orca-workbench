@@ -44,6 +44,7 @@ export function applyPortfolioVerificationCommand(
       scenarios: command.scenarios,
       acceptanceCriteria: item.acceptanceCriteria,
       designReferences: item.designReferences,
+      designAttachments: structuredClone(item.designAttachments),
       sourceReference: item.sourceReference,
       at: now,
       note: command.note
@@ -97,7 +98,7 @@ export function applyPortfolioVerificationCommand(
   }
   const result = verification.results.find((entry) => entry.id === command.resultId)
   const cell = progress.cells.find((entry) => entry.result?.id === result?.id)
-  if (!result || !cell?.current) {
+  if (!result || !cell || (command.kind === 'verification.review' && !cell.current)) {
     throw new Error('This result is outdated. Record a new test result.')
   }
   if (command.kind === 'verification.review') {

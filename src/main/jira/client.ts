@@ -1,3 +1,4 @@
+import { jiraOAuthAuthorization } from './oauth-credentials'
 import { taskProviderFailure } from '../../shared/task-provider-failure'
 import { CredentialDecryptionError } from '../integration-credential-file'
 import type {
@@ -41,7 +42,7 @@ export function getClients(selection?: JiraSiteSelection | null): JiraClientForS
   return sites.flatMap((site) => {
     let token: string | null
     try {
-      token = readToken(site.id)
+      token = readToken(site.oauthGrantId ?? site.id)
     } catch (error) {
       // For all-sites reads, skip unreadable credentials; explicit site reads still throw and status retains the error.
       if (isAllSelection && error instanceof CredentialDecryptionError) {
@@ -49,19 +50,31 @@ export function getClients(selection?: JiraSiteSelection | null): JiraClientForS
       }
       throw error
     }
-    return token ? [{ site, authorization: authHeader(site.email, token, site.authType) }] : []
+    if (!token) {
+      return []
+    }
+    const grantId = site.oauthGrantId
+    return [
+      {
+        site,
+        authorization: grantId ? '' : authHeader(site.email, token, site.authType),
+        ...(grantId ? { getAuthorization: () => jiraOAuthAuthorization(grantId) } : {})
+      }
+    ]
   })
 }
 
 export function getStatus(): JiraConnectionStatus {
   const file = getSiteFile()
-  const sites = file.sites.filter((site) => hasStoredToken(site.id))
+  const sites = file.sites.filter((site) => hasStoredToken(site.oauthGrantId ?? site.id))
   const activeSite = sites.find((site) => site.id === file.activeSiteId) ?? sites[0] ?? null
   const credentialError = sites
-    .map((site) => getCredentialError(site.id))
+    .map((site) => getCredentialError(site.oauthGrantId ?? site.id))
     .find((message) => message !== undefined)
   // Protection is host-wide: inactive sites with plaintext credentials still matter.
-  const credentialProtection = sites.some((site) => getSiteTokenProtection(site.id) === 'plaintext')
+  const credentialProtection = sites.some(
+    (site) => getSiteTokenProtection(site.oauthGrantId ?? site.id) === 'plaintext'
+  )
     ? 'plaintext'
     : null
   return {
@@ -137,8 +150,14 @@ export async function connect(
 export function disconnect(siteId?: string): void {
   const file = getSiteFile()
   const ids = siteId ? [siteId] : file.sites.map((site) => site.id)
-  for (const id of ids) {
-    deleteToken(id)
+  const remaining = file.sites.filter((site) => !ids.includes(site.id))
+  for (const site of file.sites.filter((entry) => ids.includes(entry.id))) {
+    if (
+      !site.oauthGrantId ||
+      !remaining.some((entry) => entry.oauthGrantId === site.oauthGrantId)
+    ) {
+      deleteToken(site.oauthGrantId ?? site.id)
+    }
   }
   clearAttachmentImagesForSite(siteId)
   writeSiteFile({
@@ -193,10 +212,7 @@ export async function testConnection(
 }
 
 export function clearToken(siteId: string): void {
-  deleteToken(siteId)
-  clearAttachmentImagesForSite(siteId)
-  const file = getSiteFile()
-  writeSiteFile({ ...file, sites: file.sites.filter((site) => site.id !== siteId) })
+  disconnect(siteId)
 }
 
 export function isAuthError(error: unknown): boolean {

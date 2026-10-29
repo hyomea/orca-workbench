@@ -16,7 +16,7 @@ export function PortfolioNavigation({
   onCreateRole: () => void
 }): React.JSX.Element {
   return (
-    <aside className="space-y-5 border-b border-border p-4 @3xl:w-56 @3xl:shrink-0 @3xl:overflow-y-auto @3xl:border-r @3xl:border-b-0 scrollbar-sleek">
+    <aside className="min-h-0 space-y-5 border-b border-border p-4 @3xl/portfolio:border-r @3xl/portfolio:border-b-0">
       <section className="space-y-2">
         <div className="flex items-center justify-between px-2 text-muted-foreground">
           <h2 className="text-2xs font-semibold uppercase tracking-wider">
@@ -26,7 +26,7 @@ export function PortfolioNavigation({
         </div>
         <nav
           aria-label={translate('portfolio.projectList', 'Business projects')}
-          className="flex gap-1 overflow-x-auto scrollbar-sleek @3xl:flex-col"
+          className="flex gap-1 overflow-x-auto scrollbar-sleek @3xl/portfolio:flex-col"
         >
           {state.projects.map((entry) => {
             const progress = portfolioProgress(
@@ -41,7 +41,7 @@ export function PortfolioNavigation({
                 data-current={current}
                 onClick={() => onSelectProject(entry.id)}
                 className={cn(
-                  'w-48 shrink-0 rounded-md p-3 text-left outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring @3xl:w-full',
+                  'w-48 shrink-0 rounded-md p-3 text-left outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring @3xl/portfolio:w-full',
                   current && 'bg-accent'
                 )}
               >
@@ -79,9 +79,12 @@ export function PortfolioNavigation({
           </Button>
         </div>
         {state.roles.length > 0 ? (
-          <div className="flex gap-2 overflow-x-auto scrollbar-sleek @3xl:flex-col">
+          <div className="flex gap-2 overflow-x-auto scrollbar-sleek @3xl/portfolio:flex-col">
             {state.roles.map((role) => (
-              <div key={role.id} className="w-48 shrink-0 space-y-1 px-2 py-1 @3xl:w-full">
+              <div
+                key={role.id}
+                className="w-48 shrink-0 space-y-1 px-2 py-1 @3xl/portfolio:w-full"
+              >
                 <div className="flex flex-wrap items-baseline justify-between gap-x-2">
                   <p className="min-w-0 break-words text-sm font-medium">{role.name}</p>
                   <span className="text-2xs text-muted-foreground">{role.agent}</span>

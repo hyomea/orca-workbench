@@ -1,3 +1,5 @@
+import { PortfolioDesignContext } from './portfolio-design-actions'
+import { PortfolioComposer } from './PortfolioComposer'
 import { useState } from 'react'
 import { createBrowserUuid } from '@/lib/browser-uuid'
 import { defineFixture } from '../../component-fixtures/component-fixture'
@@ -37,6 +39,23 @@ function fixtureState() {
       }
     ]
   })
+  state.features.push(
+    {
+      id: 'scanning',
+      projectId: 'project',
+      name: 'Ticket scanning',
+      description:
+        'Check entry eligibility and handle duplicate scans consistently on both platforms.',
+      versions: []
+    },
+    {
+      id: 'concessions',
+      projectId: 'project',
+      name: 'Concessions',
+      description: 'Sell food and merchandise from the box office.',
+      versions: []
+    }
+  )
   for (const [id, kind, title] of [
     ['bug', 'bug', 'Refresh leaves the sold count unchanged'],
     ['improvement', 'improvement', 'Add a breakdown by ticket type']
@@ -53,6 +72,14 @@ function fixtureState() {
       acceptanceCriteria: 'Both platforms show the expected counts for the same test data.',
       designReferences: 'Design notes and screenshots will be reviewed with the AC.',
       sourceReference: 'DEMO-124',
+      designAttachments: [
+        {
+          id: 'a'.repeat(64),
+          name: 'Event report – shared design.png',
+          mimeType: 'image/png',
+          bytes: 68
+        }
+      ],
       baseVersion: 1,
       status: 'planned',
       history: [{ id: `${id}:0`, at: 1, status: 'planned', note: 'Work item created' }]
@@ -131,27 +158,50 @@ function fixtureState() {
   )
   return state
 }
-function Preview() {
-  const [state, setState] = useState(fixtureState)
+function Preview({ initial = false }: { initial?: boolean }) {
+  const [state, setState] = useState(() => {
+    const state = fixtureState()
+    if (initial) {
+      state.features[0].versions = []
+      state.workItems = [
+        {
+          ...state.workItems[0],
+          kind: 'initial',
+          title: 'Show sold and remaining seats',
+          baseVersion: 0
+        }
+      ]
+    }
+    return state
+  })
   const [scope] = useState(createBrowserUuid)
   return (
     <div className="@container/project min-h-[800px] bg-background p-6 text-foreground">
-      <PortfolioFeatures
-        state={state}
-        projectId="project"
-        draftScope={scope}
-        busy={false}
-        error=""
-        onSave={async (command) => {
-          const next = structuredClone(state)
-          applyPortfolioCommand(next, command, createBrowserUuid(), Date.now())
-          setState(next)
-          return true
+      <PortfolioDesignContext
+        value={{
+          attach: async () => true,
+          remove: async () => true,
+          read: async () =>
+            'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jP0cAAAAASUVORK5CYII='
         }}
-        onCreateTask={() => {}}
-        onSelectTask={() => {}}
-        onCreateRole={() => {}}
-      />
+      >
+        <PortfolioFeatures
+          state={state}
+          projectId="project"
+          draftScope={scope}
+          busy={false}
+          error=""
+          onSave={async (command) => {
+            const next = structuredClone(state)
+            applyPortfolioCommand(next, command, createBrowserUuid(), Date.now())
+            setState(next)
+            return true
+          }}
+          onCreateTask={() => {}}
+          onSelectTask={() => {}}
+          onCreateRole={() => {}}
+        />
+      </PortfolioDesignContext>
     </div>
   )
 }
@@ -169,6 +219,22 @@ async function click(label: string) {
   await new Promise((resolve) => requestAnimationFrame(resolve))
 }
 export const featureList = defineFixture({ width: 1100, render: () => <Preview /> })
+export const featureListNarrow = defineFixture({ width: 390, render: () => <Preview /> })
+export const workItemList = defineFixture({
+  width: 1100,
+  render: () => <Preview />,
+  interact: () => click('Event reports')
+})
+export const workItemListNarrow = defineFixture({
+  width: 390,
+  render: () => <Preview />,
+  interact: () => click('Event reports')
+})
+export const initialWorkItem = defineFixture({
+  width: 1100,
+  render: () => <Preview initial />,
+  interact: () => click('Event reports')
+})
 export const bugDetail = defineFixture({
   width: 1100,
   render: () => <Preview />,
@@ -216,5 +282,34 @@ export const recordResult = defineFixture({
   interact: async () => {
     await showParity()
     await click('Record test result')
+  }
+})
+
+export const designAttachments = defineFixture({
+  width: 700,
+  render: () => <Preview />,
+  interact: async () => {
+    await click('Event reports')
+    await click('Add a breakdown')
+    document
+      .querySelector('[aria-label="Choose design image"]')
+      ?.parentElement?.scrollIntoView({ block: 'center' })
+  }
+})
+export const roleTemplate = defineFixture({
+  width: 700,
+  render: () => (
+    <PortfolioComposer
+      kind="role"
+      state={fixtureState()}
+      projectId="project"
+      busy={false}
+      saveError=""
+      onClose={() => {}}
+      onSave={async () => true}
+    />
+  ),
+  interact: async () => {
+    await click('Apply template')
   }
 })

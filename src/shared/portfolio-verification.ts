@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { PortfolioDesignAttachments } from './portfolio-design'
 import type { PortfolioState } from './portfolio'
 
 const Id = z.string().trim().min(1).max(4096)
@@ -18,6 +19,7 @@ export const PortfolioVerificationPlan = z.object({
   scenarios: z.array(PortfolioScenario).min(1).max(20),
   acceptanceCriteria: Note,
   designReferences: z.string(),
+  designAttachments: PortfolioDesignAttachments,
   sourceReference: z.string(),
   at: z.number(),
   note: Note,

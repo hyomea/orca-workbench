@@ -43,6 +43,7 @@ import {
 } from '../orcad-peer-desktops-contract'
 import { OrcadTerminalCensusParamsSchema } from '../orcad-terminal-census'
 import { pluginConsentRequestSchema } from '../plugins/approval/plugin-consent-request'
+import { PortfolioIntake } from '../portfolio-intake'
 import {
   AccountsUnsubscribeParams,
   AddClaudeFromConfigDirParams,
@@ -367,6 +368,9 @@ import {
   IssueComment as IssueCommentOfJiraParams,
   IssueKey,
   IssueUpdate,
+  JiraOAuthComplete,
+  JiraOAuthConfigure,
+  JiraOAuthRequest,
   ListIssues,
   ProjectIssueTypeFields,
   ProjectIssueTypes,
@@ -497,11 +501,14 @@ import {
   PluginsPanelActionParams
 } from './plugins-params'
 import {
+  PortfolioAttachDesign,
   PortfolioCancelDiscovery,
   PortfolioDiscover,
   PortfolioLaunch,
   PortfolioMutate,
-  PortfolioRead
+  PortfolioRead,
+  PortfolioReadDesign,
+  PortfolioRemoveDesign
 } from './portfolio-params'
 import {
   PreflightAgentDetection,
@@ -1150,6 +1157,12 @@ export const RPC_PARAMS_BY_METHOD = {
   'jira.listProjects': SiteSelection,
   'jira.listTransitions': IssueKey,
   'jira.lookupIssueSummary': IssueKey,
+  'jira.oauthBegin': JiraOAuthRequest,
+  'jira.oauthCancel': JiraOAuthRequest,
+  'jira.oauthComplete': JiraOAuthComplete,
+  'jira.oauthConfiguration': null,
+  'jira.oauthConfigure': JiraOAuthConfigure,
+  'jira.oauthProgress': JiraOAuthRequest,
   'jira.readStatus': null,
   'jira.searchIssues': SearchIssues,
   'jira.searchUsers': UserSearch,
@@ -1297,11 +1310,15 @@ export const RPC_PARAMS_BY_METHOD = {
   'plugins.panelAction': PluginsPanelActionParams,
   'plugins.readPanelEntry': PluginReadPanelEntryParams,
   'plugins.setEnabled': PluginSetEnabledParams,
+  'portfolio.attachDesign': PortfolioAttachDesign,
   'portfolio.cancelDiscovery': PortfolioCancelDiscovery,
   'portfolio.discover': PortfolioDiscover,
+  'portfolio.intake': PortfolioIntake,
   'portfolio.launch': PortfolioLaunch,
   'portfolio.mutate': PortfolioMutate,
   'portfolio.read': PortfolioRead,
+  'portfolio.readDesign': PortfolioReadDesign,
+  'portfolio.removeDesign': PortfolioRemoveDesign,
   'preflight.check': PreflightCheck,
   'preflight.detectAgents': PreflightProjectAgentDetection,
   'preflight.detectRemoteAgents': PreflightDetectRemoteAgents,

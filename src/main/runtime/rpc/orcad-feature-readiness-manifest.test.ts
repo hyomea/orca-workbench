@@ -21,6 +21,7 @@ const AGENT_LAUNCHES = [
   'git.generateCommitMessage',
   'portfolio.launch',
   'portfolio.discover',
+  'portfolio.intake',
   'orchestration.workerStart',
   'orchestration.federationAttachStart'
 ]

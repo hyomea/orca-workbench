@@ -1,3 +1,4 @@
+import { portfolioDesignPrompt } from './portfolio-design-store'
 import { randomUUID } from 'node:crypto'
 import type { AgentLaunchResult } from '../../shared/agent-launch-intent'
 import {
@@ -43,7 +44,8 @@ async function executePortfolioTask(
       request.worktreeId,
       request.repoId,
       `${Date.now()}-${randomUUID().replaceAll('-', '')}`,
-      Date.now()
+      Date.now(),
+      portfolioDesignPrompt(store, state, request.taskId)
     )
   })
   const attempt = portfolioTask(prepared, request.taskId).attempts.at(-1)

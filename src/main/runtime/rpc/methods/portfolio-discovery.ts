@@ -1,3 +1,9 @@
+import {
+  PortfolioIntake,
+  buildPortfolioIntakePrompt,
+  parsePortfolioIntakeResult
+} from '../../../../shared/portfolio-intake'
+import { generatePortfolioText } from '../../../portfolio/portfolio-generation'
 import { folderWorkspaceRepoId } from '../../../../shared/folder-workspace-worktree'
 import { parseWslUncPath } from '../../../../shared/wsl-paths'
 import {
@@ -64,6 +70,24 @@ function sourceRoots(ids: string[], context: RpcContext): PortfolioSourceRoot[] 
 }
 
 export const PORTFOLIO_DISCOVERY_METHODS = [
+  defineMethod({
+    name: 'portfolio.intake',
+    permission: 'workspace',
+    requires: ['accounts'],
+    params: PortfolioIntake,
+    handler: async (params, context) => {
+      const output = await generatePortfolioText(params, {
+        owner: owner(context),
+        operation: 'work-item-intake',
+        prompt: async () => buildPortfolioIntakePrompt(params),
+        readLinks: params.sources.some((source) => !source.content),
+        settings: context.runtime.getClientSettings(),
+        environment: context.runtime.getCommitMessageAgentEnvironmentResolvers(),
+        signal: context.signal
+      })
+      return parsePortfolioIntakeResult(output, params)
+    }
+  }),
   defineMethod({
     name: 'portfolio.discover',
     permission: 'workspace',

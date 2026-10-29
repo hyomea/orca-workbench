@@ -71,7 +71,10 @@ export function PortfolioBoard({
     : undefined
 
   return (
-    <div className="@container flex h-full min-h-0 flex-col bg-background text-foreground">
+    <div
+      data-slot="portfolio-page"
+      className="@container/portfolio h-full min-h-0 overflow-y-auto bg-background text-foreground scrollbar-sleek"
+    >
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-4">
         <div className="min-w-0 flex-1 space-y-1">
           <div className="flex items-center gap-2">
@@ -131,7 +134,7 @@ export function PortfolioBoard({
           {error}
         </p>
       )}
-      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto scrollbar-sleek @3xl:flex-row">
+      <div className="@3xl/portfolio:grid @3xl/portfolio:grid-cols-[14rem_minmax(0,1fr)]">
         {project ? (
           <>
             <PortfolioNavigation

@@ -1,13 +1,13 @@
+import { PortfolioFeatureList } from './PortfolioFeatureList'
 import { useState } from 'react'
 import { ArrowLeft, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { translate } from '@/i18n/i18n'
 import type { PortfolioCommand, PortfolioState } from '../../../../shared/portfolio'
 import { PortfolioFeatureComposer } from './PortfolioFeatureComposer'
 import { PortfolioWorkItemDetail } from './PortfolioWorkItemDetail'
 import { PortfolioSpecification } from './PortfolioSpecification'
-import { workItemKinds, workItemStatuses } from './portfolio-feature-labels'
+import { PortfolioWorkItemList } from './PortfolioWorkItemList'
 
 export function PortfolioFeatures({
   state,
@@ -40,11 +40,12 @@ export function PortfolioFeatures({
   const current = feature?.versions.at(-1)
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        {feature ? (
+      <div className="space-y-3">
+        {feature && (
           <Button
             variant="ghost"
             size="sm"
+            className="-ml-2"
             onClick={() => {
               setFeatureId('')
               setItemId('')
@@ -53,15 +54,40 @@ export function PortfolioFeatures({
             <ArrowLeft aria-hidden="true" />
             {translate('portfolio.allFeatures', 'All features')}
           </Button>
-        ) : (
-          <h3 className="text-base font-semibold">{translate('portfolio.features', 'Features')}</h3>
         )}
-        <Button size="sm" disabled={busy} onClick={() => setComposer(feature ? 'item' : 'feature')}>
-          <Plus aria-hidden="true" />
-          {feature
-            ? translate('portfolio.newWorkItem', 'New work item')
-            : translate('portfolio.newFeature', 'New feature')}
-        </Button>
+        <div className="flex flex-col items-start justify-between gap-3 @2xl/project:flex-row">
+          {feature ? (
+            <div className="min-w-0 flex-1 space-y-2">
+              <h3 className="break-words text-xl font-semibold">{feature.name}</h3>
+              {feature.description && (
+                <p className="max-w-2xl whitespace-pre-wrap break-words text-sm text-muted-foreground">
+                  {feature.description}
+                </p>
+              )}
+              {!current && (
+                <p className="text-xs text-muted-foreground">
+                  {translate('portfolio.noSpecification', 'No published specification yet')}
+                </p>
+              )}
+            </div>
+          ) : (
+            <h3 className="text-base font-semibold">
+              {translate('portfolio.features', 'Features')}
+            </h3>
+          )}
+          {(!feature || items.length > 0 || current) && (
+            <Button
+              size="sm"
+              disabled={busy}
+              onClick={() => setComposer(feature ? 'item' : 'feature')}
+            >
+              <Plus aria-hidden="true" />
+              {feature
+                ? translate('portfolio.newWorkItem', 'New work item')
+                : translate('portfolio.newFeature', 'New feature')}
+            </Button>
+          )}
+        </div>
       </div>
       {!feature ? (
         <>
@@ -79,116 +105,69 @@ export function PortfolioFeatures({
               )}
             </div>
           )}
-          <div className="grid gap-3 @xl/project:grid-cols-2">
-            {features.map((entry) => (
-              <button
-                type="button"
-                key={entry.id}
-                onClick={() => {
-                  setFeatureId(entry.id)
-                  setItemId('')
-                }}
-                className="space-y-2 rounded-xl border border-border bg-card p-4 text-left text-card-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                <span className="block break-words text-sm font-semibold">{entry.name}</span>
-                <span className="block line-clamp-3 whitespace-pre-wrap break-words text-sm text-muted-foreground">
-                  {entry.description}
-                </span>
-                <span className="block text-xs text-muted-foreground">
-                  {translate(
-                    'portfolio.featureCounts',
-                    '{{count}} work items · specification v{{version}}',
-                    {
-                      count: state.workItems.filter((item) => item.featureId === entry.id).length,
-                      version: entry.versions.at(-1)?.version ?? 0
-                    }
-                  )}
-                </span>
-              </button>
-            ))}
-          </div>
+          <PortfolioFeatureList
+            features={features}
+            workItems={state.workItems}
+            onSelect={(id) => {
+              setFeatureId(id)
+              setItemId('')
+            }}
+          />
         </>
       ) : (
         <>
-          <div className="space-y-2">
-            <h3 className="break-words text-xl font-semibold">{feature.name}</h3>
-            <p className="whitespace-pre-wrap break-words text-sm text-muted-foreground">
-              {feature.description}
-            </p>
-          </div>
-          <details className="rounded-xl border border-border p-4">
-            <summary className="cursor-pointer text-sm font-medium">
-              {current
-                ? translate(
-                    'portfolio.currentSpecification',
-                    'Current specification v{{version}}',
-                    { version: current.version }
-                  )
-                : translate('portfolio.noSpecification', 'No published specification yet')}
-            </summary>
-            <div className="mt-4 space-y-4">
-              {current ? (
+          {current && (
+            <details className="rounded-xl border border-border p-4">
+              <summary className="cursor-pointer text-sm font-medium">
+                {translate('portfolio.currentSpecification', 'Current specification v{{version}}', {
+                  version: current.version
+                })}
+              </summary>
+              <div className="mt-4 space-y-4">
                 <PortfolioSpecification {...current} />
-              ) : (
-                <p className="text-sm text-muted-foreground">
+                {feature.versions
+                  .slice(0, -1)
+                  .toReversed()
+                  .map((version) => (
+                    <details key={version.version} className="border-t border-border pt-3">
+                      <summary className="cursor-pointer text-sm">
+                        {translate(
+                          'portfolio.previousSpecification',
+                          'Previous specification v{{version}}',
+                          { version: version.version }
+                        )}
+                      </summary>
+                      <div className="mt-3">
+                        <PortfolioSpecification {...version} />
+                      </div>
+                    </details>
+                  ))}
+              </div>
+            </details>
+          )}
+          <PortfolioWorkItemList items={items} selectedId={item?.id} onSelect={setItemId} />
+          {!items.length && (
+            <section className="space-y-4 rounded-xl border border-dashed border-border p-6">
+              <div className="max-w-lg space-y-2">
+                <h4 className="text-base font-semibold">
+                  {translate('portfolio.firstWorkItem', 'Start with the first work item')}
+                </h4>
+                <p className="text-sm leading-relaxed text-muted-foreground">
                   {translate(
-                    'portfolio.specificationHint',
-                    'Draft requirements in an initial delivery work item. Review and accept the work, then explicitly publish its specification.'
+                    'portfolio.firstWorkItemHint',
+                    'Bring in Jira acceptance criteria and designs, or start with an idea to investigate. Tasks and platform checks will stay together here.'
                   )}
                 </p>
-              )}
-              {feature.versions
-                .slice(0, -1)
-                .toReversed()
-                .map((version) => (
-                  <details key={version.version} className="border-t border-border pt-3">
-                    <summary className="cursor-pointer text-sm">
-                      {translate(
-                        'portfolio.previousSpecification',
-                        'Previous specification v{{version}}',
-                        { version: version.version }
-                      )}
-                    </summary>
-                    <div className="mt-3">
-                      <PortfolioSpecification {...version} />
-                    </div>
-                  </details>
-                ))}
-            </div>
-          </details>
-          <div className="flex flex-wrap gap-2">
-            {items.map((entry) => (
+              </div>
               <Button
-                key={entry.id}
-                variant={entry.id === itemId ? 'secondary' : 'outline'}
-                className="h-auto max-w-full flex-wrap justify-start py-2 text-left"
-                onClick={() => setItemId(entry.id)}
+                disabled={busy}
+                variant={current ? 'outline' : 'default'}
+                onClick={() => setComposer('item')}
               >
-                <span className="whitespace-normal break-words">{entry.title}</span>
-                <Badge variant="outline">
-                  {workItemKinds().find((kind) => kind.id === entry.kind)?.name}
-                </Badge>
-                <span className="text-xs text-muted-foreground">
-                  {workItemStatuses().find((status) => status.id === entry.status)?.name}
-                </span>
+                <Plus aria-hidden="true" />
+                {translate('portfolio.newWorkItem', 'New work item')}
               </Button>
-            ))}
-          </div>
-          {!items.length && (
-            <p className="text-sm text-muted-foreground">
-              {translate(
-                'portfolio.noWorkItems',
-                'Add an initial delivery, bug, improvement, or issue that needs triage.'
-              )}
-            </p>
-          )}
-          {items.length > 0 && !item && (
-            <p className="text-sm text-muted-foreground">
-              {translate(
-                'portfolio.selectWorkItem',
-                'Select a work item to review its context, tasks, and history.'
-              )}
-            </p>
+            </section>
           )}
           {item && (
             <PortfolioWorkItemDetail
@@ -211,6 +190,7 @@ export function PortfolioFeatures({
           key={`${composer}:${featureId}:${itemId}`}
           projectId={projectId}
           hasSpecification={!!current}
+          specification={composer === 'item' ? current : undefined}
           featureId={composer === 'feature' ? undefined : feature?.id}
           item={composer === 'edit' ? item : undefined}
           draftKey={JSON.stringify([

@@ -357,9 +357,107 @@ it('backs up v2 exactly and does not treat its accepted work as verified', async
       })
     )
     expect(await readFile(`${file}.v2.bak`, 'utf8')).toBe(original)
-    expect((await store.read()).schemaVersion).toBe(3)
+    expect((await store.read()).schemaVersion).toBe(4)
     expect((await store.read()).workItems[0].status).toBe('planned')
   } finally {
     await rm(directory, { recursive: true, force: true })
   }
+})
+
+it('allows separate fixes for both failed platforms without approving stale evidence', () => {
+  const state = fixture()
+  plan(state)
+  confirm(state)
+  const ios = record(state, 'ios', 'fail')
+  const android = record(state, 'android', 'fail')
+  apply(
+    state,
+    { kind: 'verification.fix', workItemId: 'item', resultId: ios, roleId: 'engineer' },
+    'fix-ios'
+  )
+  expect(() => review(state, android)).toThrow('outdated')
+  apply(
+    state,
+    { kind: 'verification.fix', workItemId: 'item', resultId: android, roleId: 'engineer' },
+    'fix-android'
+  )
+  expect(state.tasks.map((task) => task.platform)).toEqual(['ios', 'android'])
+  expect(verificationProgress(state, 'item').ready).toBe(false)
+  expect(() =>
+    apply(state, {
+      kind: 'verification.fix',
+      workItemId: 'item',
+      resultId: android,
+      roleId: 'engineer'
+    })
+  ).toThrow()
+  record(state, 'android', 'blocked')
+  expect(() =>
+    apply(state, {
+      kind: 'verification.fix',
+      workItemId: 'item',
+      resultId: android,
+      roleId: 'engineer'
+    })
+  ).toThrow('outdated')
+})
+
+it('requires a fresh test plan before detaching tasks so old passing evidence cannot become current again', () => {
+  const state = fixture()
+  plan(state)
+  confirm(state)
+  review(state, record(state, 'ios'))
+  review(state, record(state, 'android'))
+  apply(
+    state,
+    {
+      kind: 'task.create',
+      task: {
+        projectId: 'project',
+        workItemId: 'item',
+        roleId: 'engineer',
+        title: 'Rework',
+        instructions: 'Update implementation',
+        acceptanceCriteria: 'Rerun scenarios'
+      }
+    },
+    'rework'
+  )
+  expect(verificationProgress(state, 'item').ready).toBe(false)
+  expect(() => apply(state, { kind: 'task.linkWorkItem', taskId: 'rework' })).toThrow(
+    'Revise the test plan'
+  )
+  expect(state.tasks[0].workItemId).toBe('item')
+  plan(state)
+  apply(state, { kind: 'task.linkWorkItem', taskId: 'rework' })
+  confirm(state)
+  expect(state.tasks[0].workItemId).toBeUndefined()
+  expect(verificationProgress(state, 'item').ready).toBe(false)
+  expect(state.verification[0].results).toHaveLength(2)
+})
+
+it('rejects a proposal drafted against an older feature version', () => {
+  const state = fixture()
+  plan(state)
+  confirm(state)
+  review(state, record(state, 'ios'))
+  review(state, record(state, 'android'))
+  apply(state, {
+    kind: 'workItem.transition',
+    workItemId: 'item',
+    status: 'review',
+    note: 'Reviewed'
+  })
+  accept(state)
+  apply(state, { kind: 'feature.publish', workItemId: 'item', note: 'Baseline 1' })
+  const proposal = {
+    ...PortfolioWorkItemInput.parse(state.workItems[0]),
+    kind: 'improvement',
+    title: 'Next change'
+  }
+  expect(() =>
+    apply(state, { kind: 'workItem.create', workItem: proposal, expectedBaseVersion: 0 })
+  ).toThrow('specification changed')
+  apply(state, { kind: 'workItem.create', workItem: proposal, expectedBaseVersion: 1 }, 'proposal')
+  expect(state.workItems.at(-1)?.baseVersion).toBe(1)
 })

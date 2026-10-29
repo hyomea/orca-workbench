@@ -43,7 +43,7 @@ export class PortfolioStore {
         }
         throw error
       })
-      if (contents && [1, 2].includes(JSON.parse(contents).schemaVersion)) {
+      if (contents && [1, 2, 3].includes(JSON.parse(contents).schemaVersion)) {
         const backup = `${this.file}.v${JSON.parse(contents).schemaVersion}.bak`
         await writeFile(backup, contents, { flag: 'wx', mode: 0o600 }).catch(
           async (error: unknown) => {

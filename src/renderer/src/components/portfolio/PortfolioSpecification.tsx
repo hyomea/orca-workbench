@@ -1,15 +1,19 @@
+import type { PortfolioDesignAttachment } from '../../../../shared/portfolio-design'
+import { PortfolioDesignAttachments } from './PortfolioDesignAttachments'
 import { translate } from '@/i18n/i18n'
 
 export function PortfolioSpecification({
   description,
   acceptanceCriteria,
   designReferences,
-  sourceReference
+  sourceReference,
+  designAttachments
 }: {
   description: string
   acceptanceCriteria: string
   designReferences: string
   sourceReference: string
+  designAttachments?: PortfolioDesignAttachment[]
 }): React.JSX.Element {
   const sections = [
     {
@@ -39,6 +43,7 @@ export function PortfolioSpecification({
             <p className="whitespace-pre-wrap break-words text-sm">{entry.text}</p>
           </section>
         ))}
+      <PortfolioDesignAttachments attachments={designAttachments} />
     </div>
   )
 }

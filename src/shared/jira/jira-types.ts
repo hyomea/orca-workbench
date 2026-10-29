@@ -11,6 +11,7 @@ export type JiraSite = {
   authType?: JiraAuthType
   // REST gateway for scoped Cloud tokens; siteUrl remains the browse-link origin.
   apiBaseUrl?: string
+  oauthGrantId?: string
 }
 
 export type JiraViewer = {

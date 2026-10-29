@@ -1,3 +1,6 @@
+import { canEditPortfolioContext } from '../../../../shared/portfolio-design'
+import { PortfolioDesignAttachments } from './PortfolioDesignAttachments'
+import { PortfolioNextStep } from './PortfolioNextStep'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
@@ -33,6 +36,8 @@ export function PortfolioWorkItemDetail({
   onSelectTask: (id: string) => void
   onCreateRole: () => void
 }): React.JSX.Element {
+  const editable = canEditPortfolioContext(state, item.id)
+  const [tab, setTab] = useState('context')
   const [linkId, setLinkId] = useState('')
   const tasks = state.tasks.filter((task) => task.workItemId === item.id)
   const available = state.tasks.filter(
@@ -62,19 +67,23 @@ export function PortfolioWorkItemDetail({
             </span>
           </div>
         </div>
-        {item.status === 'planned' &&
-          tasks.every(
-            (task) =>
-              task.status === 'accepted' &&
-              (!task.attempts.length || task.attempts.at(-1)?.state === 'closed')
-          ) &&
-          !state.verification.some((entry) => entry.workItemId === item.id) && (
-            <Button variant="outline" size="sm" disabled={busy} onClick={onEdit}>
-              {translate('portfolio.editWorkItem', 'Edit work item')}
-            </Button>
-          )}
+        {editable && (
+          <Button variant="outline" size="sm" disabled={busy} onClick={onEdit}>
+            {translate('portfolio.editWorkItem', 'Edit work item')}
+          </Button>
+        )}
       </div>
-      <Tabs defaultValue="context" className="space-y-4">
+      <PortfolioNextStep
+        state={state}
+        feature={feature}
+        item={item}
+        busy={busy}
+        onTab={setTab}
+        onEdit={onEdit}
+        onCreateTask={onCreateTask}
+        onCreateRole={onCreateRole}
+      />
+      <Tabs value={tab} onValueChange={setTab} className="space-y-4">
         <TabsList className="grid w-full grid-cols-2 group-data-[orientation=horizontal]/tabs:h-auto @md/project:w-fit @md/project:grid-cols-4">
           <TabsTrigger className="h-8" value="context">
             {translate('portfolio.sharedContext', 'Shared context')}
@@ -90,7 +99,18 @@ export function PortfolioWorkItemDetail({
           </TabsTrigger>
         </TabsList>
         <TabsContent value="context" className="space-y-4">
-          <PortfolioSpecification {...item} />
+          <PortfolioSpecification
+            {...item}
+            designAttachments={editable ? undefined : item.designAttachments}
+          />
+          {editable && (
+            <PortfolioDesignAttachments
+              attachments={item.designAttachments}
+              workItemId={item.id}
+              editable
+              busy={busy}
+            />
+          )}
           {baseline && (
             <details className="rounded-md border border-border p-3">
               <summary className="cursor-pointer text-sm">

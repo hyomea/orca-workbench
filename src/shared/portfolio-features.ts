@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { PortfolioDesignAttachments } from './portfolio-design'
 
 const Id = z.string().trim().min(1).max(4096)
 const Name = z.string().trim().min(1).max(200)
@@ -24,6 +25,7 @@ export const PortfolioWorkItemInput = z.object({
 export const PortfolioFeatureVersion = z.object({
   version: z.number().int().positive(),
   workItemId: Id,
+  designAttachments: PortfolioDesignAttachments,
   description: Text,
   acceptanceCriteria: Text.min(1),
   designReferences: Text,
@@ -36,6 +38,7 @@ export const PortfolioFeature = PortfolioFeatureInput.extend({
   versions: z.array(PortfolioFeatureVersion)
 })
 export const PortfolioWorkItem = PortfolioWorkItemInput.extend({
+  designAttachments: PortfolioDesignAttachments,
   id: Id,
   baseVersion: z.number().int().nonnegative(),
   status: PortfolioWorkItemStatus,
@@ -48,7 +51,11 @@ export type PortfolioWorkItem = z.infer<typeof PortfolioWorkItem>
 export type PortfolioWorkItemInput = z.infer<typeof PortfolioWorkItemInput>
 export const PortfolioFeatureCommands = [
   z.object({ kind: z.literal('feature.create'), feature: PortfolioFeatureInput }),
-  z.object({ kind: z.literal('workItem.create'), workItem: PortfolioWorkItemInput }),
+  z.object({
+    kind: z.literal('workItem.create'),
+    workItem: PortfolioWorkItemInput,
+    expectedBaseVersion: z.number().int().nonnegative().optional()
+  }),
   z.object({
     kind: z.literal('workItem.update'),
     workItemId: Id,

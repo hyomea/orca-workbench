@@ -1,9 +1,17 @@
+import {
+  attachPortfolioDesign,
+  readPortfolioDesign,
+  removePortfolioDesign
+} from '../../../portfolio/portfolio-design-store'
 import { randomUUID } from 'node:crypto'
 import { join } from 'node:path'
 import { getAppEnvironment } from '../../../../shared/app-environment'
 import { folderWorkspaceRepoId } from '../../../../shared/folder-workspace-worktree'
 import { applyPortfolioCommand } from '../../../../shared/portfolio'
 import {
+  PortfolioAttachDesign,
+  PortfolioReadDesign,
+  PortfolioRemoveDesign,
   PortfolioLaunch,
   PortfolioMutate,
   PortfolioRead
@@ -26,6 +34,24 @@ function store(): PortfolioStore {
 
 export const PORTFOLIO_METHODS = [
   ...PORTFOLIO_DISCOVERY_METHODS,
+  defineMethod({
+    name: 'portfolio.attachDesign',
+    permission: 'workspace',
+    params: PortfolioAttachDesign,
+    handler: (params) => attachPortfolioDesign(store(), params)
+  }),
+  defineMethod({
+    name: 'portfolio.readDesign',
+    permission: 'workspace',
+    params: PortfolioReadDesign,
+    handler: (params) => readPortfolioDesign(store(), params.attachmentId)
+  }),
+  defineMethod({
+    name: 'portfolio.removeDesign',
+    permission: 'workspace',
+    params: PortfolioRemoveDesign,
+    handler: (params) => removePortfolioDesign(store(), params)
+  }),
   defineMethod({
     name: 'portfolio.read',
     permission: 'workspace',

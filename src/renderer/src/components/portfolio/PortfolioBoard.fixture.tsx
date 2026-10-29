@@ -98,9 +98,9 @@ const state: PortfolioState = {
   ]
 }
 
-function board(value: PortfolioState, importExample = false): React.JSX.Element {
+function board(value: PortfolioState, importExample = false, short = false): React.JSX.Element {
   return (
-    <div className="h-[800px]">
+    <div className={short ? 'h-[480px]' : 'h-[800px]'}>
       <PortfolioBoard
         draftScope={createBrowserUuid()}
         state={value}
@@ -183,7 +183,15 @@ export const editProject = defineFixture({
 export const review = defineFixture({
   width: 1200,
   render: () => board(state),
-  interact: (frame) => {
+  interact: async (frame) => {
+    const tasks = [...frame.querySelectorAll('button')].find(
+      (entry) => entry.textContent === 'Tasks'
+    )
+    if (!tasks) {
+      throw new Error('Tasks view missing')
+    }
+    tasks.click()
+    await new Promise((resolve) => requestAnimationFrame(resolve))
     const button = [...frame.querySelectorAll('button')].find((entry) =>
       entry.textContent?.includes('Verify mobile sign in')
     )
@@ -264,5 +272,90 @@ export const importAndAnalyze = defineFixture({
     }
     browse.click()
     await new Promise((resolve) => requestAnimationFrame(resolve))
+  }
+})
+
+function mobileFeatureState() {
+  const value = emptyPortfolio()
+  value.projects.push({
+    id: 'mobile',
+    name: 'Ludus Mobile',
+    objective:
+      'Deliver reliable Android and iOS workflows with shared product context, acceptance criteria, and designs. Compare each platform against the same expected behavior. Related API development supports these mobile outcomes. Confirm the audience and priority workflows before implementation.',
+    repoIds: ['api', 'mobile']
+  })
+  value.features.push({
+    id: 'reports',
+    projectId: 'mobile',
+    name: 'Event reports',
+    description: 'Keep sold and remaining counts consistent across iOS and Android.',
+    versions: []
+  })
+  return value
+}
+async function openMobileFeature(frame: HTMLElement) {
+  const button = [...frame.querySelectorAll('button')].find((entry) =>
+    entry.textContent?.includes('Event reports')
+  )
+  if (!button) {
+    throw new Error('Feature entry missing')
+  }
+  button.click()
+  await new Promise((resolve) => requestAnimationFrame(resolve))
+}
+function checkColumns(frame: HTMLElement) {
+  const navigation = frame.querySelector('aside')?.getBoundingClientRect()
+  const content = frame.querySelector('main')?.getBoundingClientRect()
+  if (
+    !navigation ||
+    !content ||
+    content.left < navigation.right - 1 ||
+    Math.abs(content.top - navigation.top) > 2
+  ) {
+    throw new Error('Wide project content must align beside its navigation.')
+  }
+}
+export const mobileFeature = defineFixture({
+  width: 1100,
+  render: () => board(mobileFeatureState()),
+  interact: async (frame) => {
+    await openMobileFeature(frame)
+    checkColumns(frame)
+  }
+})
+export const mobileFeatureNarrow = defineFixture({
+  width: 390,
+  render: () => board(mobileFeatureState()),
+  interact: openMobileFeature
+})
+export const pageScroll = defineFixture({
+  width: 1100,
+  render: () => board(mobileFeatureState(), false, true),
+  interact: async (frame) => {
+    await openMobileFeature(frame)
+    checkColumns(frame)
+    const context = frame.querySelector('main summary')
+    if (!(context instanceof HTMLElement)) {
+      throw new Error('Project context disclosure missing')
+    }
+    context.click()
+    await new Promise((resolve) => requestAnimationFrame(resolve))
+    const page = frame.querySelector('[data-slot="portfolio-page"]')
+    const main = frame.querySelector('main')
+    if (!(page instanceof HTMLElement) || !main) {
+      throw new Error('Project page missing')
+    }
+    if (page.scrollHeight <= page.clientHeight || getComputedStyle(main).overflowY !== 'visible') {
+      throw new Error(
+        'Long content must scroll the whole page, without an inner project scrollbar.'
+      )
+    }
+    page.scrollTop = page.scrollHeight
+    if (
+      page.scrollTop === 0 ||
+      main.getBoundingClientRect().bottom > page.getBoundingClientRect().bottom + 2
+    ) {
+      throw new Error('The page must scroll all the way to the final feature action.')
+    }
   }
 })

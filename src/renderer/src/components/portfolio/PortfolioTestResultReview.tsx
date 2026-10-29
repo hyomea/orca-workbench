@@ -9,6 +9,7 @@ import { PortfolioField, PortfolioSelect } from './portfolio-controls'
 export function PortfolioTestResultReview({
   result,
   current,
+  allowFix = current,
   workItemId,
   state,
   busy,
@@ -17,6 +18,7 @@ export function PortfolioTestResultReview({
 }: {
   result: PortfolioTestResult
   current: boolean
+  allowFix?: boolean
   workItemId: string
   state: PortfolioState
   busy: boolean
@@ -90,7 +92,7 @@ export function PortfolioTestResultReview({
           {translate('portfolio.openFixTask', 'Open fix task')}
         </Button>
       ) : (
-        current &&
+        allowFix &&
         !accepted &&
         (result.outcome !== 'pass' || result.review?.decision === 'rejected') && (
           <div className="space-y-3 rounded-md border border-border p-3">

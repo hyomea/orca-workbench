@@ -17,6 +17,7 @@ const JIRA_API_USER_AGENT = 'Orca'
 export type JiraClientForSite = {
   site: JiraSite
   authorization: string
+  getAuthorization?: () => Promise<string>
 }
 
 // Server/DC needs REST v2; Cloud uses v3.
@@ -125,11 +126,22 @@ export async function jiraRequest<T>(
   init?: RequestInit,
   maxResponseBytes?: number
 ): Promise<T> {
+  const method = (init?.method ?? 'GET').toUpperCase()
+  // Jira's enhanced JQL search uses POST for a read-only query.
+  const isSearch = method === 'POST' && path === '/rest/api/3/search/jql'
+  if (client.site.oauthGrantId && !['GET', 'HEAD'].includes(method) && !isSearch) {
+    throw new JiraApiError(
+      'This browser connection has read-only Jira access. Use a connection with write permissions to change issues.'
+    )
+  }
   const headers = new Headers(init?.headers)
   headers.set('Accept', 'application/json')
   headers.set('Content-Type', 'application/json')
   headers.set('User-Agent', JIRA_API_USER_AGENT)
-  headers.set('Authorization', client.authorization)
+  headers.set(
+    'Authorization',
+    client.getAuthorization ? await client.getAuthorization() : client.authorization
+  )
   const url = `${apiBaseUrl(client.site)}${path}`
   const response = await jiraFetch(url, {
     ...init,
@@ -182,7 +194,10 @@ export async function jiraRequestBinary(
   // Binary attachments must not inherit JSON content negotiation.
   headers.set('Accept', '*/*')
   headers.set('User-Agent', JIRA_API_USER_AGENT)
-  headers.set('Authorization', client.authorization)
+  headers.set(
+    'Authorization',
+    client.getAuthorization ? await client.getAuthorization() : client.authorization
+  )
   const controller = new AbortController()
   const signal = options.signal
     ? AbortSignal.any([options.signal, controller.signal])

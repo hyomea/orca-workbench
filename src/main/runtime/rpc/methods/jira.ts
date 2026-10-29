@@ -1,3 +1,4 @@
+import { JIRA_OAUTH_METHODS } from './jira-oauth'
 import {
   JIRA_PAYLOAD_CHUNK_CHARS,
   JIRA_PAYLOAD_MAX_CHARS
@@ -52,6 +53,7 @@ function generationOwner(context: Pick<RpcContext, 'pairedDeviceId' | 'caller'>)
 }
 
 export const JIRA_METHODS = [
+  ...JIRA_OAUTH_METHODS,
   ...JIRA_ATTACHMENT_IMAGE_METHODS,
   defineMethod({
     name: 'jira.generateIssueSummary',
