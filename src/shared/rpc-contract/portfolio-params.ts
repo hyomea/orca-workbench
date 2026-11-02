@@ -1,9 +1,12 @@
 import { z } from 'zod'
 import { PortfolioCommand } from '../portfolio'
+import { PortfolioNoteDraftInput } from '../portfolio-notes'
 export { PortfolioIntake } from '../portfolio-intake'
+export { PortfolioBatch } from '../portfolio-batch'
 export { PortfolioDiscover, PortfolioCancelDiscovery } from '../portfolio-discovery'
 
 export const PortfolioRead = z.object({})
+export const PortfolioPrepareSteward = z.object({})
 export const PortfolioMutate = z.object({
   revision: z.number().int().nonnegative(),
   command: PortfolioCommand
@@ -26,3 +29,9 @@ export const PortfolioRemoveDesign = PortfolioReadDesign.extend({
   revision: z.number().int().nonnegative(),
   workItemId: z.string().min(1)
 })
+
+export const PortfolioExportNotes = z.object({
+  projectId: z.string().min(1),
+  directory: z.string().min(1).max(4096)
+})
+export const PortfolioProposeNote = z.object({ draft: PortfolioNoteDraftInput })

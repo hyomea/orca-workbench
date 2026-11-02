@@ -207,8 +207,8 @@ it('backs up v3 and rejects stale, invalid, oversized, or unknown image requests
     await expect(readPortfolioDesign(store, '../../portfolio.json')).rejects.toThrow('not found')
     await attachPortfolioDesign(store, request)
     expect(await readFile(`${store.file}.v3.bak`, 'utf8')).toBe(legacy)
-    expect((await store.read()).schemaVersion).toBe(4)
-    expect(JSON.parse(await readFile(store.file, 'utf8')).schemaVersion).toBe(4)
+    expect((await store.read()).schemaVersion).toBe(5)
+    expect(JSON.parse(await readFile(store.file, 'utf8')).schemaVersion).toBe(5)
   } finally {
     await rm(directory, { recursive: true, force: true })
   }

@@ -2,12 +2,13 @@
 name: orca-cli
 description: >-
   Operate Orca-managed worktrees, folder contexts, terminals, repos, automations, worktree
-  comments, and Orca's embedded browser through the `orca` CLI. Use when the user says
-  "$orca-cli", "Orca worktree", "child worktree", "spawn codex/claude in a worktree",
-  "read/wait/send Orca terminal", "handoff" / "handover" / "give this to another agent", or
-  "Orca browser". Prefer it over raw git worktree, ad hoc PTYs, or Computer Use when Orca
-  state is involved. Use Computer Use only when a visible window needs GUI control that a
-  CLI, filesystem, or API cannot do.
+  comments, Workbench projects/features/tasks, and Orca's embedded browser through the
+  `orca` CLI. Use when the user says "$orca-cli", "Orca worktree", "child worktree", "spawn
+  codex/claude in a worktree", "read/wait/send Orca terminal", "handoff" / "handover" /
+  "give this to another agent", "Workbench", "plan this ticket into Orca", or "Orca
+  browser". Prefer it over raw git worktree, ad hoc PTYs, or Computer Use when Orca state
+  is involved. Use Computer Use only when a visible window needs GUI control that a CLI,
+  filesystem, or API cannot do.
 ---
 
 # Orca CLI
@@ -277,6 +278,13 @@ credentials. The commands and their permission are in `references/skill-sharing.
 it before publishing.
 
 <!-- /host-capability -->
+
+## Workbench Projects
+
+Workbench (the Projects page) holds business projects, features, work items, roles, tasks,
+test plans, and notes. Use `ORCA workbench` to read them, plan a ticket into them, apply
+changes atomically, and start tasks. The commands, batch format, and review boundary are in
+`references/workbench.md`. Load it before changing Workbench records.
 
 ## Built-In Browser
 

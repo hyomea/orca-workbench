@@ -112,6 +112,8 @@ function board(value: PortfolioState, importExample = false, short = false): Rea
         activity={{}}
         busy={false}
         error=""
+        onExportNotes={async () => null}
+        onOpenSteward={() => {}}
         setupActions={{
           pickSources: async () =>
             importExample ? [{ path: '/projects/arts-hub', name: 'Arts hub', kind: 'folder' }] : [],

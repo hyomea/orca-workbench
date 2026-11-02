@@ -27,7 +27,8 @@ export function PortfolioProjectBoard({
   onEditProject,
   onCreateRole,
   onSelectTask,
-  featureContent
+  featureContent,
+  notesContent
 }: {
   project: PortfolioState['projects'][number]
   tasks: readonly PortfolioTask[]
@@ -38,6 +39,7 @@ export function PortfolioProjectBoard({
   onCreateRole: () => void
   onSelectTask: (id: string) => void
   featureContent?: ReactNode
+  notesContent?: ReactNode
 }): React.JSX.Element {
   const [view, setView] = useState(featureContent ? 'features' : 'tasks')
   const progress = portfolioProgress(tasks)
@@ -91,31 +93,33 @@ export function PortfolioProjectBoard({
           </div>
         </details>
       </header>
-      {featureContent && (
+      {(featureContent || notesContent) && (
         <div
           className="mb-5 flex gap-2"
           role="group"
           aria-label={translate('portfolio.projectViews', 'Project views')}
         >
-          <Button
-            variant={view === 'features' ? 'secondary' : 'ghost'}
-            size="sm"
-            aria-pressed={view === 'features'}
-            onClick={() => setView('features')}
-          >
-            {translate('portfolio.features', 'Features')}
-          </Button>
-          <Button
-            variant={view === 'tasks' ? 'secondary' : 'ghost'}
-            size="sm"
-            aria-pressed={view === 'tasks'}
-            onClick={() => setView('tasks')}
-          >
-            {translate('portfolio.tasks', 'Tasks')}
-          </Button>
+          {[
+            ...(featureContent
+              ? [{ id: 'features', name: translate('portfolio.features', 'Features') }]
+              : []),
+            { id: 'tasks', name: translate('portfolio.tasks', 'Tasks') },
+            ...(notesContent ? [{ id: 'notes', name: translate('portfolio.notes', 'Notes') }] : [])
+          ].map((entry) => (
+            <Button
+              key={entry.id}
+              variant={view === entry.id ? 'secondary' : 'ghost'}
+              size="sm"
+              aria-pressed={view === entry.id}
+              onClick={() => setView(entry.id)}
+            >
+              {entry.name}
+            </Button>
+          ))}
         </div>
       )}
       {featureContent && <div hidden={view !== 'features'}>{featureContent}</div>}
+      {view === 'notes' && notesContent}
       {view === 'tasks' &&
         (tasks.length > 0 ? (
           <>

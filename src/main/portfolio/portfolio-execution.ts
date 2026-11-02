@@ -1,4 +1,10 @@
 import { portfolioDesignPrompt } from './portfolio-design-store'
+import {
+  portfolioNoteFiles,
+  portfolioNotesPrompt,
+  writePortfolioNoteFiles,
+  type PortfolioNoteFile
+} from './portfolio-note-files'
 import { randomUUID } from 'node:crypto'
 import type { AgentLaunchResult } from '../../shared/agent-launch-intent'
 import {
@@ -37,7 +43,9 @@ async function executePortfolioTask(
   request: { revision: number; taskId: string; worktreeId: string; repoId: string },
   launch: (attempt: PortfolioAttempt) => Promise<AgentLaunchResult>
 ): Promise<PortfolioState> {
+  let noteFiles: PortfolioNoteFile[] = []
   const prepared = await store.update(request.revision, (state) => {
+    noteFiles = portfolioNoteFiles(store, state, request.taskId)
     preparePortfolioAttempt(
       state,
       request.taskId,
@@ -45,7 +53,12 @@ async function executePortfolioTask(
       request.repoId,
       `${Date.now()}-${randomUUID().replaceAll('-', '')}`,
       Date.now(),
-      portfolioDesignPrompt(store, state, request.taskId)
+      [
+        portfolioDesignPrompt(store, state, request.taskId),
+        portfolioNotesPrompt(state, request.taskId, noteFiles)
+      ]
+        .filter(Boolean)
+        .join('\n\n')
     )
   })
   const attempt = portfolioTask(prepared, request.taskId).attempts.at(-1)
@@ -54,6 +67,7 @@ async function executePortfolioTask(
   }
   let result: AgentLaunchResult
   try {
+    await writePortfolioNoteFiles(noteFiles)
     result = await launch(attempt)
   } catch (error) {
     return store.update(null, (state) => {

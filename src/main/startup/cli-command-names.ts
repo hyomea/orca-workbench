@@ -79,5 +79,6 @@ export const CLI_COMMAND_NAMES = [
   'viewport',
   'vm',
   'wait',
+  'workbench',
   'worktree'
 ] as const

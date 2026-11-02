@@ -18,6 +18,7 @@ import {
 } from '../../../../shared/folder-workspace-worktree'
 import { PortfolioBoard } from './PortfolioBoard'
 import { portfolioSetupActions } from './portfolio-setup-actions'
+import { openPortfolioSteward } from './portfolio-steward-actions'
 
 export default function PortfolioPage(): React.JSX.Element {
   const [state, setState] = useState<PortfolioState | null>(null)
@@ -176,6 +177,25 @@ export default function PortfolioPage(): React.JSX.Element {
         }}
         onSave={(command: PortfolioCommand) => mutate('portfolio.mutate', { command })}
         onLaunch={(taskId, worktreeId) => mutate('portfolio.launch', { taskId, worktreeId })}
+        onOpenSteward={() => {
+          setError('')
+          openPortfolioSteward().catch((failure: unknown) =>
+            setError(failure instanceof Error ? failure.message : String(failure))
+          )
+        }}
+        onExportNotes={async (projectId) => {
+          const directory = await window.api.shell.pickDirectory({})
+          if (!directory) {
+            return null
+          }
+          const result = z.object({ written: z.number() }).parse(
+            await callRuntimeRpc({ kind: 'local' }, 'portfolio.exportNotes', {
+              projectId,
+              directory
+            })
+          )
+          return { directory, written: result.written }
+        }}
         onOpenWorkspace={(id) => {
           if (setActiveWorktree(id, 'local')) {
             setActiveView('terminal')

@@ -167,7 +167,7 @@ it('migrates v1 on write with an exact backup and preserves existing tasks and e
   await writeFile(file, original)
   const store = new PortfolioStore(file)
   const migrated = await store.read()
-  expect(migrated.schemaVersion).toBe(4)
+  expect(migrated.schemaVersion).toBe(5)
   expect(migrated.features).toEqual([])
   expect(migrated.tasks).toEqual(state.tasks)
   expect(await readFile(file, 'utf8')).toBe(original)

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Building2, FolderKanban, Pencil, Plus, RefreshCw } from 'lucide-react'
+import { Bot, Building2, FolderKanban, Pencil, Plus, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { translate } from '@/i18n/i18n'
@@ -15,6 +15,7 @@ import { PortfolioTaskDetail, type PortfolioWorkspace } from './PortfolioTaskDet
 import { PortfolioWelcome } from './PortfolioWelcome'
 import { PortfolioNavigation } from './PortfolioNavigation'
 import { PortfolioFeatures } from './PortfolioFeatures'
+import { PortfolioNotes, type PortfolioNotesExport } from './PortfolioNotes'
 import { PortfolioProjectBoard } from './PortfolioProjectBoard'
 import { PortfolioProjectSetup } from './PortfolioProjectSetup'
 import type { PortfolioSetupActions } from './portfolio-project-setup-types'
@@ -30,6 +31,8 @@ export function PortfolioBoard({
   onSave,
   onLaunch,
   onOpenWorkspace,
+  onExportNotes,
+  onOpenSteward,
   setupActions,
   draftScope
 }: {
@@ -43,6 +46,8 @@ export function PortfolioBoard({
   onSave: (command: PortfolioCommand) => Promise<boolean>
   onLaunch: (taskId: string, worktreeId: string) => Promise<boolean>
   onOpenWorkspace: (id: string) => void
+  onExportNotes: PortfolioNotesExport
+  onOpenSteward: () => void
   setupActions: PortfolioSetupActions
   draftScope: string
 }): React.JSX.Element {
@@ -112,6 +117,10 @@ export function PortfolioBoard({
               {translate('portfolio.refresh', 'Refresh')}
             </TooltipContent>
           </Tooltip>
+          <Button variant="outline" size="sm" disabled={busy} onClick={onOpenSteward}>
+            <Bot aria-hidden="true" />
+            {translate('portfolio.openSteward', 'Steward')}
+          </Button>
           {state.projects.length > 0 && (
             <Button variant="outline" size="sm" onClick={() => setComposer('project')}>
               <Plus aria-hidden="true" />
@@ -170,6 +179,16 @@ export function PortfolioBoard({
                 }}
                 onSelectTask={setSelectedTaskId}
                 onCreateRole={() => setComposer('role')}
+              />
+            }
+            notesContent={
+              <PortfolioNotes
+                key={project.id}
+                state={state}
+                projectId={project.id}
+                busy={busy}
+                onSave={onSave}
+                onExport={onExportNotes}
               />
             }
           />

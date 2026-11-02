@@ -3,6 +3,12 @@ import { PortfolioFeature, PortfolioWorkItem, PortfolioFeatureCommands } from '.
 import { applyPortfolioFeatureCommand, workItemForTask } from './portfolio-feature-commands'
 import { PortfolioVerification, PortfolioVerificationCommands } from './portfolio-verification'
 import { applyPortfolioVerificationCommand } from './portfolio-verification-commands'
+import {
+  applyPortfolioNoteCommand,
+  PortfolioNote,
+  PortfolioNoteCommands,
+  PortfolioNoteDraft
+} from './portfolio-notes'
 
 const Id = z.string().trim().min(1).max(4096)
 const Name = z.string().trim().min(1).max(200)
@@ -51,7 +57,9 @@ export const PortfolioTask = PortfolioTaskInput.extend({
   )
 })
 export const PortfolioState = z.object({
-  schemaVersion: z.literal(4),
+  schemaVersion: z.literal(5),
+  notes: z.array(PortfolioNote),
+  noteDrafts: z.array(PortfolioNoteDraft),
   verification: z.array(PortfolioVerification),
   features: z.array(PortfolioFeature),
   workItems: z.array(PortfolioWorkItem),
@@ -61,34 +69,38 @@ export const PortfolioState = z.object({
   roles: z.array(PortfolioRoleInput.extend({ id: Id })),
   tasks: z.array(PortfolioTask)
 })
-const LegacyPortfolioState = PortfolioState.omit({
+const V4PortfolioState = PortfolioState.omit({ notes: true, noteDrafts: true }).extend({
+  schemaVersion: z.literal(4)
+})
+const LegacyPortfolioState = V4PortfolioState.omit({
   features: true,
   workItems: true,
   verification: true
 }).extend({
   schemaVersion: z.literal(1)
 })
+const NO_NOTES = { schemaVersion: 5, notes: [], noteDrafts: [] } as const
 export function parsePortfolioState(value: unknown): PortfolioState {
   const version = z.object({ schemaVersion: z.number() }).parse(value).schemaVersion
   if (version === 1) {
     const legacy = LegacyPortfolioState.parse(value)
     return PortfolioState.parse({
       ...legacy,
-      schemaVersion: 4,
+      ...NO_NOTES,
       features: [],
       workItems: [],
       verification: []
     })
   }
   if (version === 2) {
-    const legacy = PortfolioState.omit({ verification: true })
+    const legacy = V4PortfolioState.omit({ verification: true })
       .extend({ schemaVersion: z.literal(2) })
       .parse(value)
-    return PortfolioState.parse({ ...legacy, schemaVersion: 4, verification: [] })
+    return PortfolioState.parse({ ...legacy, ...NO_NOTES, verification: [] })
   }
-  if (version === 3) {
-    const legacy = PortfolioState.extend({ schemaVersion: z.literal(3) }).parse(value)
-    return PortfolioState.parse({ ...legacy, schemaVersion: 4 })
+  if (version === 3 || version === 4) {
+    const legacy = V4PortfolioState.extend({ schemaVersion: z.literal(version) }).parse(value)
+    return PortfolioState.parse({ ...legacy, ...NO_NOTES })
   }
   return PortfolioState.parse(value)
 }
@@ -101,6 +113,7 @@ const ProjectDetails = PortfolioProjectInput
 export const PortfolioCommand = z.discriminatedUnion('kind', [
   ...PortfolioFeatureCommands,
   ...PortfolioVerificationCommands,
+  ...PortfolioNoteCommands,
   z.object({ kind: z.literal('organization.rename'), name: Name }),
   z.object({ kind: z.literal('project.create'), project: PortfolioProjectInput }),
   z.object({
@@ -123,7 +136,9 @@ export type PortfolioCommand = z.infer<typeof PortfolioCommand>
 
 export function emptyPortfolio(): PortfolioState {
   return {
-    schemaVersion: 4,
+    schemaVersion: 5,
+    notes: [],
+    noteDrafts: [],
     verification: [],
     features: [],
     workItems: [],
@@ -151,7 +166,8 @@ export function applyPortfolioCommand(
 ): void {
   if (
     applyPortfolioVerificationCommand(state, command, id, now) ||
-    applyPortfolioFeatureCommand(state, command, id, now)
+    applyPortfolioFeatureCommand(state, command, id, now) ||
+    applyPortfolioNoteCommand(state, command, id, now)
   ) {
     return
   }

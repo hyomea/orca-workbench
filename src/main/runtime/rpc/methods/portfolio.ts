@@ -8,16 +8,23 @@ import { join } from 'node:path'
 import { getAppEnvironment } from '../../../../shared/app-environment'
 import { folderWorkspaceRepoId } from '../../../../shared/folder-workspace-worktree'
 import { applyPortfolioCommand } from '../../../../shared/portfolio'
+import { applyPortfolioBatch } from '../../../../shared/portfolio-batch'
 import {
   PortfolioAttachDesign,
+  PortfolioBatch,
+  PortfolioExportNotes,
+  PortfolioProposeNote,
   PortfolioReadDesign,
   PortfolioRemoveDesign,
   PortfolioLaunch,
   PortfolioMutate,
+  PortfolioPrepareSteward,
   PortfolioRead
 } from '../../../../shared/rpc-contract/portfolio-params'
 import { AgentLaunchReplay } from '../../../../shared/rpc-contract/agent-launch-params'
 import { PortfolioStore } from '../../../portfolio/portfolio-store'
+import { exportPortfolioNotes } from '../../../portfolio/portfolio-note-files'
+import { preparePortfolioSteward } from '../../../portfolio/portfolio-steward'
 import {
   launchPortfolioTask,
   portfolioExecutionInFlight
@@ -70,6 +77,54 @@ export const PORTFOLIO_METHODS = [
         }
         applyPortfolioCommand(state, params.command, randomUUID(), Date.now())
       })
+    }
+  }),
+  defineMethod({
+    name: 'portfolio.prepareSteward',
+    permission: 'workspace',
+    params: PortfolioPrepareSteward,
+    handler: () => preparePortfolioSteward(store())
+  }),
+  defineMethod({
+    name: 'portfolio.exportNotes',
+    permission: 'workspace',
+    params: PortfolioExportNotes,
+    handler: (params) => exportPortfolioNotes(store(), params.projectId, params.directory)
+  }),
+  defineMethod({
+    // Agents propose; only the user's review in the Projects page changes a note.
+    name: 'portfolio.proposeNote',
+    permission: 'workspace',
+    params: PortfolioProposeNote,
+    handler: async (params) => {
+      const id = randomUUID()
+      await store().update(null, (state) => {
+        applyPortfolioCommand(
+          state,
+          { kind: 'noteDraft.submit', draft: params.draft },
+          id,
+          Date.now()
+        )
+      })
+      return { draftId: id }
+    }
+  }),
+  defineMethod({
+    // One revision for the whole batch: either every step applies or none does.
+    name: 'portfolio.batch',
+    permission: 'workspace',
+    params: PortfolioBatch,
+    handler: async (params) => {
+      const data = store()
+      let refs: Record<string, string> = {}
+      const state = await data.update(params.revision ?? null, (next) => {
+        refs = applyPortfolioBatch(next, params.steps, randomUUID, Date.now(), (command) => {
+          if ('taskId' in command && portfolioExecutionInFlight(data, command.taskId)) {
+            throw new Error('Wait for the launch to settle before changing this task.')
+          }
+        })
+      })
+      return { revision: state.revision, refs }
     }
   }),
   defineMethod({

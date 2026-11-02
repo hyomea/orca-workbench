@@ -90,9 +90,25 @@ Codex or Claude runs with the selected provider's configured Orca account and it
 
 Directory analysis supports native local paths, including non-Git folders. Remote and WSL sources are not supported in this first version. Idea-only projects can receive directory links later through **Edit project**; launching a task requires a linked workspace.
 
+## Project notes
+
+Open a project and choose **Notes** to keep durable project knowledge in Markdown. **Offer to agents** is on by default. When a task starts, its prompt lists each offered note's id, title, and the path of a read-only copy in the profile's `workbench/note-files` directory. Copies are named by content hash, so a retried launch keeps pointing at the text it was launched with; editing a note affects only later launches.
+
+Agents cannot edit notes directly. A task prompt explains how to submit a proposal:
+
+```bash
+orca workbench note propose --project <id> --task <id> [--note <id>] --title <title> --body-file <file> --reason <why>
+```
+
+Proposals appear under **Agent proposals**. Review and edit the text, then accept or dismiss it. An update proposal shows a warning when the note changed after it was proposed. Deleting a note keeps its pending proposals as suggestions for a new note. A project holds at most 50 pending proposals.
+
+**Export** writes one Markdown file per note into a chosen directory. Each file begins with front matter containing `id`, `title`, `updated`, and `agentContext`. Exporting again updates files that carry the same note id. Exporting never replaces other files: a name collision gets a numbered suffix. Notes deleted in Orca are not removed from an earlier export.
+
+**Import** accepts `.md`, `.markdown`, and `.txt` files. Files without front matter take their title from the first heading or the file name. A file matches an existing note by exported id, then by title. New notes are selected by default. Replacing an existing note requires selecting it after comparing the current and imported text. Every replacement checks that the note has not changed since the preview.
+
 ## Persistence and recovery
 
-Schema v4 stores features, work items, optional task/platform links, versioned test plans, platform evidence, and design attachment metadata. Reading v1, v2, or v3 upgrades it in memory without rewriting the file. The first successful mutation preserves an exact `portfolio.json.v1.bak`, `portfolio.json.v2.bak`, or `portfolio.json.v3.bak` matching the source version before writing v4. Older builds reject v4 rather than silently dropping attachments or verification records. Backups are never overwritten with different contents; conflicting backups block migration.
+Schema v5 stores features, work items, optional task/platform links, versioned test plans, platform evidence, design attachment metadata, project notes, and pending note proposals. Reading v1 through v4 upgrades it in memory without rewriting the file. The first successful mutation preserves an exact `portfolio.json.v1.bak` through `portfolio.json.v4.bak` matching the source version before writing v5. Older builds reject v5 rather than silently dropping notes, attachments, or verification records. Backups are never overwritten with different contents; conflicting backups block migration.
 
 Data lives in `workbench/portfolio.json` under the current Orca profile's user-data directory. Writes use a file lock, atomic replacement, and a revision precondition. A stale window must refresh before retrying a change. Unreadable data and unsupported schema versions fail without replacing the existing file.
 

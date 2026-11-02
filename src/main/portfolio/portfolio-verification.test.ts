@@ -357,7 +357,7 @@ it('backs up v2 exactly and does not treat its accepted work as verified', async
       })
     )
     expect(await readFile(`${file}.v2.bak`, 'utf8')).toBe(original)
-    expect((await store.read()).schemaVersion).toBe(4)
+    expect((await store.read()).schemaVersion).toBe(5)
     expect((await store.read()).workItems[0].status).toBe('planned')
   } finally {
     await rm(directory, { recursive: true, force: true })

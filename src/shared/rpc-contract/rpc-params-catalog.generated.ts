@@ -43,6 +43,7 @@ import {
 } from '../orcad-peer-desktops-contract'
 import { OrcadTerminalCensusParamsSchema } from '../orcad-terminal-census'
 import { pluginConsentRequestSchema } from '../plugins/approval/plugin-consent-request'
+import { PortfolioBatch } from '../portfolio-batch'
 import { PortfolioIntake } from '../portfolio-intake'
 import {
   AccountsUnsubscribeParams,
@@ -504,8 +505,11 @@ import {
   PortfolioAttachDesign,
   PortfolioCancelDiscovery,
   PortfolioDiscover,
+  PortfolioExportNotes,
   PortfolioLaunch,
   PortfolioMutate,
+  PortfolioPrepareSteward,
+  PortfolioProposeNote,
   PortfolioRead,
   PortfolioReadDesign,
   PortfolioRemoveDesign
@@ -1311,11 +1315,15 @@ export const RPC_PARAMS_BY_METHOD = {
   'plugins.readPanelEntry': PluginReadPanelEntryParams,
   'plugins.setEnabled': PluginSetEnabledParams,
   'portfolio.attachDesign': PortfolioAttachDesign,
+  'portfolio.batch': PortfolioBatch,
   'portfolio.cancelDiscovery': PortfolioCancelDiscovery,
   'portfolio.discover': PortfolioDiscover,
+  'portfolio.exportNotes': PortfolioExportNotes,
   'portfolio.intake': PortfolioIntake,
   'portfolio.launch': PortfolioLaunch,
   'portfolio.mutate': PortfolioMutate,
+  'portfolio.prepareSteward': PortfolioPrepareSteward,
+  'portfolio.proposeNote': PortfolioProposeNote,
   'portfolio.read': PortfolioRead,
   'portfolio.readDesign': PortfolioReadDesign,
   'portfolio.removeDesign': PortfolioRemoveDesign,
