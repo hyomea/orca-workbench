@@ -6,10 +6,17 @@ import { stopBundledRipgrep } from '../ripgrep/bundled-ripgrep-stop'
 export type PortfolioSourceRoot = { name: string; path: string }
 const SKIP =
   /(^|\/)(\.[^/]+|node_modules|vendor|dist|build|out|coverage|target|secrets?|credentials?)(\/|$)|(?:^|\/)(?:\.env.*|.*\.(?:pem|key|p12|pfx|lock))$/i
+const GUIDE = /(?:^|\/)(?:agents|claude)\.md$/i
 const DOCUMENT =
-  /(?:^|\/)(?:readme[^/]*|architecture[^/]*|overview[^/]*|vision[^/]*|roadmap[^/]*)\.(?:md|txt)$|^docs\/[^/]+\.md$/i
-const MANIFEST = /(?:^|\/)(?:package\.json|Cargo\.toml|pyproject\.toml|go\.mod|composer\.json)$/
-const CODE = /^(?:src|app|lib)\/[^/]+\.(?:tsx?|jsx?|py|rs|go)$/
+  /(?:^|\/)(?:readme[^/]*|architecture[^/]*|overview[^/]*|vision[^/]*|roadmap[^/]*|contributing[^/]*)\.(?:md|txt)$|^docs\/[^/]+\.md$/i
+const MANIFEST =
+  /(?:^|\/)(?:package\.json|Cargo\.toml|pyproject\.toml|go\.mod|composer\.json|Package\.swift|(?:build|settings)\.gradle(?:\.kts)?|libs\.versions\.toml)$/
+const CODE = /^(?:src|app|lib)\/[^/]+\.(?:tsx?|jsx?|py|rs|go|swift|kt|php)$/
+const TOTAL_EXCERPT_BYTES = 120000
+const GUIDE_EXCERPT_BYTES = 12000
+const EXCERPT_BYTES = 4000
+const MIN_EXCERPT_BYTES = 500
+const MAX_FILES_PER_SOURCE = 12
 
 function listSourcePaths(
   root: string,
@@ -110,46 +117,97 @@ export async function collectPortfolioSourceContext(
   roots: readonly PortfolioSourceRoot[],
   signal: AbortSignal
 ): Promise<{ context: string; sources: string[]; limited: boolean }> {
-  const material: {
-    project: string
-    files: string[]
+  const scans: {
+    label: string
+    root: string
+    paths: string[]
+    ranked: { path: string; rank: number }[]
+    next: number
+    listingLimited: boolean
     excerpts: { path: string; text: string }[]
   }[] = []
-  const sources: string[] = []
-  let limited = false
-  let budget = 48000
   for (const source of roots) {
     signal.throwIfAborted()
     const root = await realpath(source.path)
     const listing = await listSourcePaths(root, signal)
     const paths = listing.paths.filter((path) => !SKIP.test(path))
     const ranked = paths
-      .filter((path) => DOCUMENT.test(path) || MANIFEST.test(path) || CODE.test(path))
-      .sort((a, b) => {
-        const score = (p: string): number =>
-          /^readme\./i.test(p) ? 0 : DOCUMENT.test(p) ? 1 : MANIFEST.test(p) ? 2 : 3
-        return score(a) - score(b) || a.localeCompare(b)
-      })
-    const excerpts: { path: string; text: string }[] = []
-    for (const path of ranked.slice(0, 12)) {
+      .map((path) => ({ path, rank: evidenceRank(path) }))
+      .filter((entry): entry is { path: string; rank: number } => entry.rank !== null)
+      .sort((a, b) => a.rank - b.rank || a.path.localeCompare(b.path))
+    scans.push({
+      label: source.name || basename(root),
+      root,
+      paths,
+      ranked,
+      next: 0,
+      listingLimited: listing.limited,
+      excerpts: []
+    })
+  }
+  let budget = TOTAL_EXCERPT_BYTES
+  const readNext = async (scan: (typeof scans)[number], allowance: number): Promise<number> => {
+    let used = 0
+    while (scan.next < scan.ranked.length && scan.excerpts.length < MAX_FILES_PER_SOURCE) {
       signal.throwIfAborted()
-      if (budget <= 0) {
+      const { path, rank } = scan.ranked[scan.next]
+      const cap = Math.min(rank <= 1 ? GUIDE_EXCERPT_BYTES : EXCERPT_BYTES, allowance - used)
+      if (cap < MIN_EXCERPT_BYTES) {
         break
       }
-      const text = await readExcerpt(root, path, Math.min(4000, budget)).catch(() => null)
-      if (text === null) {
-        continue
+      scan.next += 1
+      const text = await readExcerpt(scan.root, path, cap).catch(() => null)
+      if (text !== null) {
+        scan.excerpts.push({ path, text })
+        used += Buffer.byteLength(text)
       }
-      excerpts.push({ path, text })
-      sources.push(`${source.name || basename(root)}/${path}`)
-      budget -= Buffer.byteLength(text)
     }
-    material.push({ project: source.name, files: paths.slice(0, 100), excerpts })
-    limited ||=
-      listing.limited ||
-      paths.length > 100 ||
-      ranked.length > excerpts.length ||
-      excerpts.some((entry) => entry.text.endsWith('[excerpt truncated]'))
+    return used
   }
-  return { context: JSON.stringify(material), sources, limited }
+  // Fair share first so a large early directory cannot starve later ones; leftovers fill a second pass.
+  for (const [index, scan] of scans.entries()) {
+    budget -= await readNext(scan, Math.floor(budget / (scans.length - index)))
+  }
+  for (const scan of scans) {
+    budget -= await readNext(scan, budget)
+  }
+  const limited = scans.some(
+    (scan) =>
+      scan.listingLimited ||
+      scan.paths.length > 100 ||
+      scan.ranked.length > scan.excerpts.length ||
+      scan.excerpts.some((entry) => entry.text.endsWith('[excerpt truncated]'))
+  )
+  return {
+    context: JSON.stringify(
+      scans.map((scan) => ({
+        project: scan.label,
+        files: scan.paths.slice(0, 100),
+        excerpts: scan.excerpts
+      }))
+    ),
+    sources: scans.flatMap((scan) => scan.excerpts.map((entry) => `${scan.label}/${entry.path}`)),
+    limited
+  }
+}
+
+// Agent instructions and the root README describe a repository best; nested docs are often vendored.
+function evidenceRank(path: string): number | null {
+  const depth = path.split('/').length - 1
+  if (GUIDE.test(path) && depth <= 1) {
+    return depth
+  }
+  if (/^readme[^/]*\.(?:md|txt)$/i.test(path)) {
+    return 0
+  }
+  if (DOCUMENT.test(path) && depth <= 1) {
+    return 2
+  }
+  if (MANIFEST.test(path) && depth <= 2) {
+    return 3
+  }
+  if (DOCUMENT.test(path) || GUIDE.test(path)) {
+    return 4
+  }
+  return CODE.test(path) ? 5 : null
 }

@@ -52,6 +52,36 @@ it('samples project evidence while excluding ignored, hidden, dependency, and ex
   expect(await readFile(join(project, 'docs/vision.md'), 'utf8')).toHaveLength(5000)
 })
 
+it('reads agent instructions first and keeps a large early directory from starving later ones', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'orca-discovery-share-'))
+  directories.push(root)
+  const large = join(root, 'large')
+  const small = join(root, 'small')
+  await mkdir(join(large, 'docs'), { recursive: true })
+  await mkdir(join(small, 'src', 'vendor-widget'), { recursive: true })
+  await writeFile(join(large, 'README.md'), 'r'.repeat(20000))
+  for (let index = 0; index < 30; index += 1) {
+    await writeFile(join(large, 'docs', `guide-${index}.md`), 'd'.repeat(20000))
+  }
+  await writeFile(join(small, 'README.md'), 'small-readme-marker')
+  await writeFile(join(small, 'CLAUDE.md'), 'small-agent-marker')
+  await writeFile(join(small, 'src', 'vendor-widget', 'README.md'), 'vendored-marker')
+  const result = await collectPortfolioSourceContext(
+    [
+      { name: 'Large', path: large },
+      { name: 'Small', path: small }
+    ],
+    new AbortController().signal
+  )
+  const smallSources = result.sources.filter((source) => source.startsWith('Small/'))
+  expect(smallSources.slice(0, 2).sort()).toEqual(['Small/CLAUDE.md', 'Small/README.md'])
+  expect(smallSources.indexOf('Small/src/vendor-widget/README.md')).toBeGreaterThan(1)
+  expect(result.context).toContain('small-agent-marker')
+  expect(result.sources.filter((source) => source.startsWith('Large/')).length).toBeLessThanOrEqual(
+    12
+  )
+})
+
 it('rejects canceled scans before reading any directories', async () => {
   const controller = new AbortController()
   controller.abort(new Error('Stopped'))

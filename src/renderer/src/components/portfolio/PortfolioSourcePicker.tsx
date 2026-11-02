@@ -35,6 +35,14 @@ export function PortfolioSourcePicker({
     <fieldset disabled={disabled || working} className="space-y-3">
       <legend className="mb-2 text-sm font-medium">
         {translate('portfolio.sourceDirectories', 'Project directories')}
+        {selected.length > 0 && (
+          <span className="ml-2 text-xs font-normal text-muted-foreground">
+            {translate('portfolio.sourcesSelected', '{{count}} of {{total}} selected', {
+              count: selected.length,
+              total: choices.length
+            })}
+          </span>
+        )}
       </legend>
       <p className="text-xs text-muted-foreground">
         {translate(
@@ -42,11 +50,11 @@ export function PortfolioSourcePicker({
           'Choose existing sources or import a directory. Imports remain in Orca even if you cancel project setup.'
         )}
       </p>
-      <div className="max-h-48 space-y-2 overflow-y-auto scrollbar-sleek">
+      <div className="max-h-80 space-y-1.5 overflow-y-auto scrollbar-sleek">
         {choices.map((repo) => (
           <label
             key={repo.id}
-            className="flex items-center gap-3 rounded-md border border-border p-3 text-sm"
+            className="flex items-center gap-3 rounded-md border border-border px-3 py-2 text-sm"
           >
             <Checkbox
               checked={selected.includes(repo.id)}

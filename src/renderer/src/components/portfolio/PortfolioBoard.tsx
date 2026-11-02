@@ -134,56 +134,54 @@ export function PortfolioBoard({
           {error}
         </p>
       )}
-      <div className="@3xl/portfolio:grid @3xl/portfolio:grid-cols-[14rem_minmax(0,1fr)]">
-        {project ? (
-          <>
-            <PortfolioNavigation
-              state={state}
-              selectedProjectId={project.id}
-              onSelectProject={setSelectedProjectId}
-              onCreateRole={() => setComposer('role')}
-            />
-            <PortfolioProjectBoard
-              key={project.id}
-              project={project}
-              tasks={tasks}
-              roles={state.roles}
-              repos={repos}
-              onEditProject={() => setComposer('project.edit')}
-              onCreateTask={() => {
-                setTaskWorkItemId('')
-                setComposer('task')
-              }}
-              onCreateRole={() => setComposer('role')}
-              onSelectTask={setSelectedTaskId}
-              featureContent={
-                <PortfolioFeatures
-                  key={project.id}
-                  state={state}
-                  projectId={project.id}
-                  draftScope={draftScope}
-                  busy={busy}
-                  error={error}
-                  onSave={onSave}
-                  onCreateTask={(id) => {
-                    setTaskWorkItemId(id)
-                    setComposer('task')
-                  }}
-                  onSelectTask={setSelectedTaskId}
-                  onCreateRole={() => setComposer('role')}
-                />
-              }
-            />
-          </>
-        ) : (
-          <PortfolioWelcome
-            roleCount={state.roles.length}
-            onCreateProject={() => setComposer('project')}
-            onCreateIdea={() => setComposer('project.idea')}
+      {project ? (
+        <div className="@3xl/portfolio:grid @3xl/portfolio:grid-cols-[14rem_minmax(0,1fr)]">
+          <PortfolioNavigation
+            state={state}
+            selectedProjectId={project.id}
+            onSelectProject={setSelectedProjectId}
             onCreateRole={() => setComposer('role')}
           />
-        )}
-      </div>
+          <PortfolioProjectBoard
+            key={project.id}
+            project={project}
+            tasks={tasks}
+            roles={state.roles}
+            repos={repos}
+            onEditProject={() => setComposer('project.edit')}
+            onCreateTask={() => {
+              setTaskWorkItemId('')
+              setComposer('task')
+            }}
+            onCreateRole={() => setComposer('role')}
+            onSelectTask={setSelectedTaskId}
+            featureContent={
+              <PortfolioFeatures
+                key={project.id}
+                state={state}
+                projectId={project.id}
+                draftScope={draftScope}
+                busy={busy}
+                error={error}
+                onSave={onSave}
+                onCreateTask={(id) => {
+                  setTaskWorkItemId(id)
+                  setComposer('task')
+                }}
+                onSelectTask={setSelectedTaskId}
+                onCreateRole={() => setComposer('role')}
+              />
+            }
+          />
+        </div>
+      ) : (
+        <PortfolioWelcome
+          roleCount={state.roles.length}
+          onCreateProject={() => setComposer('project')}
+          onCreateIdea={() => setComposer('project.idea')}
+          onCreateRole={() => setComposer('role')}
+        />
+      )}
       {composer === 'project' || composer === 'project.edit' || composer === 'project.idea' ? (
         <PortfolioProjectSetup
           key={`${draftScope}:${composer}:${project?.id ?? ''}`}

@@ -55,6 +55,12 @@ export function PortfolioDiscoveryReview({
         <div className="space-y-2">
           <h3 className="text-sm font-medium">
             {translate('portfolio.questionsToConsider', 'To clarify')}
+            <span className="ml-2 text-xs font-normal text-muted-foreground">
+              {translate(
+                'portfolio.questionsOptional',
+                'Optional · you can save without answering'
+              )}
+            </span>
           </h3>
           <ul className="list-disc space-y-2 pl-5 text-sm">
             {result.draft.questions.map((question, index) => (
