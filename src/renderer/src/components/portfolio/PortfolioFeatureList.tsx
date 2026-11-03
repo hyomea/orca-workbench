@@ -1,6 +1,7 @@
 import { ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { translate } from '@/i18n/i18n'
+import { parityStatusName } from './portfolio-parity-labels'
 import type { PortfolioFeature, PortfolioWorkItem } from '../../../../shared/portfolio-features'
 
 export function PortfolioFeatureList({
@@ -46,6 +47,14 @@ export function PortfolioFeatureList({
                       {feature.description}
                     </span>
                   )}
+                  <span className="block text-xs text-muted-foreground">
+                    {feature.parity
+                      ? translate('portfolio.parityRow', 'iOS: {{ios}} · Android: {{android}}', {
+                          ios: parityStatusName(feature.parity.ios.status),
+                          android: parityStatusName(feature.parity.android.status)
+                        })
+                      : translate('portfolio.parityNotChecked', 'Parity not checked')}
+                  </span>
                 </span>
                 <span className="col-start-1 row-start-2 flex flex-wrap gap-x-2 text-xs text-muted-foreground @2xl/feature-list:col-auto @2xl/feature-list:row-auto @2xl/feature-list:block">
                   <span className="block">

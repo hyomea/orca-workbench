@@ -59,6 +59,9 @@ guess field names; read \`schema\`.
   and the relevant code, ask only questions that change the plan, show the plan, then apply it
   in one batch. Reuse existing features and roles. Put task dependencies in the dependent
   task's instructions.
+- When an outcome changes a feature, plan a check of that feature on iOS and Android before the
+  change, recorded with \`feature.parity\`. Do not plan a survey of features no outcome
+  touches unless the user asks.
 - Break work into tasks by purpose, not size, following "Breaking work into tasks" in
   \`ORCA skills get orca-cli --reference references/workbench.md\`: mechanical changes such as renames are their own task, a
   feature that crosses layers splits into data, business logic, and UI, and nothing is split

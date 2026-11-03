@@ -60,7 +60,11 @@ export function applyPortfolioFeatureCommand(
     })
     return true
   }
-  if (command.kind === 'feature.update' || command.kind === 'feature.delete') {
+  if (
+    command.kind === 'feature.update' ||
+    command.kind === 'feature.delete' ||
+    command.kind === 'feature.parity'
+  ) {
     return applyFeatureChange(state, command)
   }
   if (command.kind === 'task.linkWorkItem') {

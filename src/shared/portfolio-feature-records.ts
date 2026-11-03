@@ -17,12 +17,19 @@ export function featureInProject(
 
 export function applyFeatureChange(
   state: PortfolioState,
-  command: Extract<PortfolioCommand, { kind: 'feature.update' | 'feature.delete' }>
+  command: Extract<
+    PortfolioCommand,
+    { kind: 'feature.update' | 'feature.delete' | 'feature.parity' }
+  >
 ): boolean {
   const index = state.features.findIndex((entry) => entry.id === command.featureId)
   const feature = state.features[index]
   if (!feature) {
     throw new Error('Feature no longer exists. Refresh and try again.')
+  }
+  if (command.kind === 'feature.parity') {
+    feature.parity = command.parity
+    return true
   }
   if (command.kind === 'feature.delete') {
     if (state.workItems.some((item) => item.featureId === feature.id)) {

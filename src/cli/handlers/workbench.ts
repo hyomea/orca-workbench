@@ -69,8 +69,11 @@ function formatStatus(state: PortfolioState): string {
       }
     }
     for (const feature of features) {
+      const parity = feature.parity
+        ? `iOS ${feature.parity.ios.status}, Android ${feature.parity.android.status}`
+        : 'parity not checked'
       lines.push(
-        `  Feature ${feature.name} (specification v${feature.versions.at(-1)?.version ?? 0}) [${feature.id}]`
+        `  Feature ${feature.name} (specification v${feature.versions.at(-1)?.version ?? 0}, ${parity}) [${feature.id}]`
       )
     }
     for (const task of state.tasks.filter((entry) => entry.projectId === project.id)) {

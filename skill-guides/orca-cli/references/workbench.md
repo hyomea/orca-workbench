@@ -22,6 +22,15 @@ stored as work items (`workItem.*` commands, `workItemId` on tasks). Each outcom
   a capability and its specification; an accepted new capability or improvement publishes
   its specification there. Many outcomes, such as engineering work, have no feature.
 
+A feature also holds its row in the parity inventory, set with `feature.parity`: for `ios` and
+`android`, a `status` (`same`, `differs`, `missing`, `platform-specific`, or `unknown`), a
+`note` that explains any status other than `same` (including why it is unknown), the
+`evidence`, and `checkedOn` (YYYY-MM-DD); plus `ruleLocation` (where the business rule lives,
+preferably the API) and `needsHardware`. Record only what you checked, with its evidence; the
+user can correct it. Parity is recorded when an outcome touches a feature: check how the
+feature behaves on both platforms before changing it, and record it. Do not propose surveying
+features no outcome touches unless the user asks for it.
+
 Change tickets, parity, or the feature link of an outcome in progress with `workItem.scope`;
 its `feature` is omitted to keep the link, `null` to remove it, or a feature id.
 

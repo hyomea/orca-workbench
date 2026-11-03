@@ -8,6 +8,7 @@ import { PortfolioFeatureComposer } from './PortfolioFeatureComposer'
 import { PortfolioWorkItemDetail } from './PortfolioWorkItemDetail'
 import { PortfolioSpecification } from './PortfolioSpecification'
 import { PortfolioWorkItemList } from './PortfolioWorkItemList'
+import { PortfolioFeatureParity } from './PortfolioFeatureParity'
 
 type Composer = 'feature' | 'feature.edit' | 'outcome' | 'outcome.edit'
 
@@ -182,6 +183,7 @@ export function PortfolioFeatures({
               )}
             </div>
           </div>
+          <PortfolioFeatureParity feature={feature} busy={busy} onSave={onSave} />
           {current && (
             <details className="rounded-xl border border-border p-4">
               <summary className="cursor-pointer text-sm font-medium">

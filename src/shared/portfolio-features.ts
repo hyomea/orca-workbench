@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { PortfolioDesignAttachments } from './portfolio-design'
+import { PortfolioFeatureParity } from './portfolio-feature-parity'
 
 const Id = z.string().trim().min(1).max(4096)
 const Name = z.string().trim().min(1).max(200)
@@ -58,7 +59,8 @@ export const PortfolioFeatureVersion = z.object({
 })
 export const PortfolioFeature = PortfolioFeatureInput.extend({
   id: Id,
-  versions: z.array(PortfolioFeatureVersion)
+  versions: z.array(PortfolioFeatureVersion),
+  parity: PortfolioFeatureParity.optional()
 })
 export const PortfolioWorkItem = PortfolioWorkItemInput.extend({
   designAttachments: PortfolioDesignAttachments,
@@ -143,5 +145,7 @@ export const PortfolioFeatureCommands = [
     expected: PortfolioFeatureDetails
   }),
   z.object({ kind: z.literal('feature.delete'), featureId: Id }),
+  // Records what was found when the feature was checked on both platforms.
+  z.object({ kind: z.literal('feature.parity'), featureId: Id, parity: PortfolioFeatureParity }),
   z.object({ kind: z.literal('task.linkWorkItem'), taskId: Id, workItemId: Id.optional() })
 ] as const

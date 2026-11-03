@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, expect, it, vi } from 'vitest'
+import userEvent from '@testing-library/user-event'
 import { createBrowserUuid } from '@/lib/browser-uuid'
 import {
   applyPortfolioCommand,
@@ -375,7 +376,9 @@ it('keeps the selected feature when switching project views and discloses full p
 it('creates an outcome with no feature for platform-specific engineering work', async () => {
   const { commands } = harness()
   await click('New outcome')
-  fireEvent.change(screen.getByLabelText('Work type'), { target: { value: 'engineering' } })
+  const user = userEvent.setup()
+  await user.click(screen.getByRole('combobox', { name: 'Work type' }))
+  await user.click(screen.getByRole('option', { name: 'Engineering' }))
   enter('Name', 'Test foundation')
   fireEvent.click(screen.getByRole('checkbox', { name: 'Android' }))
   enter('Android ticket', 'ENG-5952')
@@ -385,6 +388,7 @@ it('creates an outcome with no feature for platform-specific engineering work', 
     expectedBaseVersion: 0,
     workItem: expect.objectContaining({
       projectId: 'project',
+      kind: 'engineering',
       title: 'Test foundation',
       parity: false,
       tickets: [{ platform: 'android', reference: 'ENG-5952' }]
@@ -394,4 +398,36 @@ it('creates an outcome with no feature for platform-specific engineering work', 
   fireEvent.click(screen.getByRole('button', { name: /Test foundation/ }))
   await tab('Parity & tests')
   expect(screen.getByText(/no shared test plan is required/)).toBeTruthy()
+})
+
+it('records a feature’s parity row with evidence for each platform', async () => {
+  const { commands } = harness('features')
+  await click('New feature')
+  enter('Name', 'Check-in')
+  await click('Confirm and save')
+  fireEvent.click(screen.getByRole('button', { name: /Check-in/ }))
+  expect(screen.getByText(/Not checked yet/)).toBeTruthy()
+  await click('Record a parity check')
+  const user = userEvent.setup()
+  await user.click(screen.getAllByRole('combobox', { name: 'Status' })[0])
+  await user.click(screen.getByRole('option', { name: 'Same' }))
+  fireEvent.change(screen.getAllByLabelText('Evidence')[0], {
+    target: { value: 'Staging build 15, simulator' }
+  })
+  await click('Save')
+  expect(screen.getByRole('alert')).toBeTruthy()
+  fireEvent.change(screen.getAllByLabelText('What differs, or why')[1], {
+    target: { value: 'Needs a Bluetooth scanner' }
+  })
+  fireEvent.click(screen.getByRole('checkbox', { name: 'Needs real hardware' }))
+  await click('Save')
+  expect(commands.at(-1)).toMatchObject({
+    kind: 'feature.parity',
+    parity: {
+      ios: { status: 'same', evidence: 'Staging build 15, simulator' },
+      android: { status: 'unknown', note: 'Needs a Bluetooth scanner' },
+      needsHardware: true
+    }
+  })
+  expect(screen.getByText('Needs a Bluetooth scanner')).toBeTruthy()
 })
