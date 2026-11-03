@@ -7,7 +7,9 @@ export const WORKBENCH_HANDLER_GROUP: HandlerGroup = {
     'workbench schema',
     'workbench apply',
     'workbench task start',
-    'workbench note propose'
+    'workbench note propose',
+    'workbench personal-notes list',
+    'workbench personal-notes index'
   ],
   load: async () => (await import('./handlers/workbench.js')).WORKBENCH_HANDLERS
 }

@@ -41,6 +41,7 @@ export function PortfolioTaskDetail({
 }): React.JSX.Element {
   const [workspaceId, setWorkspaceId] = useState(workspaces[0]?.id ?? '')
   const [note, setNote] = useState('')
+  const [stopNote, setStopNote] = useState('')
   const attempt = task.attempts.at(-1)
   const unresolved = attempt && (attempt.state === 'pending' || attempt.state === 'unknown')
   async function transition(status: 'todo' | 'blocked' | 'review' | 'accepted'): Promise<void> {
@@ -166,6 +167,49 @@ export function PortfolioTaskDetail({
                     </Button>
                   )}
                 </div>
+                {attempt.state !== 'closed' && (
+                  <div className="space-y-2 border-t border-border pt-3">
+                    <p className="text-xs text-muted-foreground">
+                      {activity
+                        ? translate(
+                            'portfolio.endExecutionHelp',
+                            'To start again, stop the agent in its workspace, then end this execution here.'
+                          )
+                        : translate(
+                            'portfolio.endUnobservedExecutionHelp',
+                            'If the agent exited or never started, check its workspace and end this execution to start again.'
+                          )}
+                    </p>
+                    <Textarea
+                      aria-label={translate('portfolio.endExecutionNote', 'What you checked')}
+                      placeholder={translate(
+                        'portfolio.endExecutionPlaceholder',
+                        'For example: the agent exited at a permission prompt; nothing was changed.'
+                      )}
+                      value={stopNote}
+                      onChange={(event) => setStopNote(event.target.value)}
+                      rows={2}
+                      maxLength={20000}
+                    />
+                    <Button
+                      variant="outline"
+                      disabled={busy || !stopNote.trim()}
+                      onClick={async () => {
+                        if (
+                          await onSave({
+                            kind: 'task.closeExecution',
+                            taskId: task.id,
+                            note: stopNote
+                          })
+                        ) {
+                          setStopNote('')
+                        }
+                      }}
+                    >
+                      {translate('portfolio.endExecution', 'End this execution')}
+                    </Button>
+                  </div>
+                )}
               </section>
             )}
             {task.evidence && (
@@ -228,25 +272,6 @@ export function PortfolioTaskDetail({
                       {translate('portfolio.block', 'Mark blocked')}
                     </Button>
                   )}
-                </div>
-              )}
-              {attempt && attempt.state !== 'closed' && (
-                <div className="space-y-2">
-                  <p className="text-xs text-muted-foreground">
-                    {translate(
-                      'portfolio.closeExecutionHelp',
-                      'To allow a new execution, inspect the workspace and stop the previous agent first. Record what you checked above.'
-                    )}
-                  </p>
-                  <Button
-                    variant="outline"
-                    disabled={busy || !note.trim()}
-                    onClick={() =>
-                      void onSave({ kind: 'task.closeExecution', taskId: task.id, note })
-                    }
-                  >
-                    {translate('portfolio.confirmStopped', 'I have stopped this execution')}
-                  </Button>
                 </div>
               )}
             </section>

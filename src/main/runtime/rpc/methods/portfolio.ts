@@ -19,12 +19,23 @@ import {
   PortfolioLaunch,
   PortfolioMutate,
   PortfolioPrepareSteward,
-  PortfolioRead
+  PortfolioRead,
+  PortfolioIndexPersonalNotes,
+  PortfolioPersonalNotes,
+  PortfolioSetPersonalNotesFolder
 } from '../../../../shared/rpc-contract/portfolio-params'
 import { AgentLaunchReplay } from '../../../../shared/rpc-contract/agent-launch-params'
 import { PortfolioStore } from '../../../portfolio/portfolio-store'
 import { exportPortfolioNotes } from '../../../portfolio/portfolio-note-files'
 import { preparePortfolioSteward } from '../../../portfolio/portfolio-steward'
+import {
+  indexPersonalNotes,
+  personalNoteAppliesTo,
+  personalNotesPrompt,
+  readPersonalNotesFolder,
+  scanPersonalNotes,
+  setPersonalNotesFolder
+} from '../../../portfolio/personal-notes'
 import {
   launchPortfolioTask,
   portfolioExecutionInFlight
@@ -92,6 +103,37 @@ export const PORTFOLIO_METHODS = [
     handler: (params) => exportPortfolioNotes(store(), params.projectId, params.directory)
   }),
   defineMethod({
+    name: 'portfolio.setPersonalNotesFolder',
+    permission: 'workspace',
+    params: PortfolioSetPersonalNotesFolder,
+    handler: (params) => setPersonalNotesFolder(store(), params.folder)
+  }),
+  defineMethod({
+    name: 'portfolio.indexPersonalNotes',
+    permission: 'workspace',
+    params: PortfolioIndexPersonalNotes,
+    handler: () => indexPersonalNotes(store())
+  }),
+  defineMethod({
+    // Agents read the list; notes the user closed to every agent are left out.
+    name: 'portfolio.personalNotes',
+    permission: 'workspace',
+    params: PortfolioPersonalNotes,
+    handler: async (params) => {
+      const folder = await readPersonalNotesFolder(store())
+      const notes = folder ? await scanPersonalNotes(folder) : []
+      const repo = params.repo
+      return {
+        folder,
+        notes: notes.filter(
+          (note) =>
+            note.agents !== 'none' &&
+            (!repo || personalNoteAppliesTo(note, { path: repo, displayName: repo }))
+        )
+      }
+    }
+  }),
+  defineMethod({
     // Agents propose; only the user's review in the Projects page changes a note.
     name: 'portfolio.proposeNote',
     permission: 'workspace',
@@ -154,17 +196,22 @@ export const PORTFOLIO_METHODS = [
       if (!replay) {
         throw new Error('Replay-safe agent launch is unavailable.')
       }
-      return launchPortfolioTask(store(), { ...params, worktreeId: scope.id, repoId }, (attempt) =>
-        replay.handler(
-          AgentLaunchReplay.parse({
-            agent: attempt.agent,
-            operationId: attempt.operationId,
-            target: { kind: 'existing', worktree: `id:${attempt.worktreeId}` },
-            prompt: { text: attempt.prompt, delivery: 'submit' },
-            presentation: 'background'
-          }),
-          context
-        )
+      const data = store()
+      const personalNotes = await personalNotesPrompt(data, scope.repo ?? null)
+      return launchPortfolioTask(
+        data,
+        { ...params, worktreeId: scope.id, repoId, personalNotes },
+        (attempt) =>
+          replay.handler(
+            AgentLaunchReplay.parse({
+              agent: attempt.agent,
+              operationId: attempt.operationId,
+              target: { kind: 'existing', worktree: `id:${attempt.worktreeId}` },
+              prompt: { text: attempt.prompt, delivery: 'submit' },
+              presentation: 'background'
+            }),
+            context
+          )
       )
     }
   })

@@ -23115,8 +23115,6 @@
     "submitReview": "Submit for review",
     "reopen": "Return to planned",
     "block": "Mark blocked",
-    "closeExecutionHelp": "To allow a new execution, inspect the workspace and stop the previous agent first. Record what you checked above.",
-    "confirmStopped": "I have stopped this execution",
     "history": "History",
     "welcomeTitle": "Organize work across repositories",
     "welcomeDescription": "Connect repositories, give agents clear responsibilities, and review the results in one place.",
@@ -23413,7 +23411,15 @@
     "noteForAgents": "For agents",
     "noNotes": "No notes yet. Write one, or import Markdown files you already keep.",
     "openSteward": "Steward",
-    "stewardUnavailable": "Could not open the steward workspace.",
-    "stewardLaunchFailed": "Could not start the steward chat."
+    "stewardLaunchFailed": "Could not start the steward chat.",
+    "endExecutionHelp": "To start again, stop the agent in its workspace, then end this execution here.",
+    "endUnobservedExecutionHelp": "If the agent exited or never started, check its workspace and end this execution to start again.",
+    "endExecutionNote": "What you checked",
+    "endExecutionPlaceholder": "For example: the agent exited at a permission prompt; nothing was changed.",
+    "endExecution": "End this execution",
+    "folderWorkspaceUnavailable": "Could not open {{path}} in Orca.",
+    "personalNotes": "Notes",
+    "openPersonalNotes": "Open my notes",
+    "choosePersonalNotesFolder": "Choose notes folder…"
   }
 }

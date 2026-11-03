@@ -30,10 +30,17 @@ export const WORKBENCH_COMMAND_SPECS: CommandSpec[] = [
   {
     path: ['workbench', 'task', 'start'],
     summary: 'Start a planned Workbench task in an existing workspace',
-    usage: 'orca workbench task start <task> --worktree <id> [--json]',
+    usage: 'orca workbench task start <task> --worktree <selector> [--json]',
     allowedFlags: [...LOCAL_COMMAND_FLAGS, 'task', 'worktree'],
     positionalArgs: ['task'],
-    notes: ['The workspace must belong to a repository linked to the task’s project.']
+    examples: [
+      'orca workbench task start <task-id> --worktree path:/path/to/workspace --json',
+      'orca workbench task start <task-id> --worktree branch:feature/ENG-123-fix --json'
+    ],
+    notes: [
+      '--worktree accepts the same selectors as other worktree commands (path:, branch:, id:, active).',
+      'The workspace must belong to a repository linked to the task’s project.'
+    ]
   },
   {
     path: ['workbench', 'note', 'propose'],
@@ -56,5 +63,26 @@ export const WORKBENCH_COMMAND_SPECS: CommandSpec[] = [
     notes: [
       'The note changes only after the user accepts the proposal. Pass --note to propose a replacement for an existing note.'
     ]
+  },
+  {
+    path: ['workbench', 'personal-notes', 'list'],
+    summary: 'List the user’s personal notes with their summaries and paths',
+    usage: 'orca workbench personal-notes list [--repo <name>] [--json]',
+    allowedFlags: [...LOCAL_COMMAND_FLAGS, 'repo'],
+    examples: [
+      'orca workbench personal-notes list',
+      'orca workbench personal-notes list --repo android-box-office --json'
+    ],
+    notes: [
+      '--repo keeps general notes and notes whose `applies` names that repository.',
+      'Notes marked `agents: none` are never listed. Read a note by its path.'
+    ]
+  },
+  {
+    path: ['workbench', 'personal-notes', 'index'],
+    summary: 'Regenerate INDEX.md in the personal notes folder',
+    usage: 'orca workbench personal-notes index [--json]',
+    allowedFlags: [...LOCAL_COMMAND_FLAGS],
+    notes: ['Run after adding, moving, or changing the front matter of a note.']
   }
 ]

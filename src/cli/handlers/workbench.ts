@@ -2,6 +2,7 @@ import type { CommandHandler, HandlerContext } from '../dispatch'
 import { readCommandBody } from '../command-body-input'
 import { getOptionalStringFlag, getRequiredStringFlag } from '../flags'
 import { printResult } from '../format'
+import { getRequiredWorktreeSelector } from '../selectors'
 import { rejectRemoteSelectionFlags } from '../remote-selection-flag-rejection'
 import { z } from 'zod'
 import { PortfolioCommand, type PortfolioState } from '../../shared/portfolio'
@@ -103,11 +104,17 @@ async function apply(ctx: HandlerContext): Promise<void> {
 async function startTask(ctx: HandlerContext): Promise<void> {
   rejectRemoteSelectionFlags(ctx.flags, LOCAL_ONLY)
   const taskId = getRequiredStringFlag(ctx.flags, 'task')
+  // Accept any worktree selector, like other worktree commands; launch takes the resolved id.
+  const { worktree } = (
+    await ctx.client.call<{ worktree: { id: string } }>('worktree.show', {
+      worktree: await getRequiredWorktreeSelector(ctx.flags, 'worktree', ctx.cwd, ctx.client)
+    })
+  ).result
   const state = await read(ctx)
   const response = await ctx.client.call<PortfolioState>('portfolio.launch', {
     revision: state.revision,
     taskId,
-    worktreeId: getRequiredStringFlag(ctx.flags, 'worktree')
+    worktreeId: worktree.id
   })
   printResult(response, ctx.json, (next) => {
     const attempt = next.tasks.find((task) => task.id === taskId)?.attempts.at(-1)
@@ -138,10 +145,58 @@ async function propose(ctx: HandlerContext): Promise<void> {
   printResult(response, ctx.json, () => 'Note proposal submitted for review in Projects.')
 }
 
+type PersonalNoteRow = {
+  title: string
+  path: string
+  category: string
+  summary: string
+  applies: string[]
+  agents: string
+  problem?: string
+}
+
+async function listPersonalNotes(ctx: HandlerContext): Promise<void> {
+  rejectRemoteSelectionFlags(ctx.flags, LOCAL_ONLY)
+  const repo = getOptionalStringFlag(ctx.flags, 'repo')
+  const response = await ctx.client.call<{ folder: string | null; notes: PersonalNoteRow[] }>(
+    'portfolio.personalNotes',
+    repo ? { repo } : {}
+  )
+  printResult(response, ctx.json, ({ folder, notes }) => {
+    if (!folder) {
+      return 'No personal notes folder is set. The user chooses it from Notes on the Projects page.'
+    }
+    const lines = [`Personal notes in ${folder}`]
+    for (const note of notes) {
+      const scope = note.applies.length ? note.applies.join(', ') : 'general'
+      lines.push(
+        `- ${note.title} (${note.category || 'General'}; ${scope}; agents: ${note.agents})${note.summary ? ` — ${note.summary}` : ''}`,
+        `  ${note.path}${note.problem ? `\n  ⚠ ${note.problem}` : ''}`
+      )
+    }
+    return lines.join('\n')
+  })
+}
+
+async function indexNotes(ctx: HandlerContext): Promise<void> {
+  rejectRemoteSelectionFlags(ctx.flags, LOCAL_ONLY)
+  const response = await ctx.client.call<{ indexPath: string; notes: unknown[] }>(
+    'portfolio.indexPersonalNotes',
+    {}
+  )
+  printResult(
+    response,
+    ctx.json,
+    ({ indexPath, notes }) => `Indexed ${notes.length} notes in ${indexPath}`
+  )
+}
+
 export const WORKBENCH_HANDLERS: Record<string, CommandHandler> = {
   'workbench status': status,
   'workbench schema': schema,
   'workbench apply': apply,
   'workbench task start': startTask,
-  'workbench note propose': propose
+  'workbench note propose': propose,
+  'workbench personal-notes list': listPersonalNotes,
+  'workbench personal-notes index': indexNotes
 }

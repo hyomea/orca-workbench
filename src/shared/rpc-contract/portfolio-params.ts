@@ -34,4 +34,7 @@ export const PortfolioExportNotes = z.object({
   projectId: z.string().min(1),
   directory: z.string().min(1).max(4096)
 })
+export const PortfolioSetPersonalNotesFolder = z.object({ folder: z.string().min(1).max(4096) })
+export const PortfolioIndexPersonalNotes = z.object({})
+export const PortfolioPersonalNotes = z.object({ repo: z.string().min(1).max(200).optional() })
 export const PortfolioProposeNote = z.object({ draft: PortfolioNoteDraftInput })

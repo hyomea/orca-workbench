@@ -1,9 +1,10 @@
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { expect, it } from 'vitest'
 import { PortfolioStore } from './portfolio-store'
 import { preparePortfolioSteward } from './portfolio-steward'
+import { setPersonalNotesFolder } from './personal-notes'
 
 it('refreshes the steward instructions and keeps the user’s own notes', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'orca-steward-'))
@@ -18,6 +19,32 @@ it('refreshes the steward instructions and keeps the user’s own notes', async 
     expect(instructions).toContain('@steward-notes.md')
     expect(instructions).toContain('workbench apply')
     expect(await readFile(join(path, 'steward-notes.md'), 'utf8')).toBe('Prefer Codex for reviews.')
+    const settings = JSON.parse(await readFile(join(path, '.claude', 'settings.json'), 'utf8'))
+    expect(settings.permissions.allow).toContain('Bash(orca-dev workbench:*)')
+    expect(settings.permissions.allow).toContain('Bash(orca terminal read:*)')
+    expect(settings.permissions.allow.some((rule: string) => rule.includes('terminal send'))).toBe(
+      false
+    )
+  } finally {
+    await rm(directory, { recursive: true, force: true })
+  }
+})
+
+it('points the steward at the personal notes folder once one is chosen', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'orca-steward-'))
+  try {
+    const store = new PortfolioStore(join(directory, 'workbench', 'portfolio.json'))
+    const { path } = await preparePortfolioSteward(store)
+    expect(await readFile(join(path, 'CLAUDE.md'), 'utf8')).toContain(
+      'has not chosen a personal notes folder'
+    )
+    const notes = join(directory, 'notes')
+    await mkdir(notes)
+    await setPersonalNotesFolder(store, notes)
+    await preparePortfolioSteward(store)
+    expect(await readFile(join(path, 'CLAUDE.md'), 'utf8')).toContain(`in \`${notes}\``)
+    const settings = JSON.parse(await readFile(join(path, '.claude', 'settings.json'), 'utf8'))
+    expect(settings.permissions.additionalDirectories).toEqual([notes])
   } finally {
     await rm(directory, { recursive: true, force: true })
   }

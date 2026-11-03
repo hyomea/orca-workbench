@@ -19,6 +19,7 @@ import {
 import { PortfolioBoard } from './PortfolioBoard'
 import { portfolioSetupActions } from './portfolio-setup-actions'
 import { openPortfolioSteward } from './portfolio-steward-actions'
+import { choosePersonalNotesFolder, openPersonalNotes } from './portfolio-personal-notes-actions'
 
 export default function PortfolioPage(): React.JSX.Element {
   const [state, setState] = useState<PortfolioState | null>(null)
@@ -38,6 +39,13 @@ export default function PortfolioPage(): React.JSX.Element {
     const next = parsePortfolioState(value)
     setState((current) => (!current || next.revision >= current.revision ? next : current))
   }, [])
+  // Steward and notes open in other workspaces; a failure is reported here on the Projects page.
+  const openElsewhere = (action: () => Promise<void>): void => {
+    setError('')
+    action().catch((failure: unknown) =>
+      setError(failure instanceof Error ? failure.message : String(failure))
+    )
+  }
   const refresh = useCallback(async () => {
     try {
       accept(await callRuntimeRpc({ kind: 'local' }, 'portfolio.read', {}))
@@ -177,12 +185,15 @@ export default function PortfolioPage(): React.JSX.Element {
         }}
         onSave={(command: PortfolioCommand) => mutate('portfolio.mutate', { command })}
         onLaunch={(taskId, worktreeId) => mutate('portfolio.launch', { taskId, worktreeId })}
-        onOpenSteward={() => {
-          setError('')
-          openPortfolioSteward().catch((failure: unknown) =>
-            setError(failure instanceof Error ? failure.message : String(failure))
-          )
-        }}
+        onOpenSteward={() => openElsewhere(openPortfolioSteward)}
+        onOpenPersonalNotes={() => openElsewhere(openPersonalNotes)}
+        onChoosePersonalNotesFolder={() =>
+          openElsewhere(async () => {
+            if (await choosePersonalNotesFolder()) {
+              await openPersonalNotes()
+            }
+          })
+        }
         onExportNotes={async (projectId) => {
           const directory = await window.api.shell.pickDirectory({})
           if (!directory) {

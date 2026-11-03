@@ -18,6 +18,7 @@ import { PortfolioFeatures } from './PortfolioFeatures'
 import { PortfolioNotes, type PortfolioNotesExport } from './PortfolioNotes'
 import { PortfolioProjectBoard } from './PortfolioProjectBoard'
 import { PortfolioProjectSetup } from './PortfolioProjectSetup'
+import { PortfolioPersonalNotesMenu } from './PortfolioPersonalNotesMenu'
 import type { PortfolioSetupActions } from './portfolio-project-setup-types'
 
 export function PortfolioBoard({
@@ -33,6 +34,8 @@ export function PortfolioBoard({
   onOpenWorkspace,
   onExportNotes,
   onOpenSteward,
+  onOpenPersonalNotes,
+  onChoosePersonalNotesFolder,
   setupActions,
   draftScope
 }: {
@@ -48,6 +51,8 @@ export function PortfolioBoard({
   onOpenWorkspace: (id: string) => void
   onExportNotes: PortfolioNotesExport
   onOpenSteward: () => void
+  onOpenPersonalNotes: () => void
+  onChoosePersonalNotesFolder: () => void
   setupActions: PortfolioSetupActions
   draftScope: string
 }): React.JSX.Element {
@@ -121,6 +126,11 @@ export function PortfolioBoard({
             <Bot aria-hidden="true" />
             {translate('portfolio.openSteward', 'Steward')}
           </Button>
+          <PortfolioPersonalNotesMenu
+            disabled={busy}
+            onOpen={onOpenPersonalNotes}
+            onChooseFolder={onChoosePersonalNotesFolder}
+          />
           {state.projects.length > 0 && (
             <Button variant="outline" size="sm" onClick={() => setComposer('project')}>
               <Plus aria-hidden="true" />

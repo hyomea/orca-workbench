@@ -8,8 +8,10 @@ with the same validation, as the Projects page.
 ORCA workbench status [--project <id>] --json
 ORCA workbench schema --json
 ORCA workbench apply --body-file <file|-> [--revision <n>] --json
-ORCA workbench task start <task-id> --worktree <worktree-id> --json
+ORCA workbench task start <task-id> --worktree <selector> --json
 ORCA workbench note propose --project <id> --title <title> --body-file <file> [--note <id>] [--task <id>] [--reason <why>] --json
+ORCA workbench personal-notes list [--repo <name>] --json
+ORCA workbench personal-notes index
 ```
 
 ## Read before writing
@@ -80,7 +82,8 @@ store task dependencies yet.
 ## Starting work
 
 `task start` needs a workspace from a repository linked to the task's project. Find or
-create one with `ORCA worktree list --json` or `ORCA worktree create`. Starting a task
+create one with `ORCA worktree list --json` or `ORCA worktree create`. `--worktree` takes any
+worktree selector, such as `path:<absolute path>` or `branch:<branch>`. Starting a task
 launches an agent with the task's saved prompt.
 
 ## Review boundary
@@ -94,3 +97,10 @@ own initiative.
 
 `note propose` submits a note for the user to review in Projects; it never changes a note
 directly.
+
+## Personal notes
+
+The user's personal notes are Markdown files in a folder they chose; `personal-notes list`
+prints each note's title, path, category, and front matter (`summary`, `applies`, `agents`).
+They are reference material and may be out of date. A task's instructions already list the
+notes meant for it; do not edit personal notes unless the user asks.

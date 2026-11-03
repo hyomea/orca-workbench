@@ -15,6 +15,15 @@ import {
 } from '../../shared/portfolio'
 import type { PortfolioStore } from './portfolio-store'
 
+// personalNotes is the prompt section the caller built for the workspace's repository.
+type PortfolioLaunchRequest = {
+  revision: number
+  taskId: string
+  worktreeId: string
+  repoId: string
+  personalNotes?: string
+}
+
 const activeLaunches = new Set<string>()
 
 export function portfolioExecutionInFlight(store: PortfolioStore, taskId: string): boolean {
@@ -23,7 +32,7 @@ export function portfolioExecutionInFlight(store: PortfolioStore, taskId: string
 
 export async function launchPortfolioTask(
   store: PortfolioStore,
-  request: { revision: number; taskId: string; worktreeId: string; repoId: string },
+  request: PortfolioLaunchRequest,
   launch: (attempt: PortfolioAttempt) => Promise<AgentLaunchResult>
 ): Promise<PortfolioState> {
   const key = JSON.stringify([store.file, request.taskId])
@@ -40,7 +49,7 @@ export async function launchPortfolioTask(
 
 async function executePortfolioTask(
   store: PortfolioStore,
-  request: { revision: number; taskId: string; worktreeId: string; repoId: string },
+  request: PortfolioLaunchRequest,
   launch: (attempt: PortfolioAttempt) => Promise<AgentLaunchResult>
 ): Promise<PortfolioState> {
   let noteFiles: PortfolioNoteFile[] = []
@@ -55,7 +64,8 @@ async function executePortfolioTask(
       Date.now(),
       [
         portfolioDesignPrompt(store, state, request.taskId),
-        portfolioNotesPrompt(state, request.taskId, noteFiles)
+        portfolioNotesPrompt(state, request.taskId, noteFiles),
+        request.personalNotes
       ]
         .filter(Boolean)
         .join('\n\n')

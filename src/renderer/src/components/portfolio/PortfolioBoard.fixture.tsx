@@ -114,6 +114,8 @@ function board(value: PortfolioState, importExample = false, short = false): Rea
         error=""
         onExportNotes={async () => null}
         onOpenSteward={() => {}}
+        onOpenPersonalNotes={() => {}}
+        onChoosePersonalNotesFolder={() => {}}
         setupActions={{
           pickSources: async () =>
             importExample ? [{ path: '/projects/arts-hub', name: 'Arts hub', kind: 'folder' }] : [],
