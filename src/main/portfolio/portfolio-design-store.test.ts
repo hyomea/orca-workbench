@@ -20,6 +20,16 @@ import {
   portfolioDesignPrompt
 } from './portfolio-design-store'
 
+import { portfolioTicketsText } from '../../shared/portfolio-features'
+import type { PortfolioState } from '../../shared/portfolio'
+// Work items as schema 5 and earlier stored them: under a feature, with one source reference.
+function legacyWorkItems(items: PortfolioState['workItems']) {
+  return items.map(({ projectId: _projectId, tickets, parity: _parity, ...item }) => ({
+    ...item,
+    sourceReference: portfolioTicketsText(tickets)
+  }))
+}
+
 const png =
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jP0cAAAAASUVORK5CYII='
 function fixture() {
@@ -29,13 +39,15 @@ function fixture() {
   state.features.push({ id: 'f', projectId: 'p', name: 'Reports', description: '', versions: [] })
   state.workItems.push({
     id: 'w',
+    projectId: 'p',
     featureId: 'f',
     kind: 'initial',
     title: 'Counts',
     description: '',
     acceptanceCriteria: 'Show counts',
     designReferences: '',
-    sourceReference: '',
+    tickets: [],
+    parity: true,
     status: 'planned',
     baseVersion: 0,
     history: []
@@ -183,7 +195,12 @@ it('backs up v3 and rejects stale, invalid, oversized, or unknown image requests
   const directory = await mkdtemp(join(tmpdir(), 'orca-design-migration-'))
   try {
     const store = new PortfolioStore(join(directory, 'portfolio.json'))
-    const legacy = JSON.stringify({ ...fixture(), schemaVersion: 3 })
+    const current = fixture()
+    const legacy = JSON.stringify({
+      ...current,
+      workItems: legacyWorkItems(current.workItems),
+      schemaVersion: 3
+    })
     await writeFile(store.file, legacy)
     const request = {
       revision: 0,
@@ -207,8 +224,8 @@ it('backs up v3 and rejects stale, invalid, oversized, or unknown image requests
     await expect(readPortfolioDesign(store, '../../portfolio.json')).rejects.toThrow('not found')
     await attachPortfolioDesign(store, request)
     expect(await readFile(`${store.file}.v3.bak`, 'utf8')).toBe(legacy)
-    expect((await store.read()).schemaVersion).toBe(5)
-    expect(JSON.parse(await readFile(store.file, 'utf8')).schemaVersion).toBe(5)
+    expect((await store.read()).schemaVersion).toBe(6)
+    expect(JSON.parse(await readFile(store.file, 'utf8')).schemaVersion).toBe(6)
   } finally {
     await rm(directory, { recursive: true, force: true })
   }

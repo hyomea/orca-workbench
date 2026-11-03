@@ -62,11 +62,7 @@ export function PortfolioComposer({
   const [platform, setPlatform] = useState('shared')
   const [linkedItem, setLinkedItem] = useState(workItemId ?? 'none')
   const items = state.workItems.filter(
-    (item) =>
-      item.status !== 'accepted' &&
-      state.features.some(
-        (feature) => feature.id === item.featureId && feature.projectId === projectId
-      )
+    (item) => item.status !== 'accepted' && item.projectId === projectId
   )
   const title =
     kind === 'role'
@@ -277,21 +273,23 @@ export function PortfolioComposer({
                   ]}
                 />
                 <PortfolioSelect
-                  label={translate('portfolio.workItem', 'Work item')}
+                  label={translate('portfolio.workItem', 'Outcome')}
                   value={linkedItem}
                   onChange={setLinkedItem}
                   disabled={busy}
                   options={[
                     {
                       id: 'none',
-                      name: translate(
-                        'portfolio.projectTask',
-                        'Initiative task without a work item'
-                      )
+                      name: translate('portfolio.projectTask', 'Initiative task without an outcome')
                     },
                     ...items.map((item) => ({
                       id: item.id,
-                      name: `${state.features.find((feature) => feature.id === item.featureId)?.name} / ${item.title}`
+                      name: [
+                        state.features.find((feature) => feature.id === item.featureId)?.name,
+                        item.title
+                      ]
+                        .filter(Boolean)
+                        .join(' / ')
                     }))
                   ]}
                 />

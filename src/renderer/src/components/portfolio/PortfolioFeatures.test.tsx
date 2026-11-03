@@ -23,13 +23,14 @@ function initialState() {
   state.projects.push({ id: 'project', name: 'Mobile', objective: 'Parity', repoIds: [] })
   return state
 }
-function harness() {
+function harness(view: 'outcomes' | 'features' = 'outcomes') {
   const commands: PortfolioCommand[] = []
   const onCreateTask = vi.fn()
   function App() {
     const [state, setState] = useState(initialState)
     return (
       <PortfolioFeatures
+        view={view}
         state={state}
         projectId="project"
         draftScope="test"
@@ -65,19 +66,33 @@ function enter(label: string, value: string): void {
   fireEvent.change(screen.getByLabelText(label), { target: { value } })
 }
 
-it('creates a feature and a separate initial delivery, then requires explicit reviewed publication', async () => {
-  const { commands } = harness()
+it('creates a feature and a parity outcome for it, then requires explicit reviewed publication', async () => {
+  const { commands } = harness('features')
   await click('New feature')
   enter('Name', 'Reporting')
   enter('User outcome and shared context', 'Consistent counts')
   await click('Confirm and save')
   fireEvent.click(screen.getByRole('button', { name: /Reporting/ }))
-  await click('New work item')
+  await click('New outcome')
   enter('Name', 'First delivery')
   enter('Acceptance criteria', 'Show sold and remaining counts')
   enter('Design references and notes', 'Design screenshot A')
-  enter('Jira or source reference', 'DEMO-1')
+  fireEvent.click(screen.getByRole('checkbox', { name: 'iOS' }))
+  enter('iOS ticket', 'DEMO-1')
+  fireEvent.click(screen.getByRole('checkbox', { name: 'Android' }))
+  fireEvent.click(screen.getByRole('checkbox', { name: /must behave the same/ }))
   await click('Confirm and save')
+  expect(commands.at(-1)).toMatchObject({
+    kind: 'workItem.create',
+    workItem: {
+      featureId: expect.any(String),
+      parity: true,
+      tickets: [
+        { platform: 'ios', reference: 'DEMO-1' },
+        { platform: 'android', reference: '' }
+      ]
+    }
+  })
   fireEvent.click(screen.getByRole('button', { name: /First delivery/ }))
   expect(screen.getByText('Show sold and remaining counts')).toBeTruthy()
   expect(screen.getByText('No published specification yet')).toBeTruthy()
@@ -128,7 +143,7 @@ it('creates a feature and a separate initial delivery, then requires explicit re
   expect(commands.at(-1)?.kind).toBe('feature.publish')
   expect(
     screen.getByText(
-      'This work published a specification. Create a new work item for further changes.'
+      'This work published a specification. Create a new outcome for further changes.'
     )
   ).toBeTruthy()
 })
@@ -138,6 +153,7 @@ it('retains an unfinished work item when its editor closes and clears it only af
   const onClose = vi.fn()
   const onSave = vi.fn(async () => true)
   const props = {
+    mode: 'outcome' as const,
     projectId: 'project',
     featureId: 'feature',
     draftKey,
@@ -180,13 +196,15 @@ it('creates an agent task linked to the selected work item', async () => {
     {
       kind: 'workItem.create',
       workItem: {
+        projectId: 'project',
         featureId: 'feature',
         kind: 'bug',
         title: 'Wrong count',
         description: '',
         acceptanceCriteria: '',
         designReferences: '',
-        sourceReference: ''
+        tickets: [],
+        parity: true
       }
     },
     'bug',
@@ -236,6 +254,7 @@ it('starts an improvement with the current specification and preserves that base
   }
   const onSave = vi.fn(async () => true)
   const props = {
+    mode: 'outcome' as const,
     projectId: 'project',
     featureId: 'feature',
     draftKey: createBrowserUuid(),
@@ -326,6 +345,7 @@ it('keeps the selected feature when switching project views and discloses full p
       onOpenTasks={noop}
       featureContent={
         <PortfolioFeatures
+          view="features"
           state={state}
           projectId="project"
           draftScope="switch-test"
@@ -339,8 +359,9 @@ it('keeps the selected feature when switching project views and discloses full p
       }
     />
   )
+  await click('Features')
   fireEvent.click(screen.getByRole('button', { name: /Report counts/ }))
-  expect(screen.getByRole('heading', { name: 'Start with the first work item' })).toBeTruthy()
+  expect(screen.getByRole('heading', { name: 'Report counts' })).toBeTruthy()
   await click('Tasks')
   expect(screen.queryByRole('heading', { name: 'Report counts' })).toBeNull()
   await click('Features')
@@ -349,4 +370,28 @@ it('keeps the selected feature when switching project views and discloses full p
   expect(context?.open).toBe(false)
   fireEvent.click(screen.getByText('Initiative context · {{count}} sources'))
   expect(context?.open).toBe(true)
+})
+
+it('creates an outcome with no feature for platform-specific engineering work', async () => {
+  const { commands } = harness()
+  await click('New outcome')
+  fireEvent.change(screen.getByLabelText('Work type'), { target: { value: 'engineering' } })
+  enter('Name', 'Test foundation')
+  fireEvent.click(screen.getByRole('checkbox', { name: 'Android' }))
+  enter('Android ticket', 'ENG-5952')
+  await click('Confirm and save')
+  expect(commands.at(-1)).toEqual({
+    kind: 'workItem.create',
+    expectedBaseVersion: 0,
+    workItem: expect.objectContaining({
+      projectId: 'project',
+      title: 'Test foundation',
+      parity: false,
+      tickets: [{ platform: 'android', reference: 'ENG-5952' }]
+    })
+  })
+  expect(commands.at(-1)).not.toHaveProperty('workItem.featureId')
+  fireEvent.click(screen.getByRole('button', { name: /Test foundation/ }))
+  await tab('Parity & tests')
+  expect(screen.getByText(/no shared test plan is required/)).toBeTruthy()
 })

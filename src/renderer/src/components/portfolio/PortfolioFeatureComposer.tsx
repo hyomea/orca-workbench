@@ -18,10 +18,16 @@ import { PortfolioField, PortfolioSelect } from './portfolio-controls'
 import { PortfolioProjectSetupFooter } from './PortfolioProjectSetupFooter'
 import { workItemKinds } from './portfolio-feature-labels'
 import { useFeatureDraft } from './use-feature-draft'
+import { Checkbox } from '@/components/ui/checkbox'
+import { PortfolioTicketFields, ticketsFromDraft } from './PortfolioTicketFields'
 
+const NO_FEATURES: readonly PortfolioFeature[] = []
 export function PortfolioFeatureComposer({
+  mode,
   projectId,
   featureId,
+  features = NO_FEATURES,
+  feature,
   item,
   draftKey,
   hasSpecification,
@@ -31,8 +37,13 @@ export function PortfolioFeatureComposer({
   onSave,
   onClose
 }: {
+  // An outcome is a piece of work; a feature is the product capability some outcomes change.
+  mode: 'outcome' | 'feature'
   projectId: string
   featureId?: string
+  features?: readonly PortfolioFeature[]
+  // Present when editing an existing feature.
+  feature?: PortfolioFeature
   item?: PortfolioWorkItem
   draftKey: string
   hasSpecification?: boolean
@@ -47,35 +58,51 @@ export function PortfolioFeatureComposer({
     draftKey,
     item,
     hasSpecification ? 'improvement' : 'initial',
-    specification
+    specification,
+    featureId,
+    feature
   )
   const { draft, field, discard, preview } = editor
   const intake = usePortfolioIntake(editor)
   const working = busy || importing || intake.pending
   const [error, setError] = useState('')
-  const isItem = !!featureId
+  const isItem = mode === 'outcome'
+  const tickets = {
+    platforms: draft.platforms ?? [],
+    refs: draft.ticketRefs ?? {},
+    other: draft.sourceReference
+  }
   async function save(): Promise<void> {
     if (working) {
       return
     }
     const workItem = {
-      featureId,
+      projectId,
+      ...(draft.featureId ? { featureId: draft.featureId } : {}),
       kind: draft.kind,
       title: draft.title,
       description: draft.description,
       acceptanceCriteria: draft.acceptanceCriteria,
       designReferences: draft.designReferences,
-      sourceReference: draft.sourceReference
+      tickets: ticketsFromDraft(tickets),
+      parity: draft.parity ?? false
     }
     const parsed = PortfolioCommand.safeParse(
       isItem
         ? item
           ? { kind: 'workItem.update', workItemId: item.id, workItem, expected: draft.expected }
           : { kind: 'workItem.create', workItem, expectedBaseVersion: draft.baseVersion ?? 0 }
-        : {
-            kind: 'feature.create',
-            feature: { projectId, name: draft.name, description: draft.description }
-          }
+        : feature
+          ? {
+              kind: 'feature.update',
+              featureId: feature.id,
+              feature: { name: draft.name, description: draft.description },
+              expected: { name: feature.name, description: feature.description }
+            }
+          : {
+              kind: 'feature.create',
+              feature: { projectId, name: draft.name, description: draft.description }
+            }
     )
     if (!parsed.success) {
       setError(translate('portfolio.featureRequired', 'Enter a name and check the field lengths.'))
@@ -101,9 +128,11 @@ export function PortfolioFeatureComposer({
             <SheetTitle>
               {isItem
                 ? item
-                  ? translate('portfolio.editWorkItem', 'Edit work item')
-                  : translate('portfolio.newWorkItem', 'New work item')
-                : translate('portfolio.newFeature', 'New feature')}
+                  ? translate('portfolio.editOutcome', 'Edit outcome')
+                  : translate('portfolio.newOutcome', 'New outcome')
+                : feature
+                  ? translate('portfolio.editFeature', 'Edit feature')
+                  : translate('portfolio.newFeature', 'New feature')}
             </SheetTitle>
             <SheetDescription>
               {translate(
@@ -191,15 +220,47 @@ export function PortfolioFeatureComposer({
                       maxLength={12000}
                     />
                   </PortfolioField>
-                  <PortfolioField
-                    label={translate('portfolio.sourceReference', 'Jira or source reference')}
-                  >
-                    <Input
-                      value={draft.sourceReference}
-                      onChange={(event) => field('sourceReference', event.target.value)}
-                      maxLength={2000}
+                  <PortfolioTicketFields
+                    value={tickets}
+                    disabled={working}
+                    onChange={editor.setTickets}
+                  />
+                  <label className="flex items-start gap-2 text-sm">
+                    <Checkbox
+                      checked={draft.parity ?? false}
+                      onCheckedChange={(checked) => editor.setParity(checked === true)}
+                      className="mt-0.5"
                     />
-                  </PortfolioField>
+                    <span className="space-y-1">
+                      <span className="block font-medium">
+                        {translate(
+                          'portfolio.parityOutcome',
+                          'iOS and Android must behave the same'
+                        )}
+                      </span>
+                      <span className="block text-xs text-muted-foreground">
+                        {translate(
+                          'portfolio.parityOutcomeHint',
+                          'Requires a shared test plan with reviewed evidence on both platforms before acceptance. Leave it off for platform-specific or engineering work.'
+                        )}
+                      </span>
+                    </span>
+                  </label>
+                  {!item?.featureId && features.length > 0 && (
+                    <PortfolioSelect
+                      label={translate('portfolio.outcomeFeatureLink', 'Feature (optional)')}
+                      value={draft.featureId || 'none'}
+                      onChange={(value) => field('featureId', value === 'none' ? '' : value)}
+                      disabled={working}
+                      options={[
+                        {
+                          id: 'none',
+                          name: translate('portfolio.noFeature', 'No feature')
+                        },
+                        ...features.map((entry) => ({ id: entry.id, name: entry.name }))
+                      ]}
+                    />
+                  )}
                   <p className="text-xs text-muted-foreground">
                     {translate(
                       'portfolio.referenceReviewHint',
@@ -217,7 +278,7 @@ export function PortfolioFeatureComposer({
             <PortfolioProjectSetupFooter
               discardPrompt={translate(
                 'portfolio.discardFeatureDraft',
-                'Discard this form draft? Saved features and work items will remain.'
+                'Discard this form draft? Saved features and outcomes will remain.'
               )}
               disabled={working}
               canSave={!!(isItem ? draft.title : draft.name).trim()}

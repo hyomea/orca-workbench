@@ -19,6 +19,7 @@ export function PortfolioProjectBoard({
   onEditProject,
   onCreateRole,
   onOpenTasks,
+  outcomeContent,
   featureContent,
   notesContent
 }: {
@@ -30,10 +31,11 @@ export function PortfolioProjectBoard({
   onEditProject: () => void
   onCreateRole: () => void
   onOpenTasks: () => void
+  outcomeContent?: ReactNode
   featureContent?: ReactNode
   notesContent?: ReactNode
 }): React.JSX.Element {
-  const [view, setView] = useState(featureContent ? 'features' : 'tasks')
+  const [view, setView] = useState(outcomeContent ? 'outcomes' : 'tasks')
   const progress = portfolioProgress(tasks)
 
   return (
@@ -82,13 +84,16 @@ export function PortfolioProjectBoard({
           </div>
         </details>
       </header>
-      {(featureContent || notesContent) && (
+      {(outcomeContent || featureContent || notesContent) && (
         <div
           className="mb-5 flex gap-2"
           role="group"
           aria-label={translate('portfolio.projectViews', 'Initiative views')}
         >
           {[
+            ...(outcomeContent
+              ? [{ id: 'outcomes', name: translate('portfolio.outcomes', 'Outcomes') }]
+              : []),
             ...(featureContent
               ? [{ id: 'features', name: translate('portfolio.features', 'Features') }]
               : []),
@@ -107,6 +112,7 @@ export function PortfolioProjectBoard({
           ))}
         </div>
       )}
+      {outcomeContent && <div hidden={view !== 'outcomes'}>{outcomeContent}</div>}
       {featureContent && <div hidden={view !== 'features'}>{featureContent}</div>}
       {view === 'notes' && notesContent}
       {view === 'tasks' &&

@@ -180,9 +180,28 @@ export function PortfolioBoard({
             }}
             onCreateRole={() => setComposer('role')}
             onOpenTasks={() => onOpenTasks(project.id)}
+            outcomeContent={
+              <PortfolioFeatures
+                view="outcomes"
+                key={`outcomes:${project.id}`}
+                state={state}
+                projectId={project.id}
+                draftScope={draftScope}
+                busy={busy}
+                error={error}
+                onSave={onSave}
+                onCreateTask={(id) => {
+                  setTaskWorkItemId(id)
+                  setComposer('task')
+                }}
+                onSelectTask={setSelectedTaskId}
+                onCreateRole={() => setComposer('role')}
+              />
+            }
             featureContent={
               <PortfolioFeatures
-                key={project.id}
+                view="features"
+                key={`features:${project.id}`}
                 state={state}
                 projectId={project.id}
                 draftScope={draftScope}

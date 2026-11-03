@@ -33,6 +33,7 @@ function enter(name: string, value: string) {
 }
 function props() {
   return {
+    mode: 'outcome' as const,
     projectId: 'p',
     featureId: 'f',
     draftKey: createBrowserUuid(),

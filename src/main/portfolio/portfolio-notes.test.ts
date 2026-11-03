@@ -236,7 +236,7 @@ describe('project notes', () => {
       apply(state, { kind: 'note.create', projectId: 'p', note: content('Testing') })
     )
     expect(await readFile(`${file}.v4.bak`, 'utf8')).toBe(original)
-    expect(JSON.parse(await readFile(file, 'utf8')).schemaVersion).toBe(5)
+    expect(JSON.parse(await readFile(file, 'utf8')).schemaVersion).toBe(6)
   })
 
   it('lists agent notes as immutable files and keeps the prompt on retry', async () => {

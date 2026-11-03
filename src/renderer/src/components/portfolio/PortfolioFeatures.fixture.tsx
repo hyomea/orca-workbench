@@ -62,6 +62,7 @@ function fixtureState() {
   ] as const) {
     state.workItems.push({
       id,
+      projectId: state.features.find((feature) => feature.id === 'reports')!.projectId,
       featureId: 'reports',
       kind,
       title,
@@ -71,7 +72,11 @@ function fixtureState() {
           : 'Show the totals for each ticket type without changing the overall event totals.',
       acceptanceCriteria: 'Both platforms show the expected counts for the same test data.',
       designReferences: 'Design notes and screenshots will be reviewed with the AC.',
-      sourceReference: 'DEMO-124',
+      tickets: [
+        { platform: 'ios', reference: 'DEMO-124' },
+        { platform: 'android', reference: 'DEMO-125' }
+      ],
+      parity: true,
       designAttachments: [
         {
           id: 'a'.repeat(64),
@@ -256,7 +261,7 @@ export const newWorkItem = defineFixture({
   render: () => <Preview />,
   interact: async () => {
     await click('Event reports')
-    await click('New work item')
+    await click('New outcome')
   }
 })
 

@@ -7,6 +7,7 @@ import { PortfolioJiraPreview } from './portfolio-context-sources'
 import { useState } from 'react'
 import { z } from 'zod'
 import { useTaskCreationDraftRetention } from '@/components/use-task-creation-draft-retention'
+import { ticketDraft, type PortfolioTicketDraft } from './PortfolioTicketFields'
 import {
   PortfolioWorkItemInput,
   type PortfolioWorkItem,
@@ -29,6 +30,10 @@ const Draft = z.object({
   acceptanceCriteria: z.string(),
   designReferences: z.string(),
   sourceReference: z.string(),
+  platforms: z.array(z.string()).optional(),
+  ticketRefs: z.record(z.string(), z.string()).optional(),
+  parity: z.boolean().optional(),
+  featureId: z.string().optional(),
   contextUrl: z.string().optional(),
   contextKind: z.string().optional(),
   contextPreview: PortfolioJiraPreview.optional(),
@@ -70,19 +75,26 @@ export function useFeatureDraft(
   key: string,
   item?: PortfolioWorkItem,
   initialKind = 'initial',
-  specification?: PortfolioFeature['versions'][number]
+  specification?: PortfolioFeature['versions'][number],
+  featureId?: string,
+  feature?: PortfolioFeature
 ) {
+  const tickets = ticketDraft(item?.tickets ?? [])
   const [draft, setDraft] = useState<Draft>(
     () =>
       read(key) ?? {
-        name: '',
+        name: feature?.name ?? '',
         intakeEditedFields: item ? [...IntakeField.options] : [],
         title: item?.title ?? '',
-        description: item?.description ?? specification?.description ?? '',
+        description: item?.description ?? feature?.description ?? specification?.description ?? '',
         kind: item?.kind ?? initialKind,
         acceptanceCriteria: item?.acceptanceCriteria ?? specification?.acceptanceCriteria ?? '',
         designReferences: item?.designReferences ?? specification?.designReferences ?? '',
-        sourceReference: item?.sourceReference ?? specification?.sourceReference ?? '',
+        sourceReference: item ? tickets.other : (specification?.sourceReference ?? ''),
+        platforms: tickets.platforms,
+        ticketRefs: tickets.refs,
+        parity: item?.parity ?? false,
+        featureId: item?.featureId ?? featureId ?? '',
         expected: item && PortfolioWorkItemInput.parse(item),
         baseVersion: item?.baseVersion ?? specification?.version ?? 0
       }
@@ -101,6 +113,9 @@ export function useFeatureDraft(
       | 'intakeSources'
       | 'intakeResult'
       | 'intakeEditedFields'
+      | 'platforms'
+      | 'ticketRefs'
+      | 'parity'
     >,
     value: string
   ): void {
@@ -117,6 +132,17 @@ export function useFeatureDraft(
   }
   function preview(contextPreview: PortfolioJiraPreview | undefined): void {
     setDraft((current) => ({ ...current, contextPreview }))
+  }
+  function setTickets(value: PortfolioTicketDraft): void {
+    setDraft((current) => ({
+      ...current,
+      platforms: value.platforms,
+      ticketRefs: value.refs,
+      sourceReference: value.other
+    }))
+  }
+  function setParity(parity: boolean): void {
+    setDraft((current) => ({ ...current, parity }))
   }
   function reference(designReferences: string): void {
     setDraft((current) => ({ ...current, designReferences }))
@@ -146,5 +172,15 @@ export function useFeatureDraft(
       return { ...current, ...fields, intakeResult: result, contextUrl: '' }
     })
   }
-  return { draft, field, discard, preview, reference, rememberSources, applyIntake }
+  return {
+    draft,
+    field,
+    setTickets,
+    setParity,
+    discard,
+    preview,
+    reference,
+    rememberSources,
+    applyIntake
+  }
 }

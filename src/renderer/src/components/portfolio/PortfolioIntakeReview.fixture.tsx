@@ -44,6 +44,8 @@ function Review() {
             }
           },
           field: () => {},
+          setTickets: () => {},
+          setParity: () => {},
           discard: () => {},
           preview: () => {},
           reference: () => {},

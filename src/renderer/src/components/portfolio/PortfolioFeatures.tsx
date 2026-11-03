@@ -9,7 +9,11 @@ import { PortfolioWorkItemDetail } from './PortfolioWorkItemDetail'
 import { PortfolioSpecification } from './PortfolioSpecification'
 import { PortfolioWorkItemList } from './PortfolioWorkItemList'
 
+type Composer = 'feature' | 'feature.edit' | 'outcome' | 'outcome.edit'
+
+// Outcomes are the work; features are the product capabilities some outcomes change.
 export function PortfolioFeatures({
+  view = 'outcomes',
   state,
   projectId,
   draftScope,
@@ -20,6 +24,7 @@ export function PortfolioFeatures({
   onSelectTask,
   onCreateRole
 }: {
+  view?: 'outcomes' | 'features'
   state: PortfolioState
   projectId: string
   draftScope: string
@@ -32,16 +37,96 @@ export function PortfolioFeatures({
 }): React.JSX.Element {
   const [featureId, setFeatureId] = useState('')
   const [itemId, setItemId] = useState('')
-  const [composer, setComposer] = useState<'feature' | 'item' | 'edit' | null>(null)
+  const [composer, setComposer] = useState<Composer | null>(null)
   const features = state.features.filter((feature) => feature.projectId === projectId)
-  const feature = features.find((entry) => entry.id === featureId)
-  const items = state.workItems.filter((item) => item.featureId === feature?.id)
+  const feature = view === 'features' ? features.find((entry) => entry.id === featureId) : undefined
+  const items = state.workItems.filter((item) =>
+    view === 'features' ? item.featureId === feature?.id : item.projectId === projectId
+  )
   const item = items.find((entry) => entry.id === itemId)
+  const itemFeature = features.find((entry) => entry.id === item?.featureId)
   const current = feature?.versions.at(-1)
+  const detail = item && (
+    <PortfolioWorkItemDetail
+      key={item.id}
+      item={item}
+      feature={itemFeature}
+      state={state}
+      busy={busy}
+      onSave={onSave}
+      onEdit={() => setComposer('outcome.edit')}
+      onCreateTask={onCreateTask}
+      onSelectTask={onSelectTask}
+      onCreateRole={onCreateRole}
+    />
+  )
   return (
     <div className="space-y-5">
-      <div className="space-y-3">
-        {feature && (
+      {view === 'outcomes' ? (
+        <>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="space-y-1">
+              <h3 className="text-base font-semibold">
+                {translate('portfolio.outcomes', 'Outcomes')}
+              </h3>
+              <p className="max-w-2xl text-sm text-muted-foreground">
+                {translate(
+                  'portfolio.outcomesHint',
+                  'Each outcome is something this initiative should achieve, such as a new capability, a bug fix, or engineering work. Link its tickets per platform; it updates a feature only when it changes one.'
+                )}
+              </p>
+            </div>
+            <Button size="sm" disabled={busy} onClick={() => setComposer('outcome')}>
+              <Plus aria-hidden="true" />
+              {translate('portfolio.newOutcome', 'New outcome')}
+            </Button>
+          </div>
+          {!items.length && (
+            <div className="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">
+              {translate(
+                'portfolio.noOutcomes',
+                'Start with what you want to achieve. Bring in Jira acceptance criteria and designs, or start from an idea to investigate.'
+              )}
+            </div>
+          )}
+          <PortfolioWorkItemList
+            items={items}
+            features={features}
+            selectedId={item?.id}
+            onSelect={setItemId}
+          />
+          {detail}
+        </>
+      ) : !feature ? (
+        <>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="space-y-1">
+              <h3 className="text-base font-semibold">
+                {translate('portfolio.features', 'Features')}
+              </h3>
+              <p className="max-w-2xl text-sm text-muted-foreground">
+                {translate(
+                  'portfolio.featuresHint',
+                  'The product capabilities this initiative maintains, each with its current specification. Outcomes that change a feature publish their specification here.'
+                )}
+              </p>
+            </div>
+            <Button size="sm" disabled={busy} onClick={() => setComposer('feature')}>
+              <Plus aria-hidden="true" />
+              {translate('portfolio.newFeature', 'New feature')}
+            </Button>
+          </div>
+          <PortfolioFeatureList
+            features={features}
+            workItems={state.workItems}
+            onSelect={(id) => {
+              setFeatureId(id)
+              setItemId('')
+            }}
+          />
+        </>
+      ) : (
+        <>
           <Button
             variant="ghost"
             size="sm"
@@ -54,9 +139,7 @@ export function PortfolioFeatures({
             <ArrowLeft aria-hidden="true" />
             {translate('portfolio.allFeatures', 'All features')}
           </Button>
-        )}
-        <div className="flex flex-col items-start justify-between gap-3 @2xl/project:flex-row">
-          {feature ? (
+          <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0 flex-1 space-y-2">
               <h3 className="break-words text-xl font-semibold">{feature.name}</h3>
               {feature.description && (
@@ -70,52 +153,35 @@ export function PortfolioFeatures({
                 </p>
               )}
             </div>
-          ) : (
-            <h3 className="text-base font-semibold">
-              {translate('portfolio.features', 'Features')}
-            </h3>
-          )}
-          {(!feature || items.length > 0 || current) && (
-            <Button
-              size="sm"
-              disabled={busy}
-              onClick={() => setComposer(feature ? 'item' : 'feature')}
-            >
-              <Plus aria-hidden="true" />
-              {feature
-                ? translate('portfolio.newWorkItem', 'New work item')
-                : translate('portfolio.newFeature', 'New feature')}
-            </Button>
-          )}
-        </div>
-      </div>
-      {!feature ? (
-        <>
-          <p className="text-sm text-muted-foreground">
-            {translate(
-              'portfolio.featuresHint',
-              'Keep each feature’s shared context together. Track initial delivery, bugs, and improvements as separate work items.'
-            )}
-          </p>
-          {!features.length && (
-            <div className="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">
-              {translate(
-                'portfolio.noFeatures',
-                'Create a feature with a user outcome, then add the first piece of work. You can start from an idea or existing requirements.'
+            <div className="flex flex-wrap gap-2">
+              <Button size="sm" disabled={busy} onClick={() => setComposer('outcome')}>
+                <Plus aria-hidden="true" />
+                {translate('portfolio.newOutcome', 'New outcome')}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={busy}
+                onClick={() => setComposer('feature.edit')}
+              >
+                {translate('portfolio.editFeature', 'Edit feature')}
+              </Button>
+              {!items.length && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={busy}
+                  onClick={async () => {
+                    if (await onSave({ kind: 'feature.delete', featureId: feature.id })) {
+                      setFeatureId('')
+                    }
+                  }}
+                >
+                  {translate('portfolio.deleteFeature', 'Delete feature')}
+                </Button>
               )}
             </div>
-          )}
-          <PortfolioFeatureList
-            features={features}
-            workItems={state.workItems}
-            onSelect={(id) => {
-              setFeatureId(id)
-              setItemId('')
-            }}
-          />
-        </>
-      ) : (
-        <>
+          </div>
           {current && (
             <details className="rounded-xl border border-border p-4">
               <summary className="cursor-pointer text-sm font-medium">
@@ -145,60 +211,32 @@ export function PortfolioFeatures({
               </div>
             </details>
           )}
-          <PortfolioWorkItemList items={items} selectedId={item?.id} onSelect={setItemId} />
-          {!items.length && (
-            <section className="space-y-4 rounded-xl border border-dashed border-border p-6">
-              <div className="max-w-lg space-y-2">
-                <h4 className="text-base font-semibold">
-                  {translate('portfolio.firstWorkItem', 'Start with the first work item')}
-                </h4>
-                <p className="text-sm leading-relaxed text-muted-foreground">
-                  {translate(
-                    'portfolio.firstWorkItemHint',
-                    'Bring in Jira acceptance criteria and designs, or start with an idea to investigate. Tasks and platform checks will stay together here.'
-                  )}
-                </p>
-              </div>
-              <Button
-                disabled={busy}
-                variant={current ? 'outline' : 'default'}
-                onClick={() => setComposer('item')}
-              >
-                <Plus aria-hidden="true" />
-                {translate('portfolio.newWorkItem', 'New work item')}
-              </Button>
-            </section>
-          )}
-          {item && (
-            <PortfolioWorkItemDetail
-              key={item.id}
-              item={item}
-              feature={feature}
-              state={state}
-              busy={busy}
-              onSave={onSave}
-              onEdit={() => setComposer('edit')}
-              onCreateTask={onCreateTask}
-              onSelectTask={onSelectTask}
-              onCreateRole={onCreateRole}
-            />
-          )}
+          <PortfolioWorkItemList
+            items={items}
+            features={features}
+            selectedId={item?.id}
+            onSelect={setItemId}
+          />
+          {detail}
         </>
       )}
       {composer && (
         <PortfolioFeatureComposer
           key={`${composer}:${featureId}:${itemId}`}
+          mode={composer.startsWith('outcome') ? 'outcome' : 'feature'}
           projectId={projectId}
-          hasSpecification={!!current}
-          specification={composer === 'item' ? current : undefined}
-          featureId={composer === 'feature' ? undefined : feature?.id}
-          item={composer === 'edit' ? item : undefined}
+          features={features}
+          feature={composer === 'feature.edit' ? feature : undefined}
+          hasSpecification={composer === 'outcome' && !!current}
+          specification={composer === 'outcome' ? current : undefined}
+          featureId={composer === 'outcome' ? feature?.id : undefined}
+          item={composer === 'outcome.edit' ? item : undefined}
           draftKey={JSON.stringify([
             draftScope,
             projectId,
             composer,
             composer === 'feature' ? '' : featureId,
-            composer === 'edit' ? itemId : ''
+            composer === 'outcome.edit' ? itemId : ''
           ])}
           busy={busy}
           saveError={error}

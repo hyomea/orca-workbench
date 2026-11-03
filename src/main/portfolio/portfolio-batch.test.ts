@@ -31,13 +31,17 @@ const plan = [
     command: {
       kind: 'workItem.create',
       workItem: {
+        projectId: 'p',
         featureId: '$ref:feature',
         kind: 'improvement',
         title: 'Android foundation',
         description: 'ENG-5952',
         acceptanceCriteria: 'Unit tests pass',
         designReferences: '',
-        sourceReference: 'https://example.atlassian.net/browse/ENG-5952'
+        tickets: [
+          { platform: 'android', reference: 'https://example.atlassian.net/browse/ENG-5952' }
+        ],
+        parity: false
       }
     }
   },

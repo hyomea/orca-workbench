@@ -4,19 +4,22 @@ import { Textarea } from '@/components/ui/textarea'
 import { translate } from '@/i18n/i18n'
 import type { PortfolioCommand, PortfolioState } from '../../../../shared/portfolio'
 import type { PortfolioFeature, PortfolioWorkItem } from '../../../../shared/portfolio-features'
-import { PortfolioField } from './portfolio-controls'
+import { PortfolioField, PortfolioSelect } from './portfolio-controls'
 import { workItemStatuses } from './portfolio-feature-labels'
 
 export function PortfolioWorkItemReview({
   item,
   feature,
+  features,
   tasks,
   verificationReady,
   busy,
   onSave
 }: {
   item: PortfolioWorkItem
-  feature: PortfolioFeature
+  feature: PortfolioFeature | undefined
+  // The initiative's features, offered when an outcome without one publishes a specification.
+  features: readonly PortfolioFeature[]
   tasks: PortfolioState['tasks']
   verificationReady: boolean
   busy: boolean
@@ -24,7 +27,9 @@ export function PortfolioWorkItemReview({
 }): React.JSX.Element {
   const [note, setNote] = useState('')
   const [confirmPublish, setConfirmPublish] = useState(false)
-  const published = feature.versions.some((version) => version.workItemId === item.id)
+  const [targetId, setTargetId] = useState(feature?.id ?? '')
+  const target = feature ?? features.find((entry) => entry.id === targetId)
+  const published = !!feature?.versions.some((version) => version.workItemId === item.id)
   const openExecution = tasks.some((task) => {
     const attempt = task.attempts.at(-1)
     return attempt && attempt.state !== 'closed'
@@ -41,15 +46,15 @@ export function PortfolioWorkItemReview({
   return (
     <section className="space-y-3 border-t border-border pt-4">
       <h3 className="text-sm font-medium">
-        {translate('portfolio.workItemReview', 'Work item review')}
+        {translate('portfolio.workItemReview', 'Outcome review')}
       </h3>
       <p className="text-xs text-muted-foreground">
         {translate(
           'portfolio.workReviewHint',
-          'Acceptance requires reviewed platform evidence, accepted tasks, and closed executions. Triage only accepts investigation findings. Acceptance does not release the app.'
+          'Acceptance requires accepted tasks and closed executions. An outcome that must behave the same on iOS and Android also needs reviewed evidence on both. Triage only accepts investigation findings. Acceptance does not release the app.'
         )}
       </p>
-      {!verificationReady && item.kind !== 'investigation' && (
+      {!verificationReady && item.parity && item.kind !== 'investigation' && (
         <p className="text-sm">
           {translate(
             'portfolio.verificationRequired',
@@ -61,7 +66,7 @@ export function PortfolioWorkItemReview({
         <p className="text-sm">
           {translate(
             'portfolio.tasksNeedAcceptance',
-            'Review and accept all linked tasks before accepting this work item.'
+            'Review and accept all linked tasks before accepting this outcome.'
           )}
         </p>
       )}
@@ -121,10 +126,19 @@ export function PortfolioWorkItemReview({
                 <p className="text-xs text-muted-foreground">
                   {translate(
                     'portfolio.publishHint',
-                    'Publishing makes this work item’s complete specification current for the feature. Previous versions and execution prompts are retained.'
+                    'Publishing makes this outcome’s complete specification current for the feature. Previous versions and execution prompts are retained.'
                   )}
                 </p>
-                {item.baseVersion !== (feature.versions.at(-1)?.version ?? 0) ? (
+                {!feature && (
+                  <PortfolioSelect
+                    label={translate('portfolio.publishFeature', 'Feature to update')}
+                    value={targetId}
+                    onChange={setTargetId}
+                    disabled={busy}
+                    options={features.map((entry) => ({ id: entry.id, name: entry.name }))}
+                  />
+                )}
+                {feature && item.baseVersion !== (feature.versions.at(-1)?.version ?? 0) ? (
                   <p className="text-sm">
                     {translate(
                       'portfolio.staleSpecification',
@@ -147,13 +161,19 @@ export function PortfolioWorkItemReview({
                         busy ||
                         !note.trim() ||
                         !item.acceptanceCriteria.trim() ||
-                        !verificationReady
+                        !target ||
+                        (item.parity && !verificationReady)
                       }
                       onClick={() => {
                         if (!confirmPublish) {
                           setConfirmPublish(true)
                         } else {
-                          void save({ kind: 'feature.publish', workItemId: item.id, note })
+                          void save({
+                            kind: 'feature.publish',
+                            workItemId: item.id,
+                            note,
+                            ...(feature ? {} : { featureId: target?.id })
+                          })
                         }
                       }}
                     >
@@ -174,7 +194,7 @@ export function PortfolioWorkItemReview({
         <p className="text-sm">
           {translate(
             'portfolio.publishedWorkHint',
-            'This work published a specification. Create a new work item for further changes.'
+            'This work published a specification. Create a new outcome for further changes.'
           )}
         </p>
       )}

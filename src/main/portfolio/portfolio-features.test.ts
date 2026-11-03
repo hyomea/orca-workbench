@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { PortfolioStore } from './portfolio-store'
 import {
+  parsePortfolioState,
   applyPortfolioCommand,
   emptyPortfolio,
   preparePortfolioAttempt,
@@ -56,13 +57,15 @@ function createItem(state: PortfolioState, id: string, kind = 'initial'): void {
     {
       kind: 'workItem.create',
       workItem: {
+        projectId: 'project',
         featureId: 'feature',
         kind,
         title: id,
         description: 'Reporting change',
         acceptanceCriteria: `Criteria for ${id}`,
         designReferences: 'Design section A',
-        sourceReference: 'DEMO-1'
+        tickets: [{ platform: 'ios', reference: 'DEMO-1' }],
+        parity: true
       }
     },
     id
@@ -167,7 +170,7 @@ it('migrates v1 on write with an exact backup and preserves existing tasks and e
   await writeFile(file, original)
   const store = new PortfolioStore(file)
   const migrated = await store.read()
-  expect(migrated.schemaVersion).toBe(5)
+  expect(migrated.schemaVersion).toBe(6)
   expect(migrated.features).toEqual([])
   expect(migrated.tasks).toEqual(state.tasks)
   expect(await readFile(file, 'utf8')).toBe(original)
@@ -306,7 +309,7 @@ it('validates project membership and requires reviewed linked tasks and closed e
   })
   expect(() =>
     apply(state, { kind: 'task.transition', taskId: 'task', status: 'todo', note: 'More' })
-  ).toThrow('Reopen the work item')
+  ).toThrow('Reopen the outcome')
 })
 
 it('snapshots feature and work item context and replays the same prompt after a new publication', () => {
@@ -359,7 +362,10 @@ it('allows triage corrections before tasks while rejecting stale edits and cross
   )
   apply(
     state,
-    { kind: 'workItem.create', workItem: { ...expected, featureId: 'other-feature' } },
+    {
+      kind: 'workItem.create',
+      workItem: { ...expected, projectId: 'other', featureId: 'other-feature' }
+    },
     'other-item'
   )
   expect(() =>
@@ -388,4 +394,103 @@ it('plans backend API work as its own platform', () => {
   state.tasks[0].platform = 'backend'
   const { prompt } = preparePortfolioAttempt(state, 'task', 'workspace', 'ios', 'operation', 1)
   expect(prompt).toContain('Target platform: backend')
+})
+
+it('migrates schema 5 work items into outcomes that keep their source and evidence rule', () => {
+  const state = fixture()
+  createItem(state, 'planned-item')
+  createItem(state, 'tested-item')
+  const {
+    projectId: _projectId,
+    tickets: _tickets,
+    parity: _parity,
+    ...legacy
+  } = state.workItems[0]
+  const migrated = parsePortfolioState({
+    ...state,
+    schemaVersion: 5,
+    workItems: state.workItems.map((item) => ({
+      ...legacy,
+      id: item.id,
+      sourceReference: 'https://example.atlassian.net/browse/ENG-1'
+    }))
+  })
+  expect(migrated.schemaVersion).toBe(6)
+  expect(migrated.workItems.map((item) => [item.projectId, item.parity, item.tickets])).toEqual([
+    ['project', true, [{ reference: 'https://example.atlassian.net/browse/ENG-1' }]],
+    ['project', true, [{ reference: 'https://example.atlassian.net/browse/ENG-1' }]]
+  ])
+  apply(migrated, {
+    kind: 'workItem.scope',
+    workItemId: 'planned-item',
+    tickets: [{ platform: 'android', reference: 'ENG-5952' }],
+    parity: false
+  })
+  expect(migrated.workItems[0]).toMatchObject({
+    parity: false,
+    tickets: [{ platform: 'android', reference: 'ENG-5952' }]
+  })
+  expect(migrated.workItems[0].featureId).toBe('feature')
+  apply(migrated, {
+    kind: 'workItem.scope',
+    workItemId: 'planned-item',
+    tickets: [{ platform: 'android', reference: 'ENG-5952' }],
+    parity: false,
+    feature: null
+  })
+  expect(migrated.workItems[0]).not.toHaveProperty('featureId')
+  expect(() => apply(migrated, { kind: 'feature.delete', featureId: 'feature' })).toThrow(
+    'no outcomes'
+  )
+})
+
+it('accepts an outcome without a feature or a shared test plan when parity is not required', () => {
+  const state = fixture()
+  apply(
+    state,
+    {
+      kind: 'workItem.create',
+      workItem: {
+        projectId: 'project',
+        kind: 'engineering',
+        title: 'Test foundation',
+        description: '',
+        acceptanceCriteria: 'Unit tests run in CI on both platforms',
+        designReferences: '',
+        tickets: [
+          { platform: 'android', reference: 'ENG-5952' },
+          { platform: 'ios', reference: '' }
+        ],
+        parity: false
+      }
+    },
+    'foundation'
+  )
+  task(state, 'foundation')
+  const { prompt } = preparePortfolioAttempt(state, 'task', 'workspace', 'ios', 'operation', 1)
+  expect(prompt).toContain('Same behavior on iOS and Android required: no')
+  expect(prompt).toContain('android: ENG-5952')
+  state.tasks[0].attempts[0].state = 'launched'
+  apply(state, { kind: 'task.transition', taskId: 'task', status: 'review', note: 'Done' })
+  apply(state, {
+    kind: 'task.transition',
+    taskId: 'task',
+    status: 'accepted',
+    note: 'Reviewed',
+    codeReview: 'reviewed'
+  })
+  apply(state, { kind: 'task.closeExecution', taskId: 'task', note: 'Finished' })
+  apply(state, {
+    kind: 'workItem.transition',
+    workItemId: 'foundation',
+    status: 'review',
+    note: 'Ready'
+  })
+  apply(state, {
+    kind: 'workItem.transition',
+    workItemId: 'foundation',
+    status: 'accepted',
+    note: 'Accepted'
+  })
+  expect(state.workItems.find((item) => item.id === 'foundation')?.status).toBe('accepted')
 })

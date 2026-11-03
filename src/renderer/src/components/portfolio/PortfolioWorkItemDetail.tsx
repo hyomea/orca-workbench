@@ -9,11 +9,17 @@ import { PortfolioVerification } from './PortfolioVerification'
 import { Badge } from '@/components/ui/badge'
 import { translate } from '@/i18n/i18n'
 import type { PortfolioCommand, PortfolioState } from '../../../../shared/portfolio'
-import type { PortfolioFeature, PortfolioWorkItem } from '../../../../shared/portfolio-features'
+import {
+  portfolioTicketsText,
+  type PortfolioFeature,
+  type PortfolioWorkItem
+} from '../../../../shared/portfolio-features'
 import { PortfolioSelect } from './portfolio-controls'
 import { PortfolioSpecification } from './PortfolioSpecification'
 import { PortfolioWorkItemReview } from './PortfolioWorkItemReview'
 import { workItemKinds, workItemStatuses } from './portfolio-feature-labels'
+import { PortfolioTickets } from './PortfolioTickets'
+import { PortfolioOutcomeScope } from './PortfolioOutcomeScope'
 
 export function PortfolioWorkItemDetail({
   item,
@@ -27,7 +33,7 @@ export function PortfolioWorkItemDetail({
   onCreateRole
 }: {
   item: PortfolioWorkItem
-  feature: PortfolioFeature
+  feature: PortfolioFeature | undefined
   state: PortfolioState
   busy: boolean
   onSave: (command: PortfolioCommand) => Promise<boolean>
@@ -39,15 +45,17 @@ export function PortfolioWorkItemDetail({
   const editable = canEditPortfolioContext(state, item.id)
   const [tab, setTab] = useState('context')
   const [linkId, setLinkId] = useState('')
+  const [editingScope, setEditingScope] = useState(false)
+  const published = !!feature?.versions.some((version) => version.workItemId === item.id)
   const tasks = state.tasks.filter((task) => task.workItemId === item.id)
   const available = state.tasks.filter(
     (task) =>
-      task.projectId === feature.projectId &&
+      task.projectId === item.projectId &&
       !task.workItemId &&
       task.status === 'todo' &&
       (!task.attempts.length || task.attempts.at(-1)?.state === 'closed')
   )
-  const baseline = feature.versions.find((version) => version.version === item.baseVersion)
+  const baseline = feature?.versions.find((version) => version.version === item.baseVersion)
   return (
     <section className="space-y-5 rounded-xl border border-border p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -60,19 +68,49 @@ export function PortfolioWorkItemDetail({
             <Badge variant="secondary">
               {workItemStatuses().find((status) => status.id === item.status)?.name}
             </Badge>
-            <span className="text-xs text-muted-foreground">
-              {translate('portfolio.baseVersion', 'Base specification v{{version}}', {
-                version: item.baseVersion
-              })}
-            </span>
+            {item.parity && (
+              <Badge variant="outline">
+                {translate('portfolio.parityBadge', 'Same on iOS and Android')}
+              </Badge>
+            )}
+            {feature && (
+              <span className="text-xs text-muted-foreground">
+                {translate('portfolio.outcomeFeature', '{{feature}} · specification v{{version}}', {
+                  feature: feature.name,
+                  version: item.baseVersion
+                })}
+              </span>
+            )}
           </div>
+          <PortfolioTickets tickets={item.tickets} />
         </div>
-        {editable && (
-          <Button variant="outline" size="sm" disabled={busy} onClick={onEdit}>
-            {translate('portfolio.editWorkItem', 'Edit work item')}
-          </Button>
-        )}
+        <div className="flex flex-wrap gap-2">
+          {item.status !== 'accepted' && !published && !editingScope && (
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={busy}
+              onClick={() => setEditingScope(true)}
+            >
+              {translate('portfolio.editScope', 'Tickets, parity, and feature')}
+            </Button>
+          )}
+          {editable && (
+            <Button variant="outline" size="sm" disabled={busy} onClick={onEdit}>
+              {translate('portfolio.editOutcome', 'Edit outcome')}
+            </Button>
+          )}
+        </div>
       </div>
+      {editingScope && (
+        <PortfolioOutcomeScope
+          item={item}
+          features={state.features.filter((entry) => entry.projectId === item.projectId)}
+          busy={busy}
+          onSave={onSave}
+          onClose={() => setEditingScope(false)}
+        />
+      )}
       <PortfolioNextStep
         state={state}
         feature={feature}
@@ -101,6 +139,7 @@ export function PortfolioWorkItemDetail({
         <TabsContent value="context" className="space-y-4">
           <PortfolioSpecification
             {...item}
+            sourceReference={portfolioTicketsText(item.tickets)}
             designAttachments={editable ? undefined : item.designAttachments}
           />
           {editable && (
@@ -116,7 +155,7 @@ export function PortfolioWorkItemDetail({
               <summary className="cursor-pointer text-sm">
                 {translate(
                   'portfolio.baseSpecification',
-                  'Original specification for this work item'
+                  'Original specification for this outcome'
                 )}
               </summary>
               <div className="mt-4">
@@ -200,11 +239,18 @@ export function PortfolioWorkItemDetail({
           </section>
         </TabsContent>
         <TabsContent value="tests">
-          {item.kind === 'investigation' ? (
+          {!item.parity ? (
+            <p className="text-sm text-muted-foreground">
+              {translate(
+                'portfolio.noParityTests',
+                'This outcome does not need identical behavior on iOS and Android, so no shared test plan is required. Each platform’s tasks carry their own verification.'
+              )}
+            </p>
+          ) : item.kind === 'investigation' ? (
             <p className="text-sm text-muted-foreground">
               {translate(
                 'portfolio.triageVerificationHint',
-                'Use tasks to investigate and review the findings. To deliver a change, return to Planned, classify the work item, and define its AC before creating a test plan.'
+                'Use tasks to investigate and review the findings. To deliver a change, return to Planned, classify the outcome, and define its AC before creating a test plan.'
               )}
             </p>
           ) : (
@@ -221,6 +267,7 @@ export function PortfolioWorkItemDetail({
           <PortfolioWorkItemReview
             item={item}
             feature={feature}
+            features={state.features.filter((entry) => entry.projectId === item.projectId)}
             tasks={tasks}
             verificationReady={verificationProgress(state, item.id).ready}
             busy={busy}

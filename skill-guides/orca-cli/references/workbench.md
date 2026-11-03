@@ -1,10 +1,29 @@
 # Workbench commands
 
-Workbench (the Workbench page in Orca) stores initiatives, features, work items, roles,
-tasks, test plans, and initiative notes on this computer. These commands change the same
-records, with the same validation, as the Workbench page. An initiative is a business goal that spans
+Workbench (the Workbench page in Orca) stores initiatives, outcomes, features, roles, tasks,
+test plans, and initiative notes on this computer. These commands change the same records,
+with the same validation, as the Workbench page. An initiative is a business goal that spans
 repositories; it is not an Orca project (repository). Stored records and flags still call it
 a project: `projectId`, `project.create`, and `--project` all refer to an initiative.
+
+## Outcomes and features
+
+Work starts from an outcome: what this piece of work should achieve, such as "allow multiple
+check-ins on mobile", a bug fix, or engineering work like a test foundation. Outcomes are
+stored as work items (`workItem.*` commands, `workItemId` on tasks). Each outcome has:
+
+- `kind`: `initial` (new capability), `bug`, `improvement`, `investigation`, or
+  `engineering`.
+- `tickets`: one per platform involved, `{ "platform": "ios" | "android" | "backend",
+  "reference": "<key or link>" }`. The reference may be empty until the ticket exists.
+- `parity`: true when iOS and Android must behave the same. A parity outcome needs a shared
+  test plan with reviewed evidence on both platforms before it is accepted; others do not.
+- `featureId` (optional): the product feature it changes. A feature is the lasting record of
+  a capability and its specification; an accepted new capability or improvement publishes
+  its specification there. Many outcomes, such as engineering work, have no feature.
+
+Change tickets, parity, or the feature link of an outcome in progress with `workItem.scope`;
+its `feature` is omitted to keep the link, `null` to remove it, or a feature id.
 
 ```text
 ORCA workbench status [--project <id>] --json
@@ -33,24 +52,23 @@ state; a concurrent change then rejects the batch instead of mixing with it.
 {
   "steps": [
     {
-      "ref": "feature",
-      "command": {
-        "kind": "feature.create",
-        "feature": { "projectId": "<project-id>", "name": "Checkout", "description": "" }
-      }
-    },
-    {
       "ref": "item",
       "command": {
         "kind": "workItem.create",
         "workItem": {
-          "featureId": "$ref:feature",
+          "projectId": "<project-id>",
+          "featureId": "<feature-id, only when it changes a feature>",
           "kind": "improvement",
-          "title": "...",
+          "title": "Allow multiple check-ins on mobile",
           "description": "...",
           "acceptanceCriteria": "...",
           "designReferences": "",
-          "sourceReference": "https://<site>.atlassian.net/browse/ENG-123"
+          "tickets": [
+            { "platform": "ios", "reference": "ENG-123" },
+            { "platform": "android", "reference": "ENG-124" },
+            { "platform": "backend", "reference": "ENG-125" }
+          ],
+          "parity": true
         }
       }
     },
@@ -72,7 +90,8 @@ state; a concurrent change then rejects the batch instead of mixing with it.
 }
 ```
 
-Reuse an existing role or feature from `status` instead of creating a duplicate. A task
+Reuse an existing role or feature from `status` instead of creating a duplicate; create a
+feature only for a product capability, with `feature.create`. A task
 needs a role; create one with `role.create` in the same batch when none fits.
 Change a role with `role.update`, passing its current fields as `expected`; the optional
 `agentName` gives the role's agent a personal name. A change reaches tasks started afterwards,
@@ -80,7 +99,9 @@ not agents already running.
 
 ## Planning from a ticket
 
-When asked to plan a ticket, read the ticket and the relevant code first, ask the user only
+When asked to plan a ticket, start from the outcome it should achieve: which platforms it
+involves and their tickets, whether iOS and Android must behave the same, and whether it
+changes a product feature. Read the tickets and the relevant code first, ask the user only
 questions that change the plan, then show the plan in the conversation before applying it.
 Put dependencies between tasks in the dependent task's instructions; Workbench does not
 store task dependencies yet.
@@ -93,7 +114,7 @@ the number of files:
 - One purpose per task. A task that cannot be described in one sentence is two tasks.
 - Mechanical changes (renames, moves, formatting, generated code) are their own task, even
   when they touch many files, and never share a task with a behavior change.
-- When a feature crosses architecture layers, split along them: data (API, models,
+- When an outcome crosses architecture layers, split along them: data (API, models,
   persistence), business logic, and UI. Each layer task is verified its own way: the data
   layer against the API contract, the logic with unit tests, the UI with screenshots or
   previews. Order them so later tasks build on accepted ones, usually data, logic, then UI.

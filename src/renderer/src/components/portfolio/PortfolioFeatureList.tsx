@@ -22,7 +22,7 @@ export function PortfolioFeatureList({
         className="hidden grid-cols-[minmax(0,1fr)_10rem_14rem_1rem] gap-4 px-3 pb-2 text-xs text-muted-foreground @2xl/feature-list:grid"
       >
         <span>{translate('portfolio.featureColumn', 'Feature')}</span>
-        <span>{translate('portfolio.workItemsColumn', 'Work items')}</span>
+        <span>{translate('portfolio.workItemsColumn', 'Outcomes')}</span>
         <span>{translate('portfolio.specificationColumn', 'Specification')}</span>
       </div>
       <ul className="divide-y divide-border border-y border-border">
@@ -55,7 +55,7 @@ export function PortfolioFeatureList({
                           '{{open}} open · {{accepted}} accepted',
                           { open: items.length - accepted, accepted }
                         )
-                      : translate('portfolio.featureNoWork', 'No work items')}
+                      : translate('portfolio.featureNoWork', 'No outcomes')}
                   </span>
                   {blocked > 0 && (
                     <span className="block @2xl/feature-list:mt-1">

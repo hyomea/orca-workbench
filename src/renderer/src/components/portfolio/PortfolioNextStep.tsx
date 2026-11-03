@@ -15,7 +15,7 @@ export function PortfolioNextStep({
   onCreateRole
 }: {
   state: PortfolioState
-  feature: PortfolioFeature
+  feature: PortfolioFeature | undefined
   item: PortfolioWorkItem
   busy: boolean
   onTab: (tab: string) => void
@@ -30,7 +30,7 @@ export function PortfolioNextStep({
         'portfolio.nextRequirements',
         'Define the shared acceptance criteria and add design context before implementation.'
       ),
-      label: translate('portfolio.editWorkItem', 'Edit work item'),
+      label: translate('portfolio.editWorkItem', 'Edit outcome'),
       action: onEdit
     },
     reverify: {
@@ -44,7 +44,7 @@ export function PortfolioNextStep({
     reopen: {
       text: translate(
         'portfolio.nextReopen',
-        'Return this work item to Planned to add the missing acceptance criteria.'
+        'Return this outcome to Planned to add the missing acceptance criteria.'
       ),
       label: translate('portfolio.workReviewTab', 'Review'),
       action: () => onTab('review')
@@ -94,7 +94,7 @@ export function PortfolioNextStep({
     review: {
       text: translate(
         'portfolio.nextReview',
-        'The prerequisites are complete. Review the work item and record the acceptance decision.'
+        'The prerequisites are complete. Review the outcome and record the acceptance decision.'
       ),
       label: translate('portfolio.workReviewTab', 'Review'),
       action: () => onTab('review')
@@ -110,7 +110,7 @@ export function PortfolioNextStep({
     followUp: {
       text: translate(
         'portfolio.nextFollowUp',
-        'The baseline changed. Create a new work item against the current specification to reconcile this proposal.'
+        'The baseline changed. Create a new outcome against the current specification to reconcile this proposal.'
       ),
       label: '',
       action: () => {}
@@ -118,7 +118,7 @@ export function PortfolioNextStep({
     published: {
       text: translate(
         'portfolio.nextPublished',
-        'Specification published. Track subsequent bugs and improvements as new work items.'
+        'Specification published. Track subsequent bugs and improvements as new outcomes.'
       ),
       label: '',
       action: () => {}
@@ -126,7 +126,7 @@ export function PortfolioNextStep({
     complete: {
       text: translate(
         'portfolio.nextComplete',
-        'Work accepted. Findings and evidence remain available in this work item.'
+        'Work accepted. Findings and evidence remain available in this outcome.'
       ),
       label: '',
       action: () => {}

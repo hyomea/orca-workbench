@@ -1,5 +1,6 @@
 import { applyPortfolioCommand, type PortfolioCommand, type PortfolioState } from './portfolio'
 import { verificationProgress, verificationTaskSnapshot } from './portfolio-verification'
+import { portfolioTicketsText } from './portfolio-features'
 
 export function applyPortfolioVerificationCommand(
   state: PortfolioState,
@@ -18,10 +19,10 @@ export function applyPortfolioVerificationCommand(
   }
   const item = state.workItems.find((entry) => entry.id === command.workItemId)
   if (!item || item.status === 'accepted') {
-    throw new Error('Choose an open work item before changing verification.')
+    throw new Error('Choose an open outcome before changing verification.')
   }
   const feature = state.features.find((entry) => entry.id === item.featureId)
-  if (!feature || feature.versions.some((version) => version.workItemId === item.id)) {
+  if (feature?.versions.some((version) => version.workItemId === item.id)) {
     throw new Error('Published work is immutable. Create a follow-up work item.')
   }
   const progress = verificationProgress(state, item.id)
@@ -45,7 +46,7 @@ export function applyPortfolioVerificationCommand(
       acceptanceCriteria: item.acceptanceCriteria,
       designReferences: item.designReferences,
       designAttachments: structuredClone(item.designAttachments),
-      sourceReference: item.sourceReference,
+      sourceReference: portfolioTicketsText(item.tickets),
       at: now,
       note: command.note
     })
@@ -116,7 +117,7 @@ export function applyPortfolioVerificationCommand(
     {
       kind: 'task.create',
       task: {
-        projectId: feature.projectId,
+        projectId: item.projectId,
         workItemId: item.id,
         roleId: command.roleId,
         platform: result.platform,

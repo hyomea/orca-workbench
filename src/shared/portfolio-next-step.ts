@@ -5,15 +5,16 @@ import { verificationProgress } from './portfolio-verification'
 
 export function portfolioNextStep(
   state: PortfolioState,
-  feature: PortfolioFeature,
+  feature: PortfolioFeature | undefined,
   item: PortfolioWorkItem
 ) {
-  if (feature.versions.some((version) => version.workItemId === item.id)) {
+  if (feature?.versions.some((version) => version.workItemId === item.id)) {
     return 'published'
   }
   if (item.status === 'accepted') {
-    if (item.kind === 'initial' || item.kind === 'improvement') {
-      if (!verificationProgress(state, item.id).ready) {
+    // Publishing is how an outcome updates a feature; outcomes without one are simply done.
+    if (feature && (item.kind === 'initial' || item.kind === 'improvement')) {
+      if (item.parity && !verificationProgress(state, item.id).ready) {
         return 'reverify'
       }
       return (feature.versions.at(-1)?.version ?? 0) === item.baseVersion ? 'publish' : 'followUp'
@@ -35,6 +36,9 @@ export function portfolioNextStep(
   }
   if (!item.acceptanceCriteria.trim()) {
     return canEditPortfolioContext(state, item.id) ? 'requirements' : 'reopen'
+  }
+  if (!item.parity) {
+    return 'review'
   }
   const progress = verificationProgress(state, item.id)
   if (!progress.plan) {

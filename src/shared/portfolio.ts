@@ -1,6 +1,12 @@
 import { z } from 'zod'
-import { PortfolioFeature, PortfolioWorkItem, PortfolioFeatureCommands } from './portfolio-features'
-import { applyPortfolioFeatureCommand, workItemForTask } from './portfolio-feature-commands'
+import {
+  migrateLegacyWorkItems,
+  PortfolioFeature,
+  PortfolioFeatureCommands,
+  PortfolioWorkItem,
+  PortfolioWorkPlatform
+} from './portfolio-features'
+import { applyPortfolioFeatureCommand } from './portfolio-feature-commands'
 import { PortfolioVerification, PortfolioVerificationCommands } from './portfolio-verification'
 import { applyPortfolioVerificationCommand } from './portfolio-verification-commands'
 import {
@@ -10,6 +16,7 @@ import {
   PortfolioNoteDraft
 } from './portfolio-notes'
 import { PortfolioCodeReview, PortfolioCommit } from './portfolio-review'
+import { applyPortfolioTaskCommand } from './portfolio-task-commands'
 import {
   applyPortfolioRoleCommand,
   PortfolioAgent,
@@ -36,7 +43,7 @@ export const PortfolioTaskInput = z.object({
   instructions: Description,
   acceptanceCriteria: Description,
   workItemId: Id.optional(),
-  platform: z.enum(['ios', 'android', 'backend', 'shared']).optional()
+  platform: PortfolioWorkPlatform.optional()
 })
 export const PortfolioAttempt = z.object({
   operationId: Id,
@@ -67,7 +74,7 @@ export const PortfolioTask = PortfolioTaskInput.extend({
   )
 })
 export const PortfolioState = z.object({
-  schemaVersion: z.literal(5),
+  schemaVersion: z.literal(6),
   notes: z.array(PortfolioNote),
   noteDrafts: z.array(PortfolioNoteDraft),
   verification: z.array(PortfolioVerification),
@@ -89,9 +96,13 @@ const LegacyPortfolioState = V4PortfolioState.omit({
 }).extend({
   schemaVersion: z.literal(1)
 })
-const NO_NOTES = { schemaVersion: 5, notes: [], noteDrafts: [] } as const
-export function parsePortfolioState(value: unknown): PortfolioState {
-  const version = z.object({ schemaVersion: z.number() }).parse(value).schemaVersion
+const NO_NOTES = { schemaVersion: 6, notes: [], noteDrafts: [] } as const
+export function parsePortfolioState(input: unknown): PortfolioState {
+  const version = z.object({ schemaVersion: z.number() }).parse(input).schemaVersion
+  const value =
+    version < 6
+      ? { ...(input as object), workItems: migrateLegacyWorkItems(input as never) }
+      : input
   if (version === 1) {
     const legacy = LegacyPortfolioState.parse(value)
     return PortfolioState.parse({
@@ -112,7 +123,7 @@ export function parsePortfolioState(value: unknown): PortfolioState {
     const legacy = V4PortfolioState.extend({ schemaVersion: z.literal(version) }).parse(value)
     return PortfolioState.parse({ ...legacy, ...NO_NOTES })
   }
-  return PortfolioState.parse(value)
+  return PortfolioState.parse(version === 5 ? { ...(value as object), schemaVersion: 6 } : value)
 }
 export type PortfolioState = z.infer<typeof PortfolioState>
 export type PortfolioTask = z.infer<typeof PortfolioTask>
@@ -148,7 +159,7 @@ export type PortfolioCommand = z.infer<typeof PortfolioCommand>
 
 export function emptyPortfolio(): PortfolioState {
   return {
-    schemaVersion: 5,
+    schemaVersion: 6,
     notes: [],
     noteDrafts: [],
     verification: [],
@@ -162,14 +173,6 @@ export function emptyPortfolio(): PortfolioState {
   }
 }
 
-export function portfolioTask(state: PortfolioState, taskId: string): PortfolioTask {
-  const task = state.tasks.find((entry) => entry.id === taskId)
-  if (!task) {
-    throw new Error('Task no longer exists. Refresh the initiative.')
-  }
-  return task
-}
-
 export function applyPortfolioCommand(
   state: PortfolioState,
   command: PortfolioCommand,
@@ -180,7 +183,8 @@ export function applyPortfolioCommand(
     applyPortfolioVerificationCommand(state, command, id, now) ||
     applyPortfolioFeatureCommand(state, command, id, now) ||
     applyPortfolioNoteCommand(state, command, id, now) ||
-    applyPortfolioRoleCommand(state, command, id)
+    applyPortfolioRoleCommand(state, command, id) ||
+    applyPortfolioTaskCommand(state, command, id, now)
   ) {
     return
   }
@@ -212,82 +216,6 @@ export function applyPortfolioCommand(
       project.name = command.project.name
       project.objective = command.project.objective
       project.repoIds = [...new Set(command.project.repoIds)]
-      return
-    }
-    case 'task.create':
-      if (
-        !state.projects.some((project) => project.id === command.task.projectId) ||
-        !state.roles.some((role) => role.id === command.task.roleId)
-      ) {
-        throw new Error('Choose an existing initiative and role.')
-      }
-      if (command.task.workItemId) {
-        workItemForTask(state, command.task.projectId, command.task.workItemId)
-      }
-      state.tasks.push({
-        ...command.task,
-        id,
-        status: 'todo',
-        evidence: '',
-        attempts: [],
-        history: [{ id: `${id}:0`, at: now, status: 'todo', note: 'Task created' }]
-      })
-      return
-    case 'task.closeExecution': {
-      const task = portfolioTask(state, command.taskId)
-      const attempt = task.attempts.at(-1)
-      if (!attempt) {
-        throw new Error('This task has no execution to close.')
-      }
-      if (attempt.state === 'pending') {
-        throw new Error('Wait for the launch to settle, or retry it after reconnecting.')
-      }
-      if (task.status === 'running' || attempt.state === 'unknown') {
-        task.status = 'todo'
-        task.evidence = ''
-      }
-      attempt.state = 'closed'
-      task.history.push({
-        id: `${task.id}:${task.history.length}`,
-        at: now,
-        status: task.status,
-        note: `User confirmed execution stopped: ${command.note}`
-      })
-      return
-    }
-    case 'task.transition': {
-      const task = portfolioTask(state, command.taskId)
-      if (task.workItemId) {
-        workItemForTask(state, task.projectId, task.workItemId)
-      }
-      const attempt = task.attempts.at(-1)
-      if (attempt && (attempt.state === 'pending' || attempt.state === 'unknown')) {
-        throw new Error('Resolve the uncertain launch before changing this task.')
-      }
-      if (command.status === 'accepted' && task.status !== 'review') {
-        throw new Error('Submit evidence for review before accepting this task.')
-      }
-      if (command.status === 'accepted' && !command.codeReview) {
-        throw new Error('Record whether you reviewed the code or skipped it before accepting.')
-      }
-      if (command.status === 'review') {
-        task.evidence = command.note
-      }
-      if (task.status === command.status) {
-        throw new Error('Task already has this status.')
-      }
-      task.status = command.status
-      if (command.status === 'todo') {
-        task.evidence = ''
-      }
-      task.history.push({
-        id: `${task.id}:${task.history.length}`,
-        at: now,
-        status: command.status,
-        note: command.note,
-        ...(command.status === 'accepted' ? { codeReview: command.codeReview } : {}),
-        ...(command.status === 'review' && command.commit ? { commit: command.commit } : {})
-      })
     }
   }
 }
@@ -306,3 +234,4 @@ export function portfolioProgress(tasks: readonly PortfolioTask[]): {
 }
 
 export { preparePortfolioAttempt } from './portfolio-attempt'
+export { portfolioTask } from './portfolio-task-commands'

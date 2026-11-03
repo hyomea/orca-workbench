@@ -3,15 +3,19 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { translate } from '@/i18n/i18n'
-import type { PortfolioWorkItem } from '../../../../shared/portfolio-features'
+import type { PortfolioFeature, PortfolioWorkItem } from '../../../../shared/portfolio-features'
+import { PortfolioTickets } from './PortfolioTickets'
 import { workItemKinds, workItemStatuses } from './portfolio-feature-labels'
 
+const NO_FEATURES: readonly PortfolioFeature[] = []
 export function PortfolioWorkItemList({
   items,
+  features = NO_FEATURES,
   selectedId,
   onSelect
 }: {
   items: PortfolioWorkItem[]
+  features?: readonly PortfolioFeature[]
   selectedId?: string
   onSelect: (id: string) => void
 }): React.JSX.Element | null {
@@ -23,7 +27,7 @@ export function PortfolioWorkItemList({
   return (
     <section className="@container/work-items space-y-3">
       <h4 className="flex items-center gap-2 text-sm font-medium">
-        {translate('portfolio.workItemsColumn', 'Work items')}
+        {translate('portfolio.outcomes', 'Outcomes')}
         <span className="text-xs font-normal tabular-nums text-muted-foreground">
           {items.length}
         </span>
@@ -33,7 +37,7 @@ export function PortfolioWorkItemList({
           aria-hidden="true"
           className="hidden grid-cols-[minmax(0,1fr)_9rem_7rem_1rem] gap-4 px-3 pb-2 text-xs text-muted-foreground @2xl/work-items:grid"
         >
-          <span>{translate('portfolio.workItemColumn', 'Work item')}</span>
+          <span>{translate('portfolio.outcomeColumn', 'Outcome')}</span>
           <span>{translate('portfolio.workType', 'Work type')}</span>
           <span>{translate('portfolio.workStatusColumn', 'Status')}</span>
         </div>
@@ -58,6 +62,19 @@ export function PortfolioWorkItemList({
                       {item.description}
                     </span>
                   )}
+                  {(item.featureId || item.parity) && (
+                    <span className="block text-xs text-muted-foreground">
+                      {[
+                        features.find((feature) => feature.id === item.featureId)?.name,
+                        item.parity
+                          ? translate('portfolio.parityBadge', 'Same on iOS and Android')
+                          : undefined
+                      ]
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </span>
+                  )}
+                  <PortfolioTickets tickets={item.tickets} />
                 </span>
                 <span className="col-start-1 row-start-2 text-xs text-muted-foreground @2xl/work-items:col-auto @2xl/work-items:row-auto">
                   {kinds.find((kind) => kind.id === item.kind)?.name}

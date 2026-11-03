@@ -91,7 +91,7 @@ export function PortfolioTestPlanEditor({
       <p className="text-xs text-muted-foreground">
         {translate(
           'portfolio.planEditHint',
-          'Cover the work item’s AC with shared scenarios. Saving creates a new plan version; earlier results remain in history and must be rerun.'
+          'Cover the outcome’s AC with shared scenarios. Saving creates a new plan version; earlier results remain in history and must be rerun.'
         )}
       </p>
       {draft.scenarios.map((scenario, index) => (

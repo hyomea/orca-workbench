@@ -14,6 +14,15 @@ import { verificationProgress, verificationTaskSnapshot } from '../../shared/por
 import { PortfolioWorkItemInput } from '../../shared/portfolio-features'
 import { PortfolioStore } from './portfolio-store'
 
+import { portfolioTicketsText } from '../../shared/portfolio-features'
+// Work items as schema 5 and earlier stored them: under a feature, with one source reference.
+function legacyWorkItems(items: PortfolioState['workItems']) {
+  return items.map(({ projectId: _projectId, tickets, parity: _parity, ...item }) => ({
+    ...item,
+    sourceReference: portfolioTicketsText(tickets)
+  }))
+}
+
 function apply(state: PortfolioState, command: unknown, id: string = randomUUID()) {
   applyPortfolioCommand(state, PortfolioCommand.parse(command), id, Date.now())
 }
@@ -52,13 +61,15 @@ function fixture() {
     {
       kind: 'workItem.create',
       workItem: {
+        projectId: 'project',
         featureId: 'feature',
         kind: 'initial',
         title: 'Report counts',
         description: 'Show current counts',
         acceptanceCriteria: 'Show sold and remaining',
         designReferences: 'design.png notes',
-        sourceReference: 'AC-1'
+        tickets: [{ reference: 'AC-1' }],
+        parity: true
       }
     },
     'item'
@@ -200,7 +211,7 @@ it('persists a failed-test → agent fix → retest → evidence review → acce
       workItemId: 'item',
       note: 'Publish reviewed specification'
     })
-    expect(() => record(state, 'ios')).toThrow('open work item')
+    expect(() => record(state, 'ios')).toThrow('open outcome')
     const store = new PortfolioStore(join(directory, 'portfolio.json'))
     await store.update(0, (next) => Object.assign(next, state))
     const reopened = await new PortfolioStore(store.file).read()
@@ -339,7 +350,11 @@ it('backs up v2 exactly and does not treat its accepted work as verified', async
     const state = fixture()
     state.workItems[0].status = 'accepted'
     const { verification: _verification, ...legacy } = state
-    const original = JSON.stringify({ ...legacy, schemaVersion: 2 })
+    const original = JSON.stringify({
+      ...legacy,
+      workItems: legacyWorkItems(legacy.workItems),
+      schemaVersion: 2
+    })
     const file = join(directory, 'portfolio.json')
     await writeFile(file, original)
     const store = new PortfolioStore(file)
@@ -358,7 +373,7 @@ it('backs up v2 exactly and does not treat its accepted work as verified', async
       })
     )
     expect(await readFile(`${file}.v2.bak`, 'utf8')).toBe(original)
-    expect((await store.read()).schemaVersion).toBe(5)
+    expect((await store.read()).schemaVersion).toBe(6)
     expect((await store.read()).workItems[0].status).toBe('planned')
   } finally {
     await rm(directory, { recursive: true, force: true })

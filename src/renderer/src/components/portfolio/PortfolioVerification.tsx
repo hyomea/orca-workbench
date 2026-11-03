@@ -89,7 +89,7 @@ export function PortfolioVerification({
         <p className="text-sm">
           {translate(
             'portfolio.missingPlanAc',
-            'Add acceptance criteria to the work item before creating scenarios.'
+            'Add acceptance criteria to the outcome before creating scenarios.'
           )}
         </p>
       )}
@@ -271,7 +271,7 @@ export function PortfolioVerification({
             <p className="text-sm">
               {translate(
                 'portfolio.readyForWorkReview',
-                'All planned platform checks have reviewed passing evidence. Review linked tasks, then accept the work item.'
+                'All planned platform checks have reviewed passing evidence. Review linked tasks, then accept the outcome.'
               )}
             </p>
           )}

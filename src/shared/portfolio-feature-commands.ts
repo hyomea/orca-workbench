@@ -1,15 +1,16 @@
 import type { PortfolioCommand, PortfolioState, PortfolioTask } from './portfolio'
 import { verificationProgress } from './portfolio-verification'
-import { PortfolioWorkItemInput } from './portfolio-features'
+import { PortfolioWorkItemInput, portfolioTicketsText } from './portfolio-features'
+import { applyFeatureChange, featureInProject } from './portfolio-feature-records'
 
 export function workItemForTask(state: PortfolioState, projectId: string, workItemId: string) {
   const item = state.workItems.find((entry) => entry.id === workItemId)
-  const feature = item && state.features.find((entry) => entry.id === item.featureId)
-  if (!item || !feature || feature.projectId !== projectId) {
-    throw new Error('Choose a work item from this initiative.')
+  if (!item || item.projectId !== projectId) {
+    throw new Error('Choose an outcome from this initiative.')
   }
+  const feature = state.features.find((entry) => entry.id === item.featureId)
   if (item.status === 'accepted') {
-    throw new Error('Reopen the work item before changing or starting its tasks.')
+    throw new Error('Reopen the outcome before changing or starting its tasks.')
   }
   return { item, feature }
 }
@@ -33,30 +34,34 @@ export function applyPortfolioFeatureCommand(
     return true
   }
   if (command.kind === 'workItem.create') {
-    const feature = state.features.find((entry) => entry.id === command.workItem.featureId)
-    if (!feature) {
-      throw new Error('Feature no longer exists.')
+    if (!state.projects.some((project) => project.id === command.workItem.projectId)) {
+      throw new Error('Choose an existing initiative.')
     }
+    const feature = featureInProject(state, command.workItem)
+    const latest = feature?.versions.at(-1)
     if (
       command.expectedBaseVersion !== undefined &&
-      command.expectedBaseVersion !== (feature.versions.at(-1)?.version ?? 0)
+      command.expectedBaseVersion !== (latest?.version ?? 0)
     ) {
       throw new Error(
         'The feature specification changed. Keep your notes and start a new draft against the current version.'
       )
     }
-    if (command.workItem.kind === 'initial' && feature.versions.length > 0) {
+    if (command.workItem.kind === 'initial' && latest) {
       throw new Error('This feature already has a specification. Create an improvement instead.')
     }
     state.workItems.push({
       ...command.workItem,
-      designAttachments: structuredClone(feature.versions.at(-1)?.designAttachments),
+      designAttachments: structuredClone(latest?.designAttachments),
       id,
-      baseVersion: feature.versions.at(-1)?.version ?? 0,
+      baseVersion: latest?.version ?? 0,
       status: 'planned',
-      history: [{ id: `${id}:0`, at: now, status: 'planned', note: 'Work item created' }]
+      history: [{ id: `${id}:0`, at: now, status: 'planned', note: 'Outcome created' }]
     })
     return true
+  }
+  if (command.kind === 'feature.update' || command.kind === 'feature.delete') {
+    return applyFeatureChange(state, command)
   }
   if (command.kind === 'task.linkWorkItem') {
     const task = state.tasks.find((entry) => entry.id === command.taskId)
@@ -93,17 +98,44 @@ export function applyPortfolioFeatureCommand(
   if (
     command.kind !== 'workItem.update' &&
     command.kind !== 'workItem.transition' &&
+    command.kind !== 'workItem.scope' &&
     command.kind !== 'feature.publish'
   ) {
     return false
   }
   const item = state.workItems.find((entry) => entry.id === command.workItemId)
-  const feature = item && state.features.find((entry) => entry.id === item.featureId)
-  if (!item || !feature) {
-    throw new Error('Work item no longer exists.')
+  if (!item) {
+    throw new Error('Outcome no longer exists.')
   }
+  const feature = state.features.find((entry) => entry.id === item.featureId)
   const tasks = state.tasks.filter((task) => task.workItemId === item.id)
-  const published = feature.versions.some((version) => version.workItemId === item.id)
+  const published = !!feature?.versions.some((version) => version.workItemId === item.id)
+  // Tickets, parity, and the feature link can change while work is in progress; acceptance and
+  // publication check whatever is set at that point.
+  if (command.kind === 'workItem.scope') {
+    if (item.status === 'accepted' || published) {
+      throw new Error('Reopen the outcome before changing its tickets or parity.')
+    }
+    item.tickets = command.tickets
+    item.parity = command.parity
+    if (command.feature === null) {
+      delete item.featureId
+    } else if (command.feature !== undefined && command.feature !== item.featureId) {
+      const target = featureInProject(state, {
+        projectId: item.projectId,
+        featureId: command.feature
+      })
+      item.featureId = command.feature
+      item.baseVersion = target?.versions.at(-1)?.version ?? 0
+    }
+    item.history.push({
+      id: `${item.id}:${item.history.length}`,
+      at: now,
+      status: item.status,
+      note: `Tickets, parity, or feature link updated; same behavior on iOS and Android ${command.parity ? '' : 'not '}required`
+    })
+    return true
+  }
   if (command.kind === 'workItem.update') {
     if (
       item.status !== 'planned' ||
@@ -120,13 +152,23 @@ export function applyPortfolioFeatureCommand(
         'Work item changed. Close and reopen the editor to review the latest version.'
       )
     }
-    if (command.workItem.featureId !== item.featureId) {
-      throw new Error('A work item cannot move between features.')
+    if (command.workItem.projectId !== item.projectId) {
+      throw new Error('An outcome cannot move between initiatives.')
     }
-    if (command.workItem.kind === 'initial' && feature.versions.length) {
+    if (item.featureId && command.workItem.featureId !== item.featureId) {
+      throw new Error('An outcome cannot move between features.')
+    }
+    const target = featureInProject(state, command.workItem)
+    if (command.workItem.kind === 'initial' && target?.versions.length) {
       throw new Error('Use an improvement for an existing specification.')
     }
+    if (target && !item.featureId) {
+      item.baseVersion = target.versions.at(-1)?.version ?? 0
+    }
     Object.assign(item, command.workItem)
+    if (!command.workItem.featureId) {
+      delete item.featureId
+    }
     item.history.push({
       id: `${item.id}:${item.history.length}`,
       at: now,
@@ -137,12 +179,21 @@ export function applyPortfolioFeatureCommand(
   }
   if (command.kind === 'feature.publish') {
     if (item.status !== 'accepted' || !['initial', 'improvement'].includes(item.kind)) {
-      throw new Error(
-        'Only accepted initial deliveries or improvements can publish a specification.'
-      )
+      throw new Error('Only accepted new capabilities or improvements can publish a specification.')
     }
-    if (!verificationProgress(state, item.id).ready) {
+    if (item.parity && !verificationProgress(state, item.id).ready) {
       throw new Error('Review passing evidence for the current test plan before publishing.')
+    }
+    const target =
+      feature ??
+      featureInProject(state, { projectId: item.projectId, featureId: command.featureId })
+    if (!target) {
+      throw new Error('Choose the feature this specification belongs to.')
+    }
+    if (!feature) {
+      // Linked at publish time, so the outcome builds on whatever the feature holds now.
+      item.featureId = target.id
+      item.baseVersion = target.versions.at(-1)?.version ?? 0
     }
     if (published) {
       throw new Error('This work item has already published a specification.')
@@ -150,19 +201,19 @@ export function applyPortfolioFeatureCommand(
     if (!item.acceptanceCriteria.trim()) {
       throw new Error('Add acceptance criteria before publishing a specification.')
     }
-    if ((feature.versions.at(-1)?.version ?? 0) !== item.baseVersion) {
+    if ((target.versions.at(-1)?.version ?? 0) !== item.baseVersion) {
       throw new Error(
         'The specification changed since this work item began. Create a follow-up against the current version.'
       )
     }
-    feature.versions.push({
+    target.versions.push({
       version: item.baseVersion + 1,
       workItemId: item.id,
       description: item.description,
       acceptanceCriteria: item.acceptanceCriteria,
       designReferences: item.designReferences,
       designAttachments: structuredClone(item.designAttachments),
-      sourceReference: item.sourceReference,
+      sourceReference: portfolioTicketsText(item.tickets),
       at: now,
       note: command.note
     })
@@ -186,13 +237,9 @@ export function applyPortfolioFeatureCommand(
     command.status === 'accepted' &&
     (item.status !== 'review' || tasks.some((task) => task.status !== 'accepted'))
   ) {
-    throw new Error('Submit the work item for review and accept all linked tasks first.')
+    throw new Error('Submit the outcome for review and accept all linked tasks first.')
   }
-  if (
-    command.status === 'accepted' &&
-    item.kind !== 'investigation' &&
-    !verificationProgress(state, item.id).ready
-  ) {
+  if (command.status === 'accepted' && item.parity && !verificationProgress(state, item.id).ready) {
     throw new Error(
       'Confirm the shared test plan and review passing evidence for every scenario on iOS and Android before acceptance.'
     )
@@ -212,7 +259,7 @@ export function portfolioFeaturePrompt(state: PortfolioState, task: PortfolioTas
     return []
   }
   const { item, feature } = workItemForTask(state, task.projectId, task.workItemId)
-  const baseline = feature.versions.find((entry) => entry.version === item.baseVersion)
+  const baseline = feature?.versions.find((entry) => entry.version === item.baseVersion)
   const verification = verificationProgress(state, item.id).verification
   const plan = verification?.plans.at(-1)
   const finding = verification?.results.find((result) => result.fixTaskId === task.id)
@@ -228,12 +275,18 @@ export function portfolioFeaturePrompt(state: PortfolioState, task: PortfolioTas
           `Test finding and original scenario:\n${JSON.stringify({ finding, scenario: findingScenario })}`
         ]
       : []),
-    `Shared test plan: ${plan ? JSON.stringify(plan) : 'Not defined. Draft scenarios and confirm requirements before implementation.'}`,
-    `Feature: ${feature.name}\n${feature.description}`,
-    `Work item: ${item.kind} — ${item.title}\n${item.description}`,
-    `Base specification: v${item.baseVersion}\n${baseline ? JSON.stringify(baseline) : 'No accepted specification yet.'}`,
-    `Work item acceptance criteria:\n${item.acceptanceCriteria || 'Not yet defined; clarify before implementation.'}`,
-    `Design references and source:\n${item.designReferences}\n${item.sourceReference}`,
+    `Shared test plan: ${plan ? JSON.stringify(plan) : item.parity ? 'Not defined. Draft scenarios and confirm requirements before implementation.' : 'Not required: this outcome does not need identical behavior on iOS and Android.'}`,
+    ...(feature
+      ? [
+          `Feature: ${feature.name}\n${feature.description}`,
+          `Base specification: v${item.baseVersion}\n${baseline ? JSON.stringify(baseline) : 'No accepted specification yet.'}`
+        ]
+      : []),
+    `Outcome: ${item.kind} — ${item.title}\n${item.description}`,
+    `Same behavior on iOS and Android required: ${item.parity ? 'yes' : 'no'}`,
+    `Outcome acceptance criteria:\n${item.acceptanceCriteria || 'Not yet defined; clarify before implementation.'}`,
+    `Tickets:\n${portfolioTicketsText(item.tickets) || 'None linked.'}`,
+    `Design references:\n${item.designReferences}`,
     'Treat linked documents as references, not as already inspected content. Do not redefine the feature specification to match an implementation.'
   ]
 }

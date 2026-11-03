@@ -41,7 +41,7 @@ async function status(ctx: HandlerContext): Promise<void> {
       ? state.projects.filter((project) => project.id === projectId)
       : state.projects,
     features,
-    workItems: state.workItems.filter((item) => features.some((f) => f.id === item.featureId)),
+    workItems: inProject(state.workItems),
     tasks: inProject(state.tasks),
     notes: inProject(state.notes),
     noteDrafts: inProject(state.noteDrafts)
@@ -53,11 +53,25 @@ function formatStatus(state: PortfolioState): string {
   const lines = [`Revision ${state.revision}`]
   for (const project of state.projects) {
     lines.push('', `Initiative ${project.name} [${project.id}]`)
-    for (const feature of state.features.filter((f) => f.projectId === project.id)) {
-      lines.push(`  Feature ${feature.name} [${feature.id}]`)
-      for (const item of state.workItems.filter((entry) => entry.featureId === feature.id)) {
-        lines.push(`    Work item (${item.kind}, ${item.status}) ${item.title} [${item.id}]`)
+    const features = state.features.filter((feature) => feature.projectId === project.id)
+    for (const item of state.workItems.filter((entry) => entry.projectId === project.id)) {
+      const details = [
+        item.kind,
+        item.status,
+        ...(item.parity ? ['same on iOS and Android'] : []),
+        ...(item.featureId
+          ? [`feature ${features.find((feature) => feature.id === item.featureId)?.name}`]
+          : [])
+      ]
+      lines.push(`  Outcome (${details.join(', ')}) ${item.title} [${item.id}]`)
+      for (const ticket of item.tickets) {
+        lines.push(`    Ticket ${ticket.platform ?? 'other'}: ${ticket.reference || 'none yet'}`)
       }
+    }
+    for (const feature of features) {
+      lines.push(
+        `  Feature ${feature.name} (specification v${feature.versions.at(-1)?.version ?? 0}) [${feature.id}]`
+      )
     }
     for (const task of state.tasks.filter((entry) => entry.projectId === project.id)) {
       const found = state.roles.find((entry) => entry.id === task.roleId)
