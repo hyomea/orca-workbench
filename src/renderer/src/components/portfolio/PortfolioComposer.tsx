@@ -12,6 +12,9 @@ import {
 } from '@/components/ui/sheet'
 import { translate } from '@/i18n/i18n'
 import { PortfolioAgent, PortfolioCommand, type PortfolioState } from '../../../../shared/portfolio'
+import { portfolioRoleLabel } from '../../../../shared/portfolio-roles'
+
+type PortfolioRole = PortfolioState['roles'][number]
 import { PortfolioField, PortfolioSelect } from './portfolio-controls'
 
 export type PortfolioComposerKind =
@@ -19,6 +22,7 @@ export type PortfolioComposerKind =
   | 'project.idea'
   | 'project.edit'
   | 'role'
+  | 'role.edit'
   | 'task'
   | 'organization'
 
@@ -27,6 +31,7 @@ export function PortfolioComposer({
   state,
   projectId,
   workItemId,
+  role,
   busy,
   saveError,
   onClose,
@@ -36,6 +41,8 @@ export function PortfolioComposer({
   state: PortfolioState
   projectId: string
   workItemId?: string
+  // Present when editing an existing role instead of creating one.
+  role?: PortfolioRole
   busy: boolean
   saveError: string
   onClose: () => void
@@ -43,11 +50,14 @@ export function PortfolioComposer({
 }): React.JSX.Element {
   const [templateId, setTemplateId] = useState('analyst')
   const templates = portfolioRoleTemplates()
-  const [name, setName] = useState(kind === 'organization' ? state.organization : '')
-  const [description, setDescription] = useState('')
+  const [name, setName] = useState(
+    kind === 'organization' ? state.organization : (role?.name ?? '')
+  )
+  const [description, setDescription] = useState(role?.responsibility ?? '')
   const [criteria, setCriteria] = useState('')
   const [roleId, setRoleId] = useState(state.roles[0]?.id ?? '')
-  const [agent, setAgent] = useState('codex')
+  const [agent, setAgent] = useState<string>(role?.agent ?? 'codex')
+  const [agentName, setAgentName] = useState(role?.agentName ?? '')
   const [error, setError] = useState('')
   const [platform, setPlatform] = useState('shared')
   const [linkedItem, setLinkedItem] = useState(workItemId ?? 'none')
@@ -60,15 +70,35 @@ export function PortfolioComposer({
   )
   const title =
     kind === 'role'
-      ? translate('portfolio.newRole', 'New role')
+      ? role
+        ? translate('portfolio.editRole', 'Edit role')
+        : translate('portfolio.newRole', 'New role')
       : kind === 'task'
         ? translate('portfolio.newTask', 'New task')
         : translate('portfolio.renameOrganization', 'Rename organization')
 
   async function submit(): Promise<void> {
+    const roleInput = {
+      name,
+      responsibility: description,
+      agent,
+      ...(agentName.trim() ? { agentName } : {})
+    }
     const candidate =
       kind === 'role'
-        ? { kind: 'role.create', role: { name, responsibility: description, agent } }
+        ? role
+          ? {
+              kind: 'role.update',
+              roleId: role.id,
+              role: roleInput,
+              expected: {
+                name: role.name,
+                responsibility: role.responsibility,
+                agent: role.agent,
+                ...(role.agentName ? { agentName: role.agentName } : {})
+              }
+            }
+          : { kind: 'role.create', role: roleInput }
         : kind === 'task'
           ? {
               kind: 'task.create',
@@ -114,10 +144,15 @@ export function PortfolioComposer({
             <SheetTitle>{title}</SheetTitle>
             <SheetDescription>
               {kind === 'role'
-                ? translate(
-                    'portfolio.roleStep',
-                    'Choose an agent and a responsibility for each role.'
-                  )
+                ? role
+                  ? translate(
+                      'portfolio.editRoleHint',
+                      'Changes apply to tasks you start from now on. Running agents, and retries of an earlier launch, keep the instructions they started with.'
+                    )
+                  : translate(
+                      'portfolio.roleStep',
+                      'Choose an agent and a responsibility for each role.'
+                    )
                 : kind === 'task'
                   ? translate(
                       'portfolio.firstTaskHint',
@@ -125,7 +160,7 @@ export function PortfolioComposer({
                     )
                   : translate(
                       'portfolio.organizationHint',
-                      'Choose the name shown above your projects.'
+                      'Choose the name shown above your initiatives.'
                     )}
             </SheetDescription>
           </SheetHeader>
@@ -136,7 +171,7 @@ export function PortfolioComposer({
               void submit()
             }}
           >
-            {kind === 'role' && (
+            {kind === 'role' && !role && (
               <section className="space-y-3 rounded-md border border-border p-3">
                 <PortfolioSelect
                   label={translate('portfolio.roleTemplate', 'Role template')}
@@ -168,7 +203,13 @@ export function PortfolioComposer({
                 </Button>
               </section>
             )}
-            <PortfolioField label={translate('portfolio.name', 'Name')}>
+            <PortfolioField
+              label={
+                kind === 'role'
+                  ? translate('portfolio.roleName', 'Role name')
+                  : translate('portfolio.name', 'Name')
+              }
+            >
               <Input
                 value={name}
                 onChange={(event) => setName(event.target.value)}
@@ -176,6 +217,23 @@ export function PortfolioComposer({
                 maxLength={200}
               />
             </PortfolioField>
+            {kind === 'role' && (
+              <div className="flex flex-col gap-2">
+                <PortfolioField label={translate('portfolio.agentName', 'Agent name (optional)')}>
+                  <Input
+                    value={agentName}
+                    onChange={(event) => setAgentName(event.target.value)}
+                    maxLength={200}
+                  />
+                </PortfolioField>
+                <p className="text-xs text-muted-foreground">
+                  {translate(
+                    'portfolio.agentNameHint',
+                    'A name for this role’s agent, such as Nova. It is shown as “Nova · Android Engineer”, and the agent is told its name.'
+                  )}
+                </p>
+              </div>
+            )}
             {kind !== 'organization' && (
               <PortfolioField
                 label={
@@ -214,7 +272,8 @@ export function PortfolioComposer({
                       name: translate('portfolio.sharedWork', 'Shared / discovery / QA')
                     },
                     { id: 'ios', name: 'iOS' },
-                    { id: 'android', name: 'Android' }
+                    { id: 'android', name: 'Android' },
+                    { id: 'backend', name: translate('portfolio.backendWork', 'Backend / API') }
                   ]}
                 />
                 <PortfolioSelect
@@ -225,7 +284,10 @@ export function PortfolioComposer({
                   options={[
                     {
                       id: 'none',
-                      name: translate('portfolio.projectTask', 'Project task without a work item')
+                      name: translate(
+                        'portfolio.projectTask',
+                        'Initiative task without a work item'
+                      )
                     },
                     ...items.map((item) => ({
                       id: item.id,
@@ -237,7 +299,10 @@ export function PortfolioComposer({
                   label={translate('portfolio.assignedRole', 'Assigned role')}
                   value={roleId}
                   onChange={setRoleId}
-                  options={state.roles.map((role) => ({ id: role.id, name: role.name }))}
+                  options={state.roles.map((role) => ({
+                    id: role.id,
+                    name: portfolioRoleLabel(role)
+                  }))}
                 />
                 <PortfolioField
                   label={translate('portfolio.acceptanceCriteria', 'Acceptance criteria')}

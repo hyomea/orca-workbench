@@ -47,7 +47,7 @@ export function PortfolioDiscoveryReview({
         <p className="text-xs text-muted-foreground">
           {translate(
             'portfolio.scanLimited',
-            'This is a bounded sample of project files, not a complete audit.'
+            'This is a bounded sample of source files, not a complete audit.'
           )}
         </p>
       )}

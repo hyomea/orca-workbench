@@ -57,7 +57,7 @@ it('rejects malformed provider output instead of returning a savable draft', asy
     rawOutput: 'I have changed your project.'
   })
   await expect(discoverPortfolioObjective(request(), options)).rejects.toThrow(
-    'incomplete project draft'
+    'incomplete initiative draft'
   )
 })
 

@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { Github, Gitlab } from 'lucide-react'
+import { FolderKanban, Github, Gitlab } from 'lucide-react'
 import type { GlobalSettings } from '../../../../shared/global-settings-types'
-import type { TaskProvider } from '../../../../shared/task-providers'
+import type { TaskProvider, TaskSource } from '../../../../shared/task-providers'
 import {
   TASK_PROVIDERS,
+  TASK_SOURCES,
   normalizeVisibleTaskProviders,
   resolveVisibleTaskProvider
 } from '../../../../shared/task-providers'
@@ -35,7 +36,7 @@ type TasksPaneProps = {
 }
 
 const PROVIDER_META: Record<
-  TaskProvider,
+  TaskSource,
   {
     label: string
     description: string
@@ -89,6 +90,18 @@ const PROVIDER_META: Record<
       )
     },
     Icon: ({ className }) => <JiraIcon className={className} />
+  },
+  workbench: {
+    get label() {
+      return translate('portfolio.workbenchSource', 'Workbench')
+    },
+    get description() {
+      return translate(
+        'auto.components.settings.TasksPane.workbenchDescription',
+        'Run and review the tasks you plan in Workbench. Stored on this computer; nothing to connect.'
+      )
+    },
+    Icon: ({ className }) => <FolderKanban className={className} />
   }
 }
 
@@ -98,7 +111,9 @@ export function TasksPane({ settings, updateSettings }: TasksPaneProps): React.J
   const openSettingsTarget = useAppStore((s) => s.openSettingsTarget)
   const checkJiraConnection = useAppStore((s) => s.checkJiraConnection)
   const refreshPreflightStatus = useAppStore((s) => s.refreshPreflightStatus)
-  const readinessByProvider = useTaskSourceProviderReadiness(visibleProviders)
+  const readinessByProvider = useTaskSourceProviderReadiness(
+    visibleProviders.filter((provider): provider is TaskProvider => provider !== 'workbench')
+  )
   useIntegrationProviderStatusRefresh()
 
   // Warn only about started-then-stalled setup; untouched providers are the default.
@@ -114,7 +129,7 @@ export function TasksPane({ settings, updateSettings }: TasksPaneProps): React.J
     setPreviousAutoExpanded(autoExpandedProvider)
   }
 
-  const toggleProvider = (provider: TaskProvider): void => {
+  const toggleProvider = (provider: TaskSource): void => {
     const isVisible = visibleProviders.includes(provider)
     if (isVisible && visibleProviders.length === 1) {
       return
@@ -122,7 +137,7 @@ export function TasksPane({ settings, updateSettings }: TasksPaneProps): React.J
 
     const nextProviders = isVisible
       ? visibleProviders.filter((entry) => entry !== provider)
-      : TASK_PROVIDERS.filter((entry) => entry === provider || visibleProviders.includes(entry))
+      : TASK_SOURCES.filter((entry) => entry === provider || visibleProviders.includes(entry))
 
     updateSettings({
       visibleTaskProviders: nextProviders,
@@ -184,9 +199,16 @@ export function TasksPane({ settings, updateSettings }: TasksPaneProps): React.J
           keywords={getTasksPaneSearchKeywords()}
           className="space-y-3 py-2"
         >
-          {TASK_PROVIDERS.map((provider) => {
+          {TASK_SOURCES.map((provider) => {
             const meta = PROVIDER_META[provider]
-            const readiness = readinessByProvider[provider]
+            const readiness =
+              provider === 'workbench'
+                ? {
+                    connected: true,
+                    checking: false,
+                    visible: visibleProviders.includes('workbench')
+                  }
+                : readinessByProvider[provider]
             const Icon = meta.Icon
             const visible = readiness.visible
             const canHide = visibleProviders.length > 1
@@ -203,7 +225,7 @@ export function TasksPane({ settings, updateSettings }: TasksPaneProps): React.J
                 defaultExpanded={autoExpandedProvider === provider}
                 onToggleVisible={() => toggleProvider(provider)}
               >
-                {provider === 'linear' ? (
+                {provider === 'workbench' ? null : provider === 'linear' ? (
                   <TaskSourceLinearSetup
                     connected={readiness.connected}
                     checking={readiness.checking}

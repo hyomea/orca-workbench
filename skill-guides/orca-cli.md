@@ -2,13 +2,13 @@
 name: orca-cli
 description: >-
   Operate Orca-managed worktrees, folder contexts, terminals, repos, automations, worktree
-  comments, Workbench projects/features/tasks, and Orca's embedded browser through the
+  comments, Workbench initiatives/features/tasks, and Orca's embedded browser through the
   `orca` CLI. Use when the user says "$orca-cli", "Orca worktree", "child worktree", "spawn
   codex/claude in a worktree", "read/wait/send Orca terminal", "handoff" / "handover" /
-  "give this to another agent", "Workbench", "plan this ticket into Orca", or "Orca
-  browser". Prefer it over raw git worktree, ad hoc PTYs, or Computer Use when Orca state
-  is involved. Use Computer Use only when a visible window needs GUI control that a CLI,
-  filesystem, or API cannot do.
+  "give this to another agent", "Workbench", "plan this ticket into Orca", "submit this
+  task", or "Orca browser". Prefer it over raw git worktree, ad hoc PTYs, or Computer Use
+  when Orca state is involved. Use Computer Use only when a visible window needs GUI
+  control that a CLI, filesystem, or API cannot do.
 ---
 
 # Orca CLI
@@ -279,12 +279,14 @@ it before publishing.
 
 <!-- /host-capability -->
 
-## Workbench Projects
+## Workbench
 
-Workbench (the Projects page) holds business projects, features, work items, roles, tasks,
-test plans, and notes. Use `ORCA workbench` to read them, plan a ticket into them, apply
-changes atomically, and start tasks. The commands, batch format, and review boundary are in
-`references/workbench.md`. Load it before changing Workbench records.
+Workbench (the Workbench page in Orca) holds initiatives (business goals across
+repositories), features, work items, roles, tasks, test plans, and notes. Use
+`ORCA workbench` to read them, plan a ticket into them, apply changes atomically, and start
+and submit tasks. The commands, batch format, submission steps,
+and review boundary are in `references/workbench.md`. Load it before changing Workbench
+records, and when the user asks you to submit a Workbench task.
 
 ## Built-In Browser
 

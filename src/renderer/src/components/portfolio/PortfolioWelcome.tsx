@@ -41,7 +41,7 @@ export function PortfolioWelcome({
                 </div>
                 <div className="flex-1 space-y-2">
                   <h3 className="text-sm font-semibold">
-                    {translate('portfolio.firstProject', 'Create your first project')}
+                    {translate('portfolio.firstProject', 'Create your first initiative')}
                   </h3>
                   <p className="text-sm leading-relaxed text-muted-foreground">
                     {translate(
@@ -106,7 +106,7 @@ export function PortfolioWelcome({
                   <p className="text-sm leading-relaxed text-muted-foreground">
                     {translate(
                       'portfolio.taskStep',
-                      'Inside a project, define tasks, start agents, and accept completed work.'
+                      'Inside an initiative, define tasks, start agents, and accept completed work.'
                     )}
                   </p>
                 </div>

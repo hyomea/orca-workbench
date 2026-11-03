@@ -114,6 +114,8 @@ function board(value: PortfolioState, importExample = false, short = false): Rea
         error=""
         onExportNotes={async () => null}
         onOpenSteward={() => {}}
+        onOpenTasks={() => {}}
+        onReviewChanges={() => {}}
         onOpenPersonalNotes={() => {}}
         onChoosePersonalNotesFolder={() => {}}
         setupActions={{
@@ -163,7 +165,7 @@ export const newProject = defineFixture({
   render: () => board(state),
   interact: (frame) => {
     const button = [...frame.querySelectorAll('button')].find(
-      (entry) => entry.textContent === 'New project'
+      (entry) => entry.textContent === 'New initiative'
     )
     if (!button) {
       throw new Error('New project action missing')
@@ -176,7 +178,7 @@ export const editProject = defineFixture({
   render: () => board(state),
   interact: (frame) => {
     const button = [...frame.querySelectorAll('button')].find(
-      (entry) => entry.textContent === 'Edit project'
+      (entry) => entry.textContent === 'Edit initiative'
     )
     if (!button) {
       throw new Error('Edit project action missing')
@@ -233,7 +235,7 @@ export const discoveryDraft = defineFixture({
       button.click()
     }
     const button = [...frame.querySelectorAll('button')].find(
-      (entry) => entry.textContent === 'New project'
+      (entry) => entry.textContent === 'New initiative'
     )
     if (!button) {
       throw new Error('New project missing')

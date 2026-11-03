@@ -77,7 +77,7 @@ type NoteCommand = z.infer<(typeof PortfolioNoteCommands)[number]>
 function projectNote(state: PortfolioState, noteId: string, expectedVersion: number) {
   const note = state.notes.find((entry) => entry.id === noteId)
   if (!note) {
-    throw new Error('Note no longer exists. Refresh the project.')
+    throw new Error('Note no longer exists. Refresh the initiative.')
   }
   if (note.version !== expectedVersion) {
     throw new Error('This note changed elsewhere. Reopen it to review the latest version.')
@@ -87,7 +87,7 @@ function projectNote(state: PortfolioState, noteId: string, expectedVersion: num
 
 function requireProject(state: PortfolioState, projectId: string): void {
   if (!state.projects.some((project) => project.id === projectId)) {
-    throw new Error('Project no longer exists. Refresh and try again.')
+    throw new Error('Initiative no longer exists. Refresh and try again.')
   }
 }
 
@@ -145,7 +145,7 @@ export function applyPortfolioNoteCommand(
         }
         const note = projectNote(state, entry.noteId, entry.expectedVersion)
         if (note.projectId !== typed.projectId) {
-          throw new Error('Imported notes must belong to the selected project.')
+          throw new Error('Imported notes must belong to the selected initiative.')
         }
         write(note, entry.note, now)
       })
@@ -157,20 +157,20 @@ export function applyPortfolioNoteCommand(
         ? state.notes.find((entry) => entry.id === draft.noteId)
         : undefined
       if (draft.noteId && target?.projectId !== draft.projectId) {
-        throw new Error('The note to update does not exist in this project.')
+        throw new Error('The note to update does not exist in this initiative.')
       }
       if (
         draft.taskId &&
         !state.tasks.some((task) => task.id === draft.taskId && task.projectId === draft.projectId)
       ) {
-        throw new Error('The task does not belong to this project.')
+        throw new Error('The task does not belong to this initiative.')
       }
       if (
         state.noteDrafts.filter((entry) => entry.projectId === draft.projectId).length >=
         MAX_DRAFTS_PER_PROJECT
       ) {
         throw new Error(
-          'This project has too many pending note proposals. Ask the user to review them first.'
+          'This initiative has too many pending note proposals. Ask the user to review them first.'
         )
       }
       state.noteDrafts.push({
@@ -184,7 +184,7 @@ export function applyPortfolioNoteCommand(
     case 'noteDraft.accept': {
       const draft = state.noteDrafts.find((entry) => entry.id === typed.draftId)
       if (!draft) {
-        throw new Error('This proposal was already handled. Refresh the project.')
+        throw new Error('This proposal was already handled. Refresh the initiative.')
       }
       if (draft.noteId) {
         if (typed.expectedVersion === undefined) {
@@ -200,7 +200,7 @@ export function applyPortfolioNoteCommand(
     }
     case 'noteDraft.dismiss':
       if (!state.noteDrafts.some((entry) => entry.id === typed.draftId)) {
-        throw new Error('This proposal was already handled. Refresh the project.')
+        throw new Error('This proposal was already handled. Refresh the initiative.')
       }
       state.noteDrafts = state.noteDrafts.filter((entry) => entry.id !== typed.draftId)
       return true

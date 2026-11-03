@@ -34,7 +34,7 @@ export async function discoverPortfolioObjective(
     return { draft: parsePortfolioObjectiveDraft(output), sources, limited }
   } catch {
     throw new Error(
-      'The agent returned an incomplete project draft. Try again or write the objective manually.'
+      'The agent returned an incomplete initiative draft. Try again or write the objective manually.'
     )
   }
 }

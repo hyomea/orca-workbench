@@ -9,22 +9,25 @@ import {
   PortfolioNoteCommands,
   PortfolioNoteDraft
 } from './portfolio-notes'
+import { PortfolioCodeReview, PortfolioCommit } from './portfolio-review'
+import {
+  applyPortfolioRoleCommand,
+  PortfolioAgent,
+  PortfolioRoleCommands,
+  PortfolioRoleInput
+} from './portfolio-roles'
+export { PortfolioAgent, PortfolioRoleInput } from './portfolio-roles'
+export { PortfolioCodeReview, PortfolioCommit } from './portfolio-review'
 
 const Id = z.string().trim().min(1).max(4096)
 const Name = z.string().trim().min(1).max(200)
 const Description = z.string().trim().min(1).max(20000)
 
-export const PortfolioAgent = z.enum(['codex', 'claude', 'opencode'])
 export const PortfolioTaskStatus = z.enum(['todo', 'running', 'blocked', 'review', 'accepted'])
 export const PortfolioProjectInput = z.object({
   name: Name,
   objective: Description,
   repoIds: z.array(Id).max(100)
-})
-export const PortfolioRoleInput = z.object({
-  name: Name,
-  responsibility: Description,
-  agent: PortfolioAgent
 })
 export const PortfolioTaskInput = z.object({
   projectId: Id,
@@ -33,7 +36,7 @@ export const PortfolioTaskInput = z.object({
   instructions: Description,
   acceptanceCriteria: Description,
   workItemId: Id.optional(),
-  platform: z.enum(['ios', 'android', 'shared']).optional()
+  platform: z.enum(['ios', 'android', 'backend', 'shared']).optional()
 })
 export const PortfolioAttempt = z.object({
   operationId: Id,
@@ -53,7 +56,14 @@ export const PortfolioTask = PortfolioTaskInput.extend({
   evidence: z.string(),
   attempts: z.array(PortfolioAttempt),
   history: z.array(
-    z.object({ id: Id, at: z.number(), status: PortfolioTaskStatus, note: z.string() })
+    z.object({
+      id: Id,
+      at: z.number(),
+      status: PortfolioTaskStatus,
+      note: z.string(),
+      codeReview: PortfolioCodeReview.optional(),
+      commit: PortfolioCommit.optional()
+    })
   )
 })
 export const PortfolioState = z.object({
@@ -114,6 +124,7 @@ export const PortfolioCommand = z.discriminatedUnion('kind', [
   ...PortfolioFeatureCommands,
   ...PortfolioVerificationCommands,
   ...PortfolioNoteCommands,
+  ...PortfolioRoleCommands,
   z.object({ kind: z.literal('organization.rename'), name: Name }),
   z.object({ kind: z.literal('project.create'), project: PortfolioProjectInput }),
   z.object({
@@ -122,14 +133,15 @@ export const PortfolioCommand = z.discriminatedUnion('kind', [
     project: ProjectDetails,
     expected: ProjectDetails
   }),
-  z.object({ kind: z.literal('role.create'), role: PortfolioRoleInput }),
   z.object({ kind: z.literal('task.create'), task: PortfolioTaskInput }),
   z.object({ kind: z.literal('task.closeExecution'), taskId: Id, note: Description }),
   z.object({
     kind: z.literal('task.transition'),
     taskId: Id,
     status: PortfolioTaskStatus.exclude(['running']),
-    note: Description
+    note: Description,
+    codeReview: PortfolioCodeReview.optional(),
+    commit: PortfolioCommit.optional()
   })
 ])
 export type PortfolioCommand = z.infer<typeof PortfolioCommand>
@@ -153,7 +165,7 @@ export function emptyPortfolio(): PortfolioState {
 export function portfolioTask(state: PortfolioState, taskId: string): PortfolioTask {
   const task = state.tasks.find((entry) => entry.id === taskId)
   if (!task) {
-    throw new Error('Task no longer exists. Refresh the project.')
+    throw new Error('Task no longer exists. Refresh the initiative.')
   }
   return task
 }
@@ -167,7 +179,8 @@ export function applyPortfolioCommand(
   if (
     applyPortfolioVerificationCommand(state, command, id, now) ||
     applyPortfolioFeatureCommand(state, command, id, now) ||
-    applyPortfolioNoteCommand(state, command, id, now)
+    applyPortfolioNoteCommand(state, command, id, now) ||
+    applyPortfolioRoleCommand(state, command, id)
   ) {
     return
   }
@@ -185,7 +198,7 @@ export function applyPortfolioCommand(
     case 'project.update': {
       const project = state.projects.find((entry) => entry.id === command.projectId)
       if (!project) {
-        throw new Error('Project no longer exists. Close this form and refresh.')
+        throw new Error('Initiative no longer exists. Close this form and refresh.')
       }
       if (
         project.name !== command.expected.name ||
@@ -193,7 +206,7 @@ export function applyPortfolioCommand(
         JSON.stringify(project.repoIds) !== JSON.stringify(command.expected.repoIds)
       ) {
         throw new Error(
-          'Project details changed. Close and reopen this form to review the latest version.'
+          'Initiative details changed. Close and reopen this form to review the latest version.'
         )
       }
       project.name = command.project.name
@@ -201,15 +214,12 @@ export function applyPortfolioCommand(
       project.repoIds = [...new Set(command.project.repoIds)]
       return
     }
-    case 'role.create':
-      state.roles.push({ ...command.role, id })
-      return
     case 'task.create':
       if (
         !state.projects.some((project) => project.id === command.task.projectId) ||
         !state.roles.some((role) => role.id === command.task.roleId)
       ) {
-        throw new Error('Choose an existing project and role.')
+        throw new Error('Choose an existing initiative and role.')
       }
       if (command.task.workItemId) {
         workItemForTask(state, command.task.projectId, command.task.workItemId)
@@ -257,6 +267,9 @@ export function applyPortfolioCommand(
       if (command.status === 'accepted' && task.status !== 'review') {
         throw new Error('Submit evidence for review before accepting this task.')
       }
+      if (command.status === 'accepted' && !command.codeReview) {
+        throw new Error('Record whether you reviewed the code or skipped it before accepting.')
+      }
       if (command.status === 'review') {
         task.evidence = command.note
       }
@@ -271,7 +284,9 @@ export function applyPortfolioCommand(
         id: `${task.id}:${task.history.length}`,
         at: now,
         status: command.status,
-        note: command.note
+        note: command.note,
+        ...(command.status === 'accepted' ? { codeReview: command.codeReview } : {}),
+        ...(command.status === 'review' && command.commit ? { commit: command.commit } : {})
       })
     }
   }

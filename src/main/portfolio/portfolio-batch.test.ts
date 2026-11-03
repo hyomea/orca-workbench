@@ -120,6 +120,6 @@ it('writes nothing when any step fails', async () => {
     store.update(null, (state) => {
       applyPortfolioBatch(state, broken, ids(), 5)
     })
-  ).rejects.toThrow('Step 4 (task.create): Choose an existing project and role.')
+  ).rejects.toThrow('Step 4 (task.create): Choose an existing initiative and role.')
   expect(await store.read()).toEqual(before)
 })

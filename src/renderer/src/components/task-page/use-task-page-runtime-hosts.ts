@@ -2,7 +2,7 @@ import type { TaskPageRepoSelectionModel } from './use-task-page-repo-selection'
 import { normalizeGitHubTaskPreset } from '../../../../shared/task-github-search'
 import { getTaskPresetQuery } from '../../../../shared/task-preset-query'
 import { useState, useRef, useEffect, useMemo } from 'react'
-import { type TaskProvider, resolveVisibleTaskProvider } from '../../../../shared/task-providers'
+import { type TaskSource, resolveVisibleTaskProvider } from '../../../../shared/task-providers'
 import type { TaskSourceContext } from '../../../../shared/task-source-context'
 import type { RuntimeProviderPreflightStatus } from '@/components/task-source-provider-availability'
 import { buildExecutionHostRegistry } from '../../../../shared/execution-host-registry'
@@ -29,7 +29,7 @@ export function useTaskPageRuntimeHosts(model: TaskPageRepoSelectionModel) {
   const defaultTaskViewPreset = normalizeGitHubTaskPreset(settings?.defaultTaskViewPreset ?? 'all')
   const initialTaskQuery = getTaskPresetQuery(defaultTaskViewPreset)
   const preferredTaskSource = pageData.taskSource ?? defaultTaskSource
-  const [taskSource, setTaskSource] = useState<TaskProvider>(
+  const [taskSource, setTaskSource] = useState<TaskSource>(
     resolveVisibleTaskProvider(preferredTaskSource, visibleTaskProviders)
   )
   const runtimePreflightMountedRef = useRef(true)

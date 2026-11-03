@@ -7,7 +7,7 @@ import type { GitHubProjectSettings } from './github/project-types'
 import type { VoiceSettings } from './speech-types'
 import type { AiVaultSearchSettings } from './ai-vault-search-settings'
 import type { GitLabProjectSettings } from './gitlab-types'
-import type { TaskProvider } from './task-providers'
+import type { TaskSource } from './task-providers'
 import type { KeybindingOverrides, TerminalShortcutPolicy } from './keybindings'
 import type { AppIconId } from './app-icon'
 import type { SourceControlAiSettings } from './source-control-ai-types'
@@ -345,11 +345,13 @@ export type GlobalSettings = GlobalSettingsBase & {
   /** Default preset in the new-workspace GitHub task view. */
   defaultTaskViewPreset: TaskViewPresetId
   /** Persisted last-used task source so Tasks reopens to the same provider instead of defaulting to GitHub. */
-  defaultTaskSource: TaskProvider
+  defaultTaskSource: TaskSource
   /** Persisted visible task providers; hides unused providers from Tasks chrome and sidebar shortcuts. */
-  visibleTaskProviders: TaskProvider[]
+  visibleTaskProviders: TaskSource[]
   /** Why: one-shot guard to make Jira visible for existing profiles once, without re-adding after a later opt-out. */
   visibleTaskProvidersDefaultedForJira: boolean
+  /** Set once Workbench was appended to a saved source list that predates it. */
+  visibleTaskProvidersDefaultedForWorkbench: boolean
   /** Repo selection: null includes all present/future repos; arrays freeze a subset, dropping ineligible ids on load and treating empty as null. */
   defaultRepoSelection: string[] | null
   /** Linear team selection: null includes all; arrays freeze selected team IDs, matching defaultRepoSelection. */

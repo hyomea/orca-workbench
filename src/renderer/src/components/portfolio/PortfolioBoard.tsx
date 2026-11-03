@@ -9,6 +9,7 @@ import {
   type PortfolioCommand,
   type PortfolioState
 } from '../../../../shared/portfolio'
+import { portfolioRoleLabelById } from '../../../../shared/portfolio-roles'
 import type { AgentStatusEntry } from '../../../../shared/agent-status-types'
 import { PortfolioComposer, type PortfolioComposerKind } from './PortfolioComposer'
 import { PortfolioTaskDetail, type PortfolioWorkspace } from './PortfolioTaskDetail'
@@ -19,6 +20,8 @@ import { PortfolioNotes, type PortfolioNotesExport } from './PortfolioNotes'
 import { PortfolioProjectBoard } from './PortfolioProjectBoard'
 import { PortfolioProjectSetup } from './PortfolioProjectSetup'
 import { PortfolioPersonalNotesMenu } from './PortfolioPersonalNotesMenu'
+import { portfolioTaskObservation } from './portfolio-task-lanes'
+import { usePortfolioTaskReviewComments } from './portfolio-task-review-actions'
 import type { PortfolioSetupActions } from './portfolio-project-setup-types'
 
 export function PortfolioBoard({
@@ -32,8 +35,10 @@ export function PortfolioBoard({
   onSave,
   onLaunch,
   onOpenWorkspace,
+  onReviewChanges,
   onExportNotes,
   onOpenSteward,
+  onOpenTasks,
   onOpenPersonalNotes,
   onChoosePersonalNotesFolder,
   setupActions,
@@ -49,8 +54,10 @@ export function PortfolioBoard({
   onSave: (command: PortfolioCommand) => Promise<boolean>
   onLaunch: (taskId: string, worktreeId: string) => Promise<boolean>
   onOpenWorkspace: (id: string) => void
+  onReviewChanges: (worktreeId: string) => void
   onExportNotes: PortfolioNotesExport
   onOpenSteward: () => void
+  onOpenTasks: (projectId: string) => void
   onOpenPersonalNotes: () => void
   onChoosePersonalNotesFolder: () => void
   setupActions: PortfolioSetupActions
@@ -61,6 +68,9 @@ export function PortfolioBoard({
   const [selectedTaskId, setSelectedTaskId] = useState('')
   const [taskWorkItemId, setTaskWorkItemId] = useState('')
   const [composer, setComposer] = useState<PortfolioComposerKind | null>(null)
+  const [editingRoleId, setEditingRoleId] = useState('')
+  const editingRole =
+    composer === 'role.edit' ? state.roles.find((role) => role.id === editingRoleId) : undefined
   const project =
     state.projects.find((entry) => entry.id === selectedProjectId) ?? state.projects[0]
   const tasks = state.tasks.filter((task) => task.projectId === project?.id)
@@ -69,16 +79,8 @@ export function PortfolioBoard({
     project?.repoIds.includes(workspace.repoId)
   )
   const progress = portfolioProgress(state.tasks)
-  const attempt = selectedTask?.attempts.at(-1)
-  const observation = attempt
-    ? Object.values(activity).find(
-        (entry) =>
-          ((attempt.paneKey && entry.paneKey === attempt.paneKey) ||
-            (attempt.handle && entry.terminalHandle === attempt.handle)) &&
-          !entry.restoredUnconfirmed &&
-          (entry.evidenceObservedAt ?? entry.updatedAt) >= attempt.createdAt
-      )
-    : undefined
+  const observation = selectedTask ? portfolioTaskObservation(selectedTask, activity) : undefined
+  const reviewComments = usePortfolioTaskReviewComments(selectedTask?.attempts.at(-1)?.worktreeId)
 
   return (
     <div
@@ -90,7 +92,7 @@ export function PortfolioBoard({
           <div className="flex items-center gap-2">
             <FolderKanban className="size-4 text-muted-foreground" aria-hidden="true" />
             <h1 className="text-base font-semibold">
-              {translate('portfolio.navigation', 'Projects')}
+              {translate('portfolio.navigation', 'Workbench')}
             </h1>
           </div>
           <Button
@@ -134,7 +136,7 @@ export function PortfolioBoard({
           {state.projects.length > 0 && (
             <Button variant="outline" size="sm" onClick={() => setComposer('project')}>
               <Plus aria-hidden="true" />
-              {translate('portfolio.newProject', 'New project')}
+              {translate('portfolio.newProject', 'New initiative')}
             </Button>
           )}
         </div>
@@ -160,6 +162,10 @@ export function PortfolioBoard({
             selectedProjectId={project.id}
             onSelectProject={setSelectedProjectId}
             onCreateRole={() => setComposer('role')}
+            onEditRole={(roleId) => {
+              setEditingRoleId(roleId)
+              setComposer('role.edit')
+            }}
           />
           <PortfolioProjectBoard
             key={project.id}
@@ -173,7 +179,7 @@ export function PortfolioBoard({
               setComposer('task')
             }}
             onCreateRole={() => setComposer('role')}
-            onSelectTask={setSelectedTaskId}
+            onOpenTasks={() => onOpenTasks(project.id)}
             featureContent={
               <PortfolioFeatures
                 key={project.id}
@@ -231,10 +237,12 @@ export function PortfolioBoard({
           onClose={() => setComposer(null)}
         />
       ) : (
-        composer && (
+        composer &&
+        (composer !== 'role.edit' || editingRole) && (
           <PortfolioComposer
-            key={`${composer}:${project?.id ?? ''}`}
-            kind={composer}
+            key={`${composer}:${project?.id ?? ''}:${editingRole?.id ?? ''}`}
+            kind={composer === 'role.edit' ? 'role' : composer}
+            role={editingRole}
             workItemId={taskWorkItemId || undefined}
             state={state}
             projectId={project?.id ?? ''}
@@ -249,15 +257,17 @@ export function PortfolioBoard({
         <PortfolioTaskDetail
           key={selectedTask.id}
           task={selectedTask}
-          roleName={state.roles.find((role) => role.id === selectedTask.roleId)?.name ?? ''}
+          roleName={portfolioRoleLabelById(state, selectedTask.roleId)}
           workspaces={projectWorkspaces}
           activity={observation}
+          reviewComments={reviewComments}
           busy={busy}
           saveError={error}
           onClose={() => setSelectedTaskId('')}
           onSave={onSave}
           onLaunch={onLaunch}
           onOpenWorkspace={onOpenWorkspace}
+          onReviewChanges={onReviewChanges}
         />
       )}
     </div>

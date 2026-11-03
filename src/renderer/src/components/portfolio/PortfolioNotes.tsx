@@ -160,7 +160,7 @@ export function PortfolioNotes({
           <p className="max-w-xl text-xs text-muted-foreground">
             {translate(
               'portfolio.notesHint',
-              'Durable project knowledge for you and your agents. Agents can propose changes; you decide what is kept.'
+              'Durable knowledge about this initiative for you and your agents. Agents can propose changes; you decide what is kept.'
             )}
           </p>
         </div>

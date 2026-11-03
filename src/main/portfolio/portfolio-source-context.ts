@@ -61,7 +61,7 @@ function listSourcePaths(
         })
       }
     }
-    const abort = (): void => finish(new Error('Project analysis canceled.'))
+    const abort = (): void => finish(new Error('Initiative analysis canceled.'))
     const timer = setTimeout(
       () => finish(new Error('Reading the directory timed out. Choose a smaller directory.')),
       10000
@@ -79,7 +79,7 @@ function listSourcePaths(
     child.stderr?.resume()
     child.on('error', (error) => finish(error))
     child.on('close', (code) =>
-      finish(code === 0 || code === 1 ? undefined : new Error('Cannot list project files.'))
+      finish(code === 0 || code === 1 ? undefined : new Error('Cannot list source files.'))
     )
     signal.addEventListener('abort', abort, { once: true })
     if (signal.aborted) {

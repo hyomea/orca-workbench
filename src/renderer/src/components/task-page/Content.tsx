@@ -7,11 +7,14 @@ import { TaskPageGitHubList } from './github/List'
 import { TaskPageGitLabTodoList } from './gitlab/TodoList'
 import { TaskPageGitLabItemList } from './gitlab/ItemList'
 import { TaskPageJiraContent } from './jira/Content'
+import { PortfolioTaskQueue } from '@/components/portfolio/PortfolioTaskQueue'
+import { useAppStore } from '@/store'
 export function TaskPageContent({
   model
 }: {
   model: TaskPageComposerActionsModel
 }): React.JSX.Element | null {
+  const workbenchProjectId = useAppStore((s) => s.taskPageData.workbenchProjectId)
   const {
     repoSelection,
     taskSource,
@@ -73,6 +76,8 @@ export function TaskPageContent({
     <TaskPageGitLabTodoList model={model} />
   ) : taskSource === 'gitlab' ? (
     <TaskPageGitLabItemList model={model} />
+  ) : taskSource === 'workbench' ? (
+    <PortfolioTaskQueue key={workbenchProjectId} initialProjectId={workbenchProjectId} />
   ) : (
     <TaskPageJiraContent model={model} />
   )

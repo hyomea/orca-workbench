@@ -34,7 +34,7 @@ export function PortfolioSourcePicker({
   return (
     <fieldset disabled={disabled || working} className="space-y-3">
       <legend className="mb-2 text-sm font-medium">
-        {translate('portfolio.sourceDirectories', 'Project directories')}
+        {translate('portfolio.sourceDirectories', 'Source directories')}
         {selected.length > 0 && (
           <span className="ml-2 text-xs font-normal text-muted-foreground">
             {translate('portfolio.sourcesSelected', '{{count}} of {{total}} selected', {
@@ -47,7 +47,7 @@ export function PortfolioSourcePicker({
       <p className="text-xs text-muted-foreground">
         {translate(
           'portfolio.sourcesHint',
-          'Choose existing sources or import a directory. Imports remain in Orca even if you cancel project setup.'
+          'Choose existing sources or import a directory. Imports remain in Orca even if you cancel initiative setup.'
         )}
       </p>
       <div className="max-h-80 space-y-1.5 overflow-y-auto scrollbar-sleek">

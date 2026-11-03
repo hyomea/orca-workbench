@@ -12,7 +12,7 @@ import {
   normalizeVisibleTaskProviders,
   restoreAvailableDefaultTaskProvider,
   resolveVisibleTaskProvider,
-  type TaskProvider
+  type TaskSource
 } from '../../../../shared/task-providers'
 import {
   getSourceOptions,
@@ -160,12 +160,12 @@ export function useTaskPageRepoSelection(model: TaskPageStoreBindingsModel) {
     [sourceOptions, visibleTaskProviders]
   )
   const hideTaskSource = useCallback(
-    (provider: TaskProvider, label: string) => {
+    (provider: TaskSource, label: string) => {
       const visibleWithoutProvider = preferredVisibleTaskProviders.filter(
         (visibleProvider) => visibleProvider !== provider
       )
       // Empty provider lists mean all, so hiding one source must leave another selected.
-      const nextVisibleTaskProviders: TaskProvider[] =
+      const nextVisibleTaskProviders: TaskSource[] =
         visibleWithoutProvider.length > 0 ? visibleWithoutProvider : ['github']
       const nextDefaultTaskSource = resolveVisibleTaskProvider(
         defaultTaskSource,

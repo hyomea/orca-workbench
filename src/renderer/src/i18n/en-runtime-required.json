@@ -2058,6 +2058,8 @@
     }
   },
   "portfolio": {
+    "acceptedCount_one": "Accepted ({{count}})",
+    "acceptedCount_other": "Accepted ({{count}})",
     "attachDesignLink": "Attach design link",
     "featureCounts": "{{count}} work items · specification v{{version}}",
     "jiraApplyWithAC": "Applying replaces the name, description, acceptance criteria, and Jira reference below. Review these fields before saving.",
@@ -2067,6 +2069,8 @@
     "referenceOnlyHint": "Paste requirements and reference links here. Links are not imported or analyzed automatically. An improvement should describe the complete proposed specification before publication.",
     "selectWorkItem": "Select a work item to review its context, tasks, and history.",
     "specificationHint": "Draft requirements in an initial delivery work item. Review and accept the work, then explicitly publish its specification.",
+    "tasksInTasksPage_one": "Start, follow, and review this initiative’s {{count}} task in Tasks.",
+    "tasksInTasksPage_other": "Start, follow, and review this initiative’s {{count}} tasks in Tasks.",
     "useTicketContent": "Use ticket content"
   },
   "projectViews": {

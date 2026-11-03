@@ -134,7 +134,7 @@ it('imports selected directories before analyzing once with the returned IDs and
     pickSources: async () => [{ path: '/project/mobile', name: 'Mobile source', kind: 'git' }],
     importSource: () => imported
   })
-  fireEvent.click(screen.getByText('Existing project'))
+  fireEvent.click(screen.getByText('Existing initiative'))
   await act(async () => {
     fireEvent.click(screen.getByText('Import directory'))
   })
@@ -172,7 +172,7 @@ it('stops on a partial import failure and retries only the remaining directory b
       return { id: source.path, name: source.name }
     }
   })
-  fireEvent.click(screen.getByText('Existing project'))
+  fireEvent.click(screen.getByText('Existing initiative'))
   await act(async () => {
     fireEvent.click(screen.getByText('Import directory'))
   })
@@ -204,7 +204,7 @@ it('keeps imported sources selected when analysis fails so retry does not import
     pickSources: async () => [{ path: '/project/docs', name: 'Docs source', kind: 'folder' }],
     importSource
   })
-  fireEvent.click(screen.getByText('Existing project'))
+  fireEvent.click(screen.getByText('Existing initiative'))
   await act(async () => {
     fireEvent.click(screen.getByText('Import directory'))
   })
@@ -225,7 +225,7 @@ it('restores imported sources, analysis, corrections, and refinement after closi
     pickSources: async () => [{ path: '/arts', name: 'Arts folder', kind: 'folder' }],
     importSource: async () => ({ id: 'arts-id', name: 'Arts folder' })
   })
-  fireEvent.click(screen.getByText('Existing project'))
+  fireEvent.click(screen.getByText('Existing initiative'))
   await act(async () => {
     fireEvent.click(screen.getByText('Import directory'))
   })

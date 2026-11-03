@@ -139,7 +139,7 @@ const SidebarNav = React.memo(function SidebarNav() {
         )}
       >
         <FolderKanban className="size-4 shrink-0" />
-        {translate('portfolio.navigation', 'Projects')}
+        {translate('portfolio.navigation', 'Workbench')}
       </button>
       {showArtifactsButton ? (
         <ContextMenu>

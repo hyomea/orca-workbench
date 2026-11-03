@@ -129,7 +129,8 @@ function acceptTask(state: PortfolioState, id: string) {
     kind: 'task.transition',
     taskId: id,
     status: 'accepted',
-    note: 'Reviewed changes'
+    note: 'Reviewed changes',
+    codeReview: 'reviewed'
   })
 }
 function accept(state: PortfolioState) {

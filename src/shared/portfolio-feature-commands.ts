@@ -6,7 +6,7 @@ export function workItemForTask(state: PortfolioState, projectId: string, workIt
   const item = state.workItems.find((entry) => entry.id === workItemId)
   const feature = item && state.features.find((entry) => entry.id === item.featureId)
   if (!item || !feature || feature.projectId !== projectId) {
-    throw new Error('Choose a work item from this project.')
+    throw new Error('Choose a work item from this initiative.')
   }
   if (item.status === 'accepted') {
     throw new Error('Reopen the work item before changing or starting its tasks.')
@@ -27,7 +27,7 @@ export function applyPortfolioFeatureCommand(
 ): boolean {
   if (command.kind === 'feature.create') {
     if (!state.projects.some((project) => project.id === command.feature.projectId)) {
-      throw new Error('Choose an existing project.')
+      throw new Error('Choose an existing initiative.')
     }
     state.features.push({ ...command.feature, id, versions: [] })
     return true

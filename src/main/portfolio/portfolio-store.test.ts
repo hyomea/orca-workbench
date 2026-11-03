@@ -148,6 +148,9 @@ describe('portfolio persistence and execution', () => {
     expect(launched.tasks[0].attempts[0].prompt).toContain(
       'Objective: Unify web and mobile sessions'
     )
+    expect(launched.tasks[0].attempts[0].prompt).toContain(
+      'This is Workbench task task. When the user asks you to submit it'
+    )
   })
 
   it('refuses a second window while the original launch is still in flight', async () => {
@@ -264,7 +267,13 @@ describe('portfolio persistence and execution', () => {
       store.update(recovered.revision, (state) =>
         applyPortfolioCommand(
           state,
-          { kind: 'task.transition', taskId: 'task', status: 'accepted', note: 'Done' },
+          {
+            kind: 'task.transition',
+            taskId: 'task',
+            status: 'accepted',
+            note: 'Done',
+            codeReview: 'skipped'
+          },
           '',
           4
         )
@@ -290,7 +299,8 @@ describe('portfolio persistence and execution', () => {
           kind: 'task.transition',
           taskId: 'task',
           status: 'accepted',
-          note: 'Reviewed contract and results'
+          note: 'Reviewed contract and results',
+          codeReview: 'reviewed'
         },
         '',
         6

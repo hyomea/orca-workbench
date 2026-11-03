@@ -28,7 +28,7 @@ export function preparePortfolioAttempt(
   const project = state.projects.find((entry) => entry.id === task.projectId)
   const role = state.roles.find((entry) => entry.id === task.roleId)
   if (!project || !role || !project.repoIds.includes(repoId)) {
-    throw new Error('Choose a workspace from a repository linked to this project.')
+    throw new Error('Choose a workspace from a repository linked to this initiative.')
   }
   if (
     state.tasks.some(
@@ -39,7 +39,7 @@ export function preparePortfolioAttempt(
     )
   ) {
     throw new Error(
-      'Another project task is running in this workspace. Choose a separate workspace.'
+      'Another initiative task is running in this workspace. Choose a separate workspace.'
     )
   }
   const attempt: PortfolioAttempt = {
@@ -49,16 +49,18 @@ export function preparePortfolioAttempt(
     createdAt: now,
     state: 'pending',
     prompt: [
-      `Project: ${project.name}`,
+      `Initiative: ${project.name}`,
       `Objective: ${project.objective}`,
       ...portfolioFeaturePrompt(state, task),
       ...(designContext ? [designContext] : []),
       `Role: ${role.name}`,
+      ...(role.agentName ? [`Your name: ${role.agentName}`] : []),
       `Responsibility: ${role.responsibility}`,
       `Task: ${task.title}`,
       task.instructions,
       `Acceptance criteria:\n${task.acceptanceCriteria}`,
-      'Report changes, verification evidence, and blockers. Completion requires user review.'
+      // The submission steps live in the orca-cli skill so they can change without relaunching.
+      `This is Workbench task ${task.id}. When the user asks you to submit it, follow "Submitting a task" in the orca-cli skill's Workbench reference.`
     ].join('\n\n')
   }
   task.attempts.push(attempt)

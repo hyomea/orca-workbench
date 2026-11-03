@@ -14,7 +14,7 @@ export class PortfolioStore {
       if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
         return emptyPortfolio()
       }
-      throw new Error('Cannot read project data. The existing file has been preserved.', {
+      throw new Error('Cannot read Workbench data. The existing file has been preserved.', {
         cause: error
       })
     }
@@ -32,7 +32,7 @@ export class PortfolioStore {
     try {
       const state = await this.read()
       if (revision !== null && state.revision !== revision) {
-        throw new Error('Project data changed in another window. Refresh and try again.')
+        throw new Error('Workbench data changed in another window. Refresh and try again.')
       }
       change(state)
       state.revision += 1
@@ -52,7 +52,7 @@ export class PortfolioStore {
             }
             if ((await readFile(backup, 'utf8')) !== contents) {
               throw new Error(
-                'An existing migration backup differs from the current file. Project data has been preserved.'
+                'An existing migration backup differs from the current file. Workbench data has been preserved.'
               )
             }
           }

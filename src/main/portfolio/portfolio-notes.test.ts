@@ -106,7 +106,7 @@ describe('project notes', () => {
     ).toThrow('changed elsewhere')
     expect(() =>
       apply(state, { kind: 'note.create', projectId: 'missing', note: content('A') })
-    ).toThrow('Project no longer exists')
+    ).toThrow('Initiative no longer exists')
   })
 
   it('keeps agent proposals reviewable and never applies them without acceptance', () => {
@@ -134,7 +134,7 @@ describe('project notes', () => {
         kind: 'noteDraft.submit',
         draft: { projectId: 'q', noteId: 'n', title: 'Wrong project', body: '', reason: '' }
       })
-    ).toThrow('does not exist in this project')
+    ).toThrow('does not exist in this initiative')
     expect(() =>
       apply(state, {
         kind: 'noteDraft.submit',
@@ -260,7 +260,7 @@ describe('project notes', () => {
       }
     )
     const prompt = launched.tasks[0].attempts[0].prompt
-    const listed = JSON.parse(/Project notes[^\n]*\n(.*)\n/.exec(prompt)?.[1] ?? '[]')
+    const listed = JSON.parse(/Initiative notes[^\n]*\n(.*)\n/.exec(prompt)?.[1] ?? '[]')
     expect(listed.map((entry: { title: string }) => entry.title)).toEqual(['Testing'])
     expect(await readFile(listed[0].path, 'utf8')).toContain('gradle')
     expect(prompt).toContain('orca workbench note propose --project "p" --task "t"')

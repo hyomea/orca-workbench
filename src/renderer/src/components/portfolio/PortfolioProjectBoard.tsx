@@ -1,13 +1,5 @@
 import { useState, type ReactNode } from 'react'
-import {
-  Circle,
-  CircleCheck,
-  CircleDashed,
-  CirclePause,
-  GitPullRequest,
-  ListChecks,
-  Plus
-} from 'lucide-react'
+import { ListChecks, Plus, SquareArrowOutUpRight } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
@@ -26,7 +18,7 @@ export function PortfolioProjectBoard({
   onCreateTask,
   onEditProject,
   onCreateRole,
-  onSelectTask,
+  onOpenTasks,
   featureContent,
   notesContent
 }: {
@@ -37,19 +29,12 @@ export function PortfolioProjectBoard({
   onCreateTask: () => void
   onEditProject: () => void
   onCreateRole: () => void
-  onSelectTask: (id: string) => void
+  onOpenTasks: () => void
   featureContent?: ReactNode
   notesContent?: ReactNode
 }): React.JSX.Element {
   const [view, setView] = useState(featureContent ? 'features' : 'tasks')
   const progress = portfolioProgress(tasks)
-  const columns = [
-    { id: 'todo', name: translate('portfolio.planned', 'Planned'), icon: CircleDashed },
-    { id: 'running', name: translate('portfolio.running', 'Running'), icon: Circle },
-    { id: 'blocked', name: translate('portfolio.blocked', 'Blocked'), icon: CirclePause },
-    { id: 'review', name: translate('portfolio.review', 'In review'), icon: GitPullRequest },
-    { id: 'accepted', name: translate('portfolio.accepted', 'Accepted'), icon: CircleCheck }
-  ] as const
 
   return (
     <main className="@container/project min-h-0 min-w-0 p-5 @3xl/portfolio:p-6">
@@ -58,7 +43,7 @@ export function PortfolioProjectBoard({
           <h2 className="min-w-0 break-words text-lg font-semibold">{project.name}</h2>
           <div className="flex gap-2">
             <Button variant="ghost" size="sm" onClick={onEditProject}>
-              {translate('portfolio.editProject', 'Edit project')}
+              {translate('portfolio.editProject', 'Edit initiative')}
             </Button>
             {view === 'tasks' && tasks.length > 0 && roles.length > 0 && (
               <Button size="sm" onClick={onCreateTask}>
@@ -70,9 +55,13 @@ export function PortfolioProjectBoard({
         </div>
         <details className="group">
           <summary className="w-fit cursor-pointer text-xs text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-            {translate('portfolio.projectContextSummary', 'Project context · {{count}} sources', {
-              count: project.repoIds.length
-            })}
+            {translate(
+              'portfolio.projectContextSummary',
+              'Initiative context · {{count}} sources',
+              {
+                count: project.repoIds.length
+              }
+            )}
           </summary>
           <div className="mt-3 space-y-3">
             <p className="max-w-2xl whitespace-pre-wrap break-words text-sm leading-relaxed text-muted-foreground">
@@ -97,7 +86,7 @@ export function PortfolioProjectBoard({
         <div
           className="mb-5 flex gap-2"
           role="group"
-          aria-label={translate('portfolio.projectViews', 'Project views')}
+          aria-label={translate('portfolio.projectViews', 'Initiative views')}
         >
           {[
             ...(featureContent
@@ -136,7 +125,7 @@ export function PortfolioProjectBoard({
               </div>
               <Progress
                 value={progress.percent}
-                aria-label={translate('portfolio.projectProgress', 'Project completion')}
+                aria-label={translate('portfolio.projectProgress', 'Initiative completion')}
                 className="h-1"
               />
               <p className="text-xs text-muted-foreground">
@@ -146,46 +135,22 @@ export function PortfolioProjectBoard({
                 )}
               </p>
             </div>
-            <div className="grid grid-cols-1 items-start gap-3 @md/project:grid-cols-2 @4xl/project:grid-cols-3 @6xl/project:grid-cols-5">
-              {columns.map((column) => {
-                const columnTasks = tasks.filter((task) => task.status === column.id)
-                return (
-                  <section
-                    key={column.id}
-                    className="min-w-0 rounded-xl border border-border bg-muted/30 p-2"
-                  >
-                    <h3 className="mb-2 flex items-center gap-2 px-1 py-1 text-xs font-medium">
-                      <column.icon className="size-3.5 text-muted-foreground" aria-hidden="true" />
-                      {column.name}
-                      <span className="ml-auto tabular-nums text-muted-foreground">
-                        {columnTasks.length}
-                      </span>
-                    </h3>
-                    <div className="space-y-2">
-                      {columnTasks.map((task) => (
-                        <button
-                          key={task.id}
-                          type="button"
-                          onClick={() => onSelectTask(task.id)}
-                          className="w-full space-y-4 rounded-md border border-border bg-card p-3 text-left text-card-foreground shadow-xs outline-none hover:border-muted-foreground/35 hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
-                        >
-                          <span className="block break-words text-sm font-medium leading-relaxed">
-                            {task.title}
-                          </span>
-                          <span className="block break-words text-xs text-muted-foreground">
-                            {roles.find((role) => role.id === task.roleId)?.name}
-                          </span>
-                        </button>
-                      ))}
-                      {columnTasks.length === 0 && (
-                        <p className="px-1 py-5 text-center text-xs text-muted-foreground">
-                          {translate('portfolio.noTasks', 'No tasks')}
-                        </p>
-                      )}
-                    </div>
-                  </section>
-                )
-              })}
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-sm text-muted-foreground">
+                {translate(
+                  'portfolio.tasksInTasksPage',
+                  'Start, follow, and review this initiative’s {{count}} tasks in Tasks.',
+                  {
+                    count: tasks.length,
+                    defaultValue_one:
+                      'Start, follow, and review this initiative’s {{count}} task in Tasks.'
+                  }
+                )}
+              </p>
+              <Button variant="outline" size="sm" onClick={onOpenTasks}>
+                <SquareArrowOutUpRight aria-hidden="true" />
+                {translate('portfolio.openInTasks', 'Open in Tasks')}
+              </Button>
             </div>
           </>
         ) : (
@@ -205,7 +170,7 @@ export function PortfolioProjectBoard({
                     )
                   : translate(
                       'portfolio.firstRoleHint',
-                      'Choose an agent and define its responsibility. Then you can assign tasks in this project.'
+                      'Choose an agent and define its responsibility. Then you can assign tasks in this initiative.'
                     )}
               </p>
             </div>

@@ -3,7 +3,7 @@ import { getExecutionHostLabel } from '../../../shared/execution-host'
 import type { ExecutionHostScope } from '../../../shared/execution-host'
 import type { ExecutionHostHealth } from '../../../shared/execution-host-registry'
 import type { SshConnectionStatus } from '../../../shared/ssh-types'
-import type { TaskProvider } from '../../../shared/task-providers'
+import type { TaskSource } from '../../../shared/task-providers'
 import type { TaskProviderIdentity, TaskSourceContext } from '../../../shared/task-source-context'
 import {
   accountTitlePart,
@@ -47,7 +47,7 @@ function getHostLabel(hostId: ExecutionHostScope, hostLabelById: HostLabelLookup
 }
 
 export function getTaskSourceContextSummary(args: {
-  provider: TaskProvider
+  provider: TaskSource
   providerLabel: string
   repoContexts?: readonly TaskSourceContext[]
   hostAvailability?: readonly TaskSourceHostAvailability[]
@@ -75,6 +75,14 @@ export function getTaskSourceContextSummary(args: {
         hostLabelById: args.hostLabelById,
         hostAvailability: args.hostAvailability
       })
+    case 'workbench':
+      return {
+        label: translate('portfolio.workbenchSourceSummary', 'This computer'),
+        title: translate(
+          'portfolio.workbenchSourceTitle',
+          'Workbench tasks, stored on this computer'
+        )
+      }
   }
 }
 

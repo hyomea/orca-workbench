@@ -99,7 +99,13 @@ describe('Store', () => {
     expect(store.getSettings().showTasksButton).toBe(true)
     expect(store.getSettings().showAutomationsButton).toBe(true)
     expect(store.getSettings().combinedDiffFileTreeVisibleByDefault).toBe(false)
-    expect(store.getSettings().visibleTaskProviders).toEqual(['github', 'gitlab', 'linear', 'jira'])
+    expect(store.getSettings().visibleTaskProviders).toEqual([
+      'github',
+      'gitlab',
+      'linear',
+      'jira',
+      'workbench'
+    ])
     expect(store.getSettings().experimentalActivity).toBe(false)
     expect(store.getSettings().experimentalActivityDefaultedOffForAllUsers).toBe(true)
     expect(store.getSettings().experimentalTerminalAttention).toBe(false)
@@ -520,7 +526,7 @@ describe('Store', () => {
     })
 
     const store = await createStore()
-    expect(store.getSettings().visibleTaskProviders).toEqual(['gitlab', 'jira'])
+    expect(store.getSettings().visibleTaskProviders).toEqual(['gitlab', 'jira', 'workbench'])
   })
 
   it('preserves a deliberate Jira provider opt-out after migration', async () => {
@@ -538,7 +544,26 @@ describe('Store', () => {
     })
 
     const store = await createStore()
-    expect(store.getSettings().visibleTaskProviders).toEqual(['gitlab'])
+    expect(store.getSettings().visibleTaskProviders).toEqual(['gitlab', 'workbench'])
+  })
+
+  it('shows Workbench once and then preserves a deliberate opt-out', async () => {
+    writeDataFile({
+      schemaVersion: 1,
+      repos: [],
+      worktreeMeta: {},
+      settings: {
+        visibleTaskProviders: ['gitlab', 'jira'],
+        visibleTaskProvidersDefaultedForJira: true,
+        visibleTaskProvidersDefaultedForWorkbench: true
+      },
+      ui: {},
+      githubCache: { pr: {}, issue: {} },
+      workspaceSession: {}
+    })
+
+    const store = await createStore()
+    expect(store.getSettings().visibleTaskProviders).toEqual(['gitlab', 'jira'])
   })
 
   it('normalizes malformed terminal shortcut policy on load', async () => {
@@ -584,7 +609,12 @@ describe('Store', () => {
 
     const store = await createStore()
     expect(store.getSettings().defaultTaskSource).toBe('github')
-    expect(store.getSettings().visibleTaskProviders).toEqual(['github', 'linear', 'jira'])
+    expect(store.getSettings().visibleTaskProviders).toEqual([
+      'github',
+      'linear',
+      'jira',
+      'workbench'
+    ])
   })
 
   it('normalizes invalid task provider defaults on load', async () => {
@@ -600,7 +630,7 @@ describe('Store', () => {
 
     const store = await createStore()
     expect(store.getSettings().defaultTaskSource).toBe('gitlab')
-    expect(store.getSettings().visibleTaskProviders).toEqual(['gitlab', 'jira'])
+    expect(store.getSettings().visibleTaskProviders).toEqual(['gitlab', 'jira', 'workbench'])
   })
 
   it('normalizes persisted open-in applications on load', async () => {

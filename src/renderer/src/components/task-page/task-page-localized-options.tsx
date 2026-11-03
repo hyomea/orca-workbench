@@ -1,5 +1,5 @@
 import React from 'react'
-import { Github, Gitlab, LayoutGrid, List } from 'lucide-react'
+import { FolderKanban, Github, Gitlab, LayoutGrid, List } from 'lucide-react'
 
 import { JiraIcon } from '@/components/icons/JiraIcon'
 import { createLocalizedCatalog } from '@/i18n/localized-catalog'
@@ -15,7 +15,7 @@ import {
   type LinearViewMode
 } from '../../../../shared/linear/issue-view-resume-state'
 import { getTaskPresetQuery } from '../../../../shared/task-preset-query'
-import type { TaskProvider } from '../../../../shared/task-providers'
+import type { TaskSource } from '../../../../shared/task-providers'
 import type { TaskViewPresetId } from '../../../../shared/ui-chrome-types'
 
 export type GitLabTaskFilter = 'opened' | 'merged' | 'closed' | 'all'
@@ -30,7 +30,7 @@ export type TaskQueryPreset = {
 export type GitHubTaskKind = 'issues' | 'prs'
 
 export type SourceOption = {
-  id: TaskProvider
+  id: TaskSource
   label: string
   Icon: (props: { className?: string }) => React.JSX.Element
   disabled?: boolean
@@ -125,6 +125,11 @@ export const getSourceOptions = createLocalizedCatalog((): SourceOption[] => [
     id: 'jira',
     label: translate('auto.components.TaskPage.9cd11ba218', 'Jira'),
     Icon: ({ className }) => <JiraIcon className={className} />
+  },
+  {
+    id: 'workbench',
+    label: translate('portfolio.workbenchSource', 'Workbench'),
+    Icon: ({ className }) => <FolderKanban className={className} />
   }
 ])
 

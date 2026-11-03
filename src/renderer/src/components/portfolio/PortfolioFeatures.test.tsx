@@ -289,12 +289,12 @@ it('applies an editable role template without assigning or launching a task', as
     />
   )
   await click('Apply template')
-  expect(screen.getByLabelText('Name')).toHaveProperty('value', 'Product Analyst')
+  expect(screen.getByLabelText('Role name')).toHaveProperty('value', 'Product Analyst')
   expect(screen.getByLabelText('Responsibility')).toHaveProperty(
     'value',
     expect.stringContaining('testable acceptance criteria')
   )
-  enter('Name', 'Mobile Product Analyst')
+  enter('Role name', 'Mobile Product Analyst')
   await click('Save')
   expect(onSave).toHaveBeenCalledWith(
     expect.objectContaining({
@@ -323,7 +323,7 @@ it('keeps the selected feature when switching project views and discloses full p
       onCreateTask={noop}
       onEditProject={noop}
       onCreateRole={noop}
-      onSelectTask={noop}
+      onOpenTasks={noop}
       featureContent={
         <PortfolioFeatures
           state={state}
@@ -345,8 +345,8 @@ it('keeps the selected feature when switching project views and discloses full p
   expect(screen.queryByRole('heading', { name: 'Report counts' })).toBeNull()
   await click('Features')
   expect(screen.getByRole('heading', { name: 'Report counts' })).toBeTruthy()
-  const context = screen.getByText('Project context · {{count}} sources').closest('details')
+  const context = screen.getByText('Initiative context · {{count}} sources').closest('details')
   expect(context?.open).toBe(false)
-  fireEvent.click(screen.getByText('Project context · {{count}} sources'))
+  fireEvent.click(screen.getByText('Initiative context · {{count}} sources'))
   expect(context?.open).toBe(true)
 })

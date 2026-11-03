@@ -53,7 +53,7 @@ export async function generatePortfolioText(
     [...requests.values()].some((active) => active.owner === options.owner)
   ) {
     throw new Error(
-      'Another project analysis is still running. Wait for it to finish or stop it first.'
+      'Another initiative analysis is still running. Wait for it to finish or stop it first.'
     )
   }
   if (!isTuiAgentEnabled(request.agent, options.settings.disabledTuiAgents)) {
@@ -61,7 +61,7 @@ export async function generatePortfolioText(
   }
   const spec = getCommitMessageAgentSpec(request.agent)
   if (!spec) {
-    throw new Error('This agent cannot generate a project objective.')
+    throw new Error('This agent cannot generate an initiative objective.')
   }
   const active: {
     owner: string

@@ -41,3 +41,102 @@ it('routes every documented workbench command to a handler', () => {
   expect([...WORKBENCH_HANDLER_GROUP.keys].sort()).toEqual(commands)
   expect(Object.keys(WORKBENCH_HANDLERS).sort()).toEqual(commands)
 })
+
+const HEAD = 'f3867912aa'
+
+function submitContext(status: string, entries: unknown[] = []) {
+  vi.spyOn(console, 'log').mockImplementation(() => {})
+  const call = vi.fn(async (method: string) => ({
+    id: 'r',
+    ok: true,
+    result:
+      method === 'portfolio.read'
+        ? { revision: 3, tasks: [{ id: 't1', status, attempts: [{ worktreeId: 'w1' }] }] }
+        : method === 'git.status'
+          ? { entries, conflictOperation: 'unknown', head: HEAD }
+          : {}
+  }))
+  const ctx = {
+    flags: new Map<string, string | boolean>([
+      ['task', 't1'],
+      ['body', 'Tests pass: ./gradlew test']
+    ]),
+    client: { call, isRemote: false },
+    cwd: '/tmp',
+    json: true
+  } as unknown as HandlerContext
+  return { call, ctx }
+}
+
+it('submits a running task for review with its evidence', async () => {
+  const { call, ctx } = submitContext('running')
+  await WORKBENCH_HANDLERS['workbench task submit'](ctx)
+  expect(call).toHaveBeenLastCalledWith('portfolio.mutate', {
+    revision: 3,
+    command: {
+      kind: 'task.transition',
+      taskId: 't1',
+      status: 'review',
+      note: 'Tests pass: ./gradlew test',
+      commit: HEAD
+    }
+  })
+  expect(call).toHaveBeenCalledWith('git.status', { worktree: 'id:w1' })
+})
+
+it('refuses to submit work that is not committed', async () => {
+  const { call, ctx } = submitContext('running', [{ path: 'app/Foo.kt', status: 'modified' }])
+  await expect(WORKBENCH_HANDLERS['workbench task submit'](ctx)).rejects.toThrow(
+    '1 uncommitted change(s)'
+  )
+  expect(call).not.toHaveBeenCalledWith('portfolio.mutate', expect.anything())
+})
+
+it('refuses to submit a task that is not running', async () => {
+  const { call, ctx } = submitContext('accepted')
+  await expect(WORKBENCH_HANDLERS['workbench task submit'](ctx)).rejects.toThrow(
+    'only a running task can be submitted'
+  )
+  expect(call).not.toHaveBeenCalledWith('portfolio.mutate', expect.anything())
+})
+
+it('submits the running task of the workspace it is run from when no id is given', async () => {
+  vi.spyOn(console, 'log').mockImplementation(() => {})
+  const tasks = [
+    { id: 't1', status: 'running', attempts: [{ worktreeId: 'repo::/work/other' }] },
+    { id: 't2', status: 'running', attempts: [{ worktreeId: 'repo::/work/ENG-5952' }] }
+  ]
+  const call = vi.fn(async (method: string) => ({
+    id: 'r',
+    ok: true,
+    result:
+      method === 'worktree.list'
+        ? { worktrees: [{ id: 'repo::/work/ENG-5952', path: '/work/ENG-5952' }] }
+        : method === 'portfolio.read'
+          ? { revision: 3, tasks }
+          : method === 'git.status'
+            ? { entries: [], conflictOperation: 'unknown', head: HEAD }
+            : {}
+  }))
+  const ctx = {
+    flags: new Map<string, string | boolean>([['body', 'Evidence']]),
+    client: { call, isRemote: false },
+    cwd: '/work/ENG-5952/app',
+    json: true
+  } as unknown as HandlerContext
+  await WORKBENCH_HANDLERS['workbench task submit'](ctx)
+  expect(call).toHaveBeenLastCalledWith('portfolio.mutate', {
+    revision: 3,
+    command: {
+      kind: 'task.transition',
+      taskId: 't2',
+      status: 'review',
+      note: 'Evidence',
+      commit: HEAD
+    }
+  })
+  tasks[1].attempts[0].worktreeId = 'repo::/work/other'
+  await expect(WORKBENCH_HANDLERS['workbench task submit'](ctx)).rejects.toThrow(
+    'No running Workbench task uses this workspace'
+  )
+})

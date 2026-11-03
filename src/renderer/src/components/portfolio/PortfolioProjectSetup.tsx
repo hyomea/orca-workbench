@@ -108,10 +108,7 @@ export function PortfolioProjectSetup({
     const combinedNotes = refine ? `${notes}\n\n${feedback}`.trim() : notes
     if (combinedNotes.length > 10000) {
       setError(
-        translate(
-          'portfolio.notesTooLong',
-          'Shorten the project notes before generating another draft.'
-        )
+        translate('portfolio.notesTooLong', 'Shorten your notes before generating another draft.')
       )
       return
     }
@@ -174,7 +171,7 @@ export function PortfolioProjectSetup({
       setError(
         translate(
           'portfolio.projectFieldsRequired',
-          'Provide a project name and objective before confirming.'
+          'Provide an initiative name and objective before confirming.'
         )
       )
       return
@@ -208,8 +205,8 @@ export function PortfolioProjectSetup({
           <SheetHeader>
             <SheetTitle>
               {editing
-                ? translate('portfolio.editProject', 'Edit project')
-                : translate('portfolio.newProject', 'New project')}
+                ? translate('portfolio.editProject', 'Edit initiative')
+                : translate('portfolio.newProject', 'New initiative')}
             </SheetTitle>
             <SheetDescription>
               {translate(
@@ -229,7 +226,7 @@ export function PortfolioProjectSetup({
               {[
                 {
                   id: 'existing' as const,
-                  label: translate('portfolio.existingProject', 'Existing project')
+                  label: translate('portfolio.existingProject', 'Existing initiative')
                 },
                 {
                   id: 'idea' as const,
@@ -280,7 +277,7 @@ export function PortfolioProjectSetup({
                     disabled={disabled}
                     placeholder={translate(
                       'portfolio.notesPlaceholder',
-                      'Use your own words, in Chinese or English. What would you like this project to become?'
+                      'Use your own words, in Chinese or English. What would you like this initiative to achieve?'
                     )}
                   />
                 </PortfolioField>
@@ -309,7 +306,7 @@ export function PortfolioProjectSetup({
                 <p className="text-xs text-muted-foreground">
                   {translate(
                     'portfolio.analysisProviderHint',
-                    'Uses the selected agent’s configured account. Selected project excerpts are sent for analysis; no project files are edited.'
+                    'Uses the selected agent’s configured account. Selected source excerpts are sent for analysis; no source files are edited.'
                   )}
                 </p>
                 {!analyzing && (
@@ -343,7 +340,7 @@ export function PortfolioProjectSetup({
                           )
                         : translate(
                             'portfolio.analyzingProject',
-                            'Reading project context and drafting an objective…'
+                            'Reading the sources and drafting an objective…'
                           )}
                     </span>
                     <Button

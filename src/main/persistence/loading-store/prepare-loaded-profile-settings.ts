@@ -118,13 +118,20 @@ export function prepareLoadedProfileSettings(
     visibleTaskProviders: parsed.settings?.visibleTaskProviders,
     defaultTaskSource: parsed.settings?.defaultTaskSource
   })
-  const visibleTaskProvidersDefaultedForJira =
-    parsed.settings?.visibleTaskProvidersDefaultedForJira === true
-  const migratedVisibleTaskProviders = visibleTaskProvidersDefaultedForJira
-    ? rawTaskProviderSettings.visibleTaskProviders
-    : rawTaskProviderSettings.visibleTaskProviders.includes('jira')
-      ? rawTaskProviderSettings.visibleTaskProviders
-      : [...rawTaskProviderSettings.visibleTaskProviders, 'jira' as const]
+  // Sources added after a profile saved its list are shown once; hiding them later sticks.
+  const appendedTaskProviders = [
+    ['jira', parsed.settings?.visibleTaskProvidersDefaultedForJira === true],
+    ['workbench', parsed.settings?.visibleTaskProvidersDefaultedForWorkbench === true]
+  ] as const
+  const migratedVisibleTaskProviders = [
+    ...rawTaskProviderSettings.visibleTaskProviders,
+    ...appendedTaskProviders
+      .filter(
+        ([provider, defaulted]) =>
+          !defaulted && !rawTaskProviderSettings.visibleTaskProviders.includes(provider)
+      )
+      .map(([provider]) => provider)
+  ]
   const taskProviderSettings = normalizeTaskProviderSettings({
     visibleTaskProviders: migratedVisibleTaskProviders,
     defaultTaskSource: rawTaskProviderSettings.defaultTaskSource
@@ -145,7 +152,7 @@ export function prepareLoadedProfileSettings(
   if (migratePrimarySelectionPlatformDefault || stampPrimarySelectionTerminalDefaults) {
     markNeedsSave()
   }
-  if (!visibleTaskProvidersDefaultedForJira) {
+  if (appendedTaskProviders.some(([, defaulted]) => !defaulted)) {
     markNeedsSave()
   }
   const claudeAgentTeamsDefaultDisabledMigrated =

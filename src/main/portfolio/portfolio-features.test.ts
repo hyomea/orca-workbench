@@ -247,8 +247,8 @@ it('validates project membership and requires reviewed linked tasks and closed e
     { kind: 'project.create', project: { name: 'Other', objective: 'Other', repoIds: [] } },
     'other'
   )
-  expect(() => task(state, 'initial', 'bad', 'other')).toThrow('this project')
-  expect(() => task(state, 'missing')).toThrow('this project')
+  expect(() => task(state, 'initial', 'bad', 'other')).toThrow('this initiative')
+  expect(() => task(state, 'missing')).toThrow('this initiative')
   task(state, 'initial')
   apply(state, {
     kind: 'workItem.transition',
@@ -266,8 +266,28 @@ it('validates project membership and requires reviewed linked tasks and closed e
   ).toThrow('accept all linked')
   preparePortfolioAttempt(state, 'task', 'workspace', 'ios', 'operation', 1)
   state.tasks[0].attempts[0].state = 'launched'
-  apply(state, { kind: 'task.transition', taskId: 'task', status: 'review', note: 'Tests pass' })
-  apply(state, { kind: 'task.transition', taskId: 'task', status: 'accepted', note: 'Reviewed' })
+  apply(state, {
+    kind: 'task.transition',
+    taskId: 'task',
+    status: 'review',
+    note: 'Tests pass',
+    commit: 'f3867912'
+  })
+  expect(state.tasks[0].history.at(-1)).toMatchObject({ status: 'review', commit: 'f3867912' })
+  expect(() =>
+    apply(state, { kind: 'task.transition', taskId: 'task', status: 'accepted', note: 'Reviewed' })
+  ).toThrow('reviewed the code or skipped it')
+  apply(state, {
+    kind: 'task.transition',
+    taskId: 'task',
+    status: 'accepted',
+    note: 'Reviewed',
+    codeReview: 'reviewed'
+  })
+  expect(state.tasks[0].history.at(-1)).toMatchObject({
+    status: 'accepted',
+    codeReview: 'reviewed'
+  })
   expect(() =>
     apply(state, {
       kind: 'workItem.transition',
@@ -344,10 +364,28 @@ it('allows triage corrections before tasks while rejecting stale edits and cross
   )
   expect(() =>
     apply(state, { kind: 'task.linkWorkItem', taskId: 'task', workItemId: 'other-item' })
-  ).toThrow('this project')
+  ).toThrow('this initiative')
   apply(state, { kind: 'task.linkWorkItem', taskId: 'task', workItemId: 'issue' })
   preparePortfolioAttempt(state, 'task', 'workspace', 'ios', 'operation', 1)
   expect(() => apply(state, { kind: 'task.linkWorkItem', taskId: 'task' })).toThrow(
     'no open execution'
   )
+})
+
+it('tells a named agent its name when the task starts', () => {
+  const state = fixture()
+  state.roles[0].agentName = 'Nova'
+  createItem(state, 'initial')
+  task(state, 'initial')
+  const { prompt } = preparePortfolioAttempt(state, 'task', 'workspace', 'ios', 'operation', 1)
+  expect(prompt).toContain('Role: iOS\n\nYour name: Nova\n\n')
+})
+
+it('plans backend API work as its own platform', () => {
+  const state = fixture()
+  createItem(state, 'initial')
+  task(state, 'initial')
+  state.tasks[0].platform = 'backend'
+  const { prompt } = preparePortfolioAttempt(state, 'task', 'workspace', 'ios', 'operation', 1)
+  expect(prompt).toContain('Target platform: backend')
 })

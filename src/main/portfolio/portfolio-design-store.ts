@@ -62,7 +62,7 @@ export async function attachPortfolioDesign(
   assertRasterImagePreviewWithinLimits(bytes, detected)
   const before = await store.read()
   if (before.revision !== request.revision) {
-    throw new Error('Project data changed. Refresh and try again.')
+    throw new Error('Workbench data changed. Refresh and try again.')
   }
   const item = editable(before, request.workItemId)
   if ((item.designAttachments?.length ?? 0) >= 12) {

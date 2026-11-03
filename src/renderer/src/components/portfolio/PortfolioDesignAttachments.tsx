@@ -65,7 +65,7 @@ export function PortfolioDesignAttachments({
                     throw new Error(
                       translate(
                         'portfolio.designSaveFailed',
-                        'Image was not saved. Review the project error and try again.'
+                        'Image was not saved. Review the error and try again.'
                       )
                     )
                   }
@@ -121,7 +121,7 @@ export function PortfolioDesignAttachments({
                         throw new Error(
                           translate(
                             'portfolio.designRemoveFailed',
-                            'Image was not removed. Review the project error and try again.'
+                            'Image was not removed. Review the error and try again.'
                           )
                         )
                       }

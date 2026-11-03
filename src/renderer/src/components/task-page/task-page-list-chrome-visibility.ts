@@ -1,7 +1,7 @@
-import type { TaskProvider } from '../../../../shared/task-providers'
+import type { TaskSource } from '../../../../shared/task-providers'
 
 export type TaskPageListChromeVisibilityState = {
-  taskSource: TaskProvider
+  taskSource: TaskSource
   hasGitHubDetail: boolean
   hasGitLabDetail: boolean
   hasJiraDetail: boolean
@@ -29,5 +29,7 @@ export function shouldHideTaskPageListChrome({
       return hasJiraDetail
     case 'linear':
       return hasLinearIssueDetail || hasLinearProjectContext || hasLinearViewContext
+    case 'workbench':
+      return false
   }
 }

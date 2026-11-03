@@ -3,29 +3,32 @@ import { Button } from '@/components/ui/button'
 import { translate } from '@/i18n/i18n'
 import { cn } from '@/lib/utils'
 import { portfolioProgress, type PortfolioState } from '../../../../shared/portfolio'
+import { portfolioRoleLabel } from '../../../../shared/portfolio-roles'
 
 export function PortfolioNavigation({
   state,
   selectedProjectId,
   onSelectProject,
-  onCreateRole
+  onCreateRole,
+  onEditRole
 }: {
   state: PortfolioState
   selectedProjectId: string
   onSelectProject: (id: string) => void
   onCreateRole: () => void
+  onEditRole: (roleId: string) => void
 }): React.JSX.Element {
   return (
     <aside className="min-h-0 space-y-5 border-b border-border p-4 @3xl/portfolio:border-r @3xl/portfolio:border-b-0">
       <section className="space-y-2">
         <div className="flex items-center justify-between px-2 text-muted-foreground">
           <h2 className="text-2xs font-semibold uppercase tracking-wider">
-            {translate('portfolio.projectList', 'Business projects')}
+            {translate('portfolio.projectList', 'Initiatives')}
           </h2>
           <span className="text-xs tabular-nums">{state.projects.length}</span>
         </div>
         <nav
-          aria-label={translate('portfolio.projectList', 'Business projects')}
+          aria-label={translate('portfolio.projectList', 'Initiatives')}
           className="flex gap-1 overflow-x-auto scrollbar-sleek @3xl/portfolio:flex-col"
         >
           {state.projects.map((entry) => {
@@ -81,18 +84,25 @@ export function PortfolioNavigation({
         {state.roles.length > 0 ? (
           <div className="flex gap-2 overflow-x-auto scrollbar-sleek @3xl/portfolio:flex-col">
             {state.roles.map((role) => (
-              <div
+              <button
+                type="button"
                 key={role.id}
-                className="w-48 shrink-0 space-y-1 px-2 py-1 @3xl/portfolio:w-full"
+                aria-label={translate('portfolio.editRoleNamed', 'Edit role {{name}}', {
+                  name: portfolioRoleLabel(role)
+                })}
+                onClick={() => onEditRole(role.id)}
+                className="w-48 shrink-0 space-y-1 rounded-md px-2 py-1 text-left hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring @3xl/portfolio:w-full"
               >
                 <div className="flex flex-wrap items-baseline justify-between gap-x-2">
-                  <p className="min-w-0 break-words text-sm font-medium">{role.name}</p>
+                  <p className="min-w-0 break-words text-sm font-medium">
+                    {portfolioRoleLabel(role)}
+                  </p>
                   <span className="text-2xs text-muted-foreground">{role.agent}</span>
                 </div>
                 <p className="line-clamp-2 break-words text-xs leading-relaxed text-muted-foreground">
                   {role.responsibility}
                 </p>
-              </div>
+              </button>
             ))}
           </div>
         ) : (

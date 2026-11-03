@@ -4,11 +4,14 @@ import { LOCAL_COMMAND_FLAGS } from '../args'
 export const WORKBENCH_COMMAND_SPECS: CommandSpec[] = [
   {
     path: ['workbench', 'status'],
-    summary: 'Show Workbench projects, features, work items, tasks, and pending proposals',
+    summary: 'Show Workbench initiatives, features, work items, tasks, and pending proposals',
     usage: 'orca workbench status [--project <id>] [--json]',
     allowedFlags: [...LOCAL_COMMAND_FLAGS, 'project'],
     examples: ['orca workbench status', 'orca workbench status --project p1 --json'],
-    notes: ['--json returns the stored records, including ids and the revision for `apply`.']
+    notes: [
+      '--json returns the stored records, including ids and the revision for `apply`.',
+      '--project takes an initiative id; the flag and the stored `projectId` fields keep their earlier name.'
+    ]
   },
   {
     path: ['workbench', 'schema'],
@@ -18,7 +21,7 @@ export const WORKBENCH_COMMAND_SPECS: CommandSpec[] = [
   },
   {
     path: ['workbench', 'apply'],
-    summary: 'Apply Workbench commands atomically, the same way the Projects page does',
+    summary: 'Apply Workbench commands atomically, the same way the Workbench page does',
     usage: 'orca workbench apply (--body <json> | --body-file <path|->) [--revision <n>] [--json]',
     allowedFlags: [...LOCAL_COMMAND_FLAGS, 'body', 'body-file', 'revision'],
     examples: ['orca workbench apply --body-file plan.json --json'],
@@ -39,12 +42,28 @@ export const WORKBENCH_COMMAND_SPECS: CommandSpec[] = [
     ],
     notes: [
       '--worktree accepts the same selectors as other worktree commands (path:, branch:, id:, active).',
-      'The workspace must belong to a repository linked to the task’s project.'
+      'The workspace must belong to a repository linked to the task’s initiative.'
+    ]
+  },
+  {
+    path: ['workbench', 'task', 'submit'],
+    summary: 'Submit a running task’s result for the user to review',
+    usage: 'orca workbench task submit [<task>] (--body <text> | --body-file <path|->) [--json]',
+    allowedFlags: [...LOCAL_COMMAND_FLAGS, 'task', 'body', 'body-file'],
+    positionalArgs: ['task'],
+    examples: [
+      'orca workbench task submit --body-file "$TMPDIR/evidence.md"',
+      'orca workbench task submit <task-id> --body-file evidence.md'
+    ],
+    notes: [
+      'Without a task id, submits the running task in the workspace that contains the current directory.',
+      'Evidence says what changed, which commands ran and their results, which acceptance criteria are met, and open questions.',
+      'The task moves to review; only the user accepts it.'
     ]
   },
   {
     path: ['workbench', 'note', 'propose'],
-    summary: 'Propose a project note for the user to review in Projects',
+    summary: 'Propose an initiative note for the user to review in Workbench',
     usage:
       'orca workbench note propose --project <id> --title <title> (--body <text> | --body-file <path|->) [--note <id>] [--task <id>] [--reason <text>] [--json]',
     allowedFlags: [
@@ -61,6 +80,7 @@ export const WORKBENCH_COMMAND_SPECS: CommandSpec[] = [
       'orca workbench note propose --project p1 --task t1 --title "Android testing" --body-file note.md --reason "Verified test commands"'
     ],
     notes: [
+      '--project takes the initiative id.',
       'The note changes only after the user accepts the proposal. Pass --note to propose a replacement for an existing note.'
     ]
   },
