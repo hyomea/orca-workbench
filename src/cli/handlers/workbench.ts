@@ -2,27 +2,15 @@ import type { CommandHandler, HandlerContext } from '../dispatch'
 import { readCommandBody } from '../command-body-input'
 import { getOptionalStringFlag, getRequiredStringFlag } from '../flags'
 import { printResult } from '../format'
-import { getRequiredWorktreeSelector, resolveCurrentWorktreeSelection } from '../selectors'
 import { rejectRemoteSelectionFlags } from '../remote-selection-flag-rejection'
 import { z } from 'zod'
-import {
-  PortfolioCommand,
-  PortfolioCommit,
-  type PortfolioState,
-  type PortfolioTask
-} from '../../shared/portfolio'
+import { PortfolioCommand, type PortfolioState } from '../../shared/portfolio'
 import { MAX_PORTFOLIO_NOTE_CHARACTERS } from '../../shared/portfolio-notes'
 import { RuntimeClientError } from '../runtime-client'
 import { portfolioRoleLabel } from '../../shared/portfolio-roles'
-import type { GitStatusResult } from '../../shared/git-status-types'
-
-// Matches the stored limit for a task transition note.
-const MAX_PORTFOLIO_EVIDENCE_CHARACTERS = 20_000
-const LOCAL_ONLY = 'workbench commands; initiatives are stored on this computer.'
-
-async function read(ctx: HandlerContext): Promise<PortfolioState> {
-  return (await ctx.client.call<PortfolioState>('portfolio.read', {})).result
-}
+import { PORTFOLIO_STAGE_NAMES } from '../../shared/portfolio-task-stages'
+import { WORKBENCH_TASK_HANDLERS } from './workbench-tasks'
+import { LOCAL_ONLY } from './workbench-client'
 
 async function status(ctx: HandlerContext): Promise<void> {
   rejectRemoteSelectionFlags(ctx.flags, LOCAL_ONLY)
@@ -79,9 +67,21 @@ function formatStatus(state: PortfolioState): string {
     for (const task of state.tasks.filter((entry) => entry.projectId === project.id)) {
       const found = state.roles.find((entry) => entry.id === task.roleId)
       const role = found ? portfolioRoleLabel(found) : 'unknown role'
+      const done = task.steps.filter((step) => step.done).length
+      const details = [
+        PORTFOLIO_STAGE_NAMES[task.stage],
+        task.status,
+        ...(task.platform ? [task.platform] : []),
+        ...(task.steps.length ? [`steps ${done}/${task.steps.length}`] : [])
+      ]
       lines.push(
-        `  Task (${task.status}${task.platform ? `, ${task.platform}` : ''}) ${task.title} · ${role} [${task.id}]${task.workItemId ? ` → ${task.workItemId}` : ''}`
+        `  Task (${details.join(', ')}) ${task.title} · ${role} [${task.id}]${task.workItemId ? ` → ${task.workItemId}` : ''}`
       )
+      for (const step of task.steps) {
+        lines.push(
+          `    [${step.done ? 'x' : ' '}] ${step.title} [${step.id}]${step.commit ? ` @ ${step.commit}` : ''}`
+        )
+      }
     }
     const notes = state.notes.filter((note) => note.projectId === project.id).length
     const drafts = state.noteDrafts.filter((draft) => draft.projectId === project.id).length
@@ -125,107 +125,6 @@ async function apply(ctx: HandlerContext): Promise<void> {
       `Applied. Revision ${result.revision}.`,
       ...Object.entries(result.refs).map(([ref, id]) => `  ${ref}: ${id}`)
     ].join('\n')
-  )
-}
-
-async function startTask(ctx: HandlerContext): Promise<void> {
-  rejectRemoteSelectionFlags(ctx.flags, LOCAL_ONLY)
-  const taskId = getRequiredStringFlag(ctx.flags, 'task')
-  // Accept any worktree selector, like other worktree commands; launch takes the resolved id.
-  const { worktree } = (
-    await ctx.client.call<{ worktree: { id: string } }>('worktree.show', {
-      worktree: await getRequiredWorktreeSelector(ctx.flags, 'worktree', ctx.cwd, ctx.client)
-    })
-  ).result
-  const state = await read(ctx)
-  const response = await ctx.client.call<PortfolioState>('portfolio.launch', {
-    revision: state.revision,
-    taskId,
-    worktreeId: worktree.id
-  })
-  printResult(response, ctx.json, (next) => {
-    const attempt = next.tasks.find((task) => task.id === taskId)?.attempts.at(-1)
-    return `Task started (${attempt?.state ?? 'unknown'}).${attempt?.warning ? ` ${attempt.warning}` : ''}`
-  })
-}
-
-// Without an id, the task is the one running in the caller's workspace; agents rarely keep the id.
-async function submittedTask(ctx: HandlerContext, state: PortfolioState): Promise<PortfolioTask> {
-  const taskId = getOptionalStringFlag(ctx.flags, 'task')
-  if (taskId) {
-    const task = state.tasks.find((entry) => entry.id === taskId)
-    if (!task) {
-      throw new RuntimeClientError('invalid_argument', `No Workbench task has id ${taskId}.`)
-    }
-    return task
-  }
-  const { worktreeId } = await resolveCurrentWorktreeSelection(ctx.cwd, ctx.client)
-  const running = state.tasks.filter(
-    (task) => task.status === 'running' && task.attempts.at(-1)?.worktreeId === worktreeId
-  )
-  if (running.length !== 1) {
-    throw new RuntimeClientError(
-      'invalid_argument',
-      running.length === 0
-        ? 'No running Workbench task uses this workspace. Pass the task id.'
-        : `Several running Workbench tasks use this workspace (${running.map((task) => task.id).join(', ')}). Pass the task id.`
-    )
-  }
-  return running[0]
-}
-
-// The user reviews a fixed version: everything must be committed, and that commit is recorded.
-async function submittedCommit(ctx: HandlerContext, task: PortfolioTask): Promise<string> {
-  const worktreeId = task.attempts.at(-1)?.worktreeId
-  if (!worktreeId) {
-    throw new RuntimeClientError('invalid_argument', `Task ${task.id} has no workspace.`)
-  }
-  const { result } = await ctx.client.call<GitStatusResult>('git.status', {
-    worktree: `id:${worktreeId}`
-  })
-  // Porcelain reports "(initial)" before the first commit.
-  if (result.readError || !PortfolioCommit.safeParse(result.head).success) {
-    throw new RuntimeClientError(
-      'invalid_argument',
-      `Cannot read the task workspace's Git state: ${result.readError ?? 'no commit is checked out'}.`
-    )
-  }
-  if (result.entries.length > 0) {
-    throw new RuntimeClientError(
-      'invalid_argument',
-      `The task workspace has ${result.entries.length} uncommitted change(s). Commit the work on the task branch, then submit again.`
-    )
-  }
-  return result.head as string
-}
-
-async function submitTask(ctx: HandlerContext): Promise<void> {
-  rejectRemoteSelectionFlags(ctx.flags, LOCAL_ONLY)
-  const evidence = await readCommandBody(ctx.flags, ctx.cwd, {
-    required: true,
-    maximumCharacters: MAX_PORTFOLIO_EVIDENCE_CHARACTERS,
-    tooLargeCode: 'evidence_too_large',
-    label: 'Evidence'
-  })
-  const state = await read(ctx)
-  const task = await submittedTask(ctx, state)
-  const taskId = task.id
-  // Only work in progress is submitted; a planned or decided task is the user's to move.
-  if (task.status !== 'running') {
-    throw new RuntimeClientError(
-      'invalid_argument',
-      `Task ${taskId} is ${task.status}; only a running task can be submitted for review.`
-    )
-  }
-  const commit = await submittedCommit(ctx, task)
-  const response = await ctx.client.call<PortfolioState>('portfolio.mutate', {
-    revision: state.revision,
-    command: { kind: 'task.transition', taskId, status: 'review', note: evidence, commit }
-  })
-  printResult(
-    response,
-    ctx.json,
-    () => 'Submitted for review. The user decides whether to accept it.'
   )
 }
 
@@ -302,8 +201,7 @@ export const WORKBENCH_HANDLERS: Record<string, CommandHandler> = {
   'workbench status': status,
   'workbench schema': schema,
   'workbench apply': apply,
-  'workbench task start': startTask,
-  'workbench task submit': submitTask,
+  ...WORKBENCH_TASK_HANDLERS,
   'workbench note propose': propose,
   'workbench personal-notes list': listPersonalNotes,
   'workbench personal-notes index': indexNotes

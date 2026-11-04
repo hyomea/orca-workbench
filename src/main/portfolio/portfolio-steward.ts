@@ -62,10 +62,13 @@ guess field names; read \`schema\`.
 - When an outcome changes a feature, plan a check of that feature on iOS and Android before the
   change, recorded with \`feature.parity\`. Do not plan a survey of features no outcome
   touches unless the user asks.
-- Break work into tasks by purpose, not size, following "Breaking work into tasks" in
-  \`ORCA skills get orca-cli --reference references/workbench.md\`: mechanical changes such as renames are their own task, a
-  feature that crosses layers splits into data, business logic, and UI, and nothing is split
-  smaller than a part that can be verified on its own.
+- Plan each platform of an outcome as a track of three tasks, \`development\`, \`codeReview\`,
+  and \`qa\` (the task's \`stage\`), following "Tracks and stages" in
+  \`ORCA skills get orca-cli --reference references/workbench.md\`. Development is one agent
+  session; plan its work as steps with \`task.steps\` by purpose, not size (mechanical changes
+  apart, data, business logic, then UI), never as separate development tasks. Start code
+  review and QA in the development task's workspace, after the previous stage is submitted
+  and, for QA, the code review accepted.
 - A recorded launch does not prove an agent is working. After \`task start\`, and whenever
   you report progress, read the task's terminal (\`ORCA terminal list --worktree <selector>\`,
   then \`ORCA terminal read\`). If the agent exited or never started, find out why, end the

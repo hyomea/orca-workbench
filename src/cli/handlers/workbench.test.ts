@@ -140,3 +140,28 @@ it('submits the running task of the workspace it is run from when no id is given
     'No running Workbench task uses this workspace'
   )
 })
+
+it('marks a step done at the committed head, and reopens it without a commit', async () => {
+  const { call, ctx } = submitContext('running')
+  ctx.flags.set('step', 'S2')
+  await WORKBENCH_HANDLERS['workbench task step'](ctx)
+  expect(call).toHaveBeenLastCalledWith('portfolio.mutate', {
+    revision: 3,
+    command: { kind: 'task.step', taskId: 't1', stepId: 'S2', done: true, commit: HEAD }
+  })
+  ctx.flags.set('undo', true)
+  await WORKBENCH_HANDLERS['workbench task step'](ctx)
+  expect(call).toHaveBeenLastCalledWith('portfolio.mutate', {
+    revision: 3,
+    command: { kind: 'task.step', taskId: 't1', stepId: 'S2', done: false }
+  })
+})
+
+it('refuses to mark a step done before it is committed', async () => {
+  const { call, ctx } = submitContext('running', [{ path: 'app/Foo.kt', status: 'modified' }])
+  ctx.flags.set('step', 'S2')
+  await expect(WORKBENCH_HANDLERS['workbench task step'](ctx)).rejects.toThrow(
+    'Commit the work on the task branch, then run this again.'
+  )
+  expect(call).not.toHaveBeenCalledWith('portfolio.mutate', expect.anything())
+})

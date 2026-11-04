@@ -40,6 +40,7 @@ ORCA workbench schema --json
 ORCA workbench apply --body-file <file|-> [--revision <n>] --json
 ORCA workbench task start <task-id> --worktree <selector> --json
 ORCA workbench task submit [<task-id>] --body-file <evidence.md> --json
+ORCA workbench task step <step-id> [--task <task-id>] [--undo] --json
 ORCA workbench note propose --project <id> --title <title> --body-file <file> [--note <id>] [--task <id>] [--reason <why>] --json
 ORCA workbench personal-notes list [--repo <name>] --json
 ORCA workbench personal-notes index
@@ -91,7 +92,8 @@ state; a concurrent change then rejects the batch instead of mixing with it.
           "title": "...",
           "instructions": "...",
           "acceptanceCriteria": "...",
-          "platform": "android"
+          "platform": "android",
+          "stage": "development"
         }
       }
     }
@@ -112,32 +114,44 @@ When asked to plan a ticket, start from the outcome it should achieve: which pla
 involves and their tickets, whether iOS and Android must behave the same, and whether it
 changes a product feature. Read the tickets and the relevant code first, ask the user only
 questions that change the plan, then show the plan in the conversation before applying it.
-Put dependencies between tasks in the dependent task's instructions; Workbench does not
-store task dependencies yet.
 
-### Breaking work into tasks
+### Tracks and stages
 
-Each task is one result the user reviews and accepts on its own, so split by purpose, not by
-the number of files:
+An outcome on one platform is a track. Each track has one task per stage, set with the task's
+`stage`, and the stages run in order:
 
-- One purpose per task. A task that cannot be described in one sentence is two tasks.
-- Mechanical changes (renames, moves, formatting, generated code) are their own task, even
-  when they touch many files, and never share a task with a behavior change.
-- When an outcome crosses architecture layers, split along them: data (API, models,
-  persistence), business logic, and UI. Each layer task is verified its own way: the data
-  layer against the API contract, the logic with unit tests, the UI with screenshots or
-  previews. Order them so later tasks build on accepted ones, usually data, logic, then UI.
-- Tag each task with its platform: `ios`, `android`, `backend` (API work in a backend
-  repository), or `shared` (discovery, QA, and other work for no single platform).
+1. `development`: one agent session builds the whole track in one workspace and branch. Its
+   work is planned as steps inside the task, not as separate tasks.
+2. `codeReview`: a reviewer role reviews the submitted branch in a new session, without
+   editing code. It starts only after development submits.
+3. `qa`: a QA role tests the reviewed work: the tests, the outcome's acceptance criteria, and
+   for a parity outcome the shared test plan on both platforms. It starts only after the user
+   accepts the code review.
+
+Create the three tasks for each platform the outcome involves, with the same `workItemId` and
+`platform` (`ios`, `android`, or `backend`; `shared` for work for no single platform). A
+backend ticket owned by another team needs no tasks; the outcome links its ticket. Code
+review and QA tasks always belong to an outcome. When the user sends findings back, they go
+to the track's development task, and code review and QA run again on the next submission.
+
+### Planning development steps
+
+Steps are the development checklist, set with `task.steps` (`[{ "id": "S1", "title": "..." }]`).
+Replanning keeps the progress of steps whose id and title stay the same. Split by purpose,
+not by the number of files:
+
+- One purpose per step. A step that cannot be described in one sentence is two steps.
+- Mechanical changes (renames, moves, formatting, generated code) are their own step, even
+  when they touch many files, and never share a step with a behavior change.
+- When the track crosses architecture layers, follow them: data (API, models, persistence),
+  business logic, then UI. Verify each its own way: the data layer against the API contract,
+  the logic with unit tests, the UI with screenshots or previews.
 - When app work needs an API change, agree the API contract first (requests, responses,
-  errors) and record it in the work item. App and backend tasks then run in parallel against
-  that contract, the apps using stubs where the API is not ready. A final task verifies the
-  apps against the real API on staging; the work item is accepted only after it passes. The
-  backend side may be another team's ticket, linked from the work item.
-- Do not split further than that. Keep a change in one task when the parts cannot be
-  verified apart or one part is too small to review alone; a small feature can be one task
-  across layers. Each task should still be a substantial piece of work an agent finishes on
-  its own.
+  errors) and record it in the outcome. App and backend tracks then run in parallel against
+  that contract, the apps using stubs where the API is not ready; QA verifies the apps against
+  the real API on staging.
+- Do not split further than that: a step is a commit worth reviewing, and a small change can
+  be one step.
 
 ## Starting work
 
@@ -148,10 +162,19 @@ launches an agent with the task's saved prompt.
 
 ## Working on a task
 
-Before changing code, read the code the task touches. If the task turns out to mix purposes,
-such as a behavior change that first needs a broad rename or refactor, stop and tell the user
-how you would split it, using the rules in "Breaking work into tasks". Do not change the
-Workbench plan yourself; the user decides.
+Before changing code, read the code the task touches.
+
+In a development task, work through its steps in order. If it has none, propose steps to the
+user following "Planning development steps", and set them with `task.steps` once the user
+agrees. Finish each step with a commit on the task branch (do not push), then mark it done
+with `ORCA workbench task step <step-id>`, which records that commit and refuses while
+changes are uncommitted. If a step turns out to mix purposes, such as a behavior change that
+first needs a broad rename, tell the user how you would split it before going on. When the
+prompt or the user gives findings from code review or QA, address them first, in new commits.
+
+In a code review or QA task, do not edit product code. Review or test the branch at the commit
+development submitted, and report findings with stable IDs (B-1 for blocking, N-1 for
+non-blocking) so the user can send them back.
 
 ## Submitting a task
 
@@ -162,7 +185,7 @@ initiative, and never accept a task.
 
 1. If the work is not finished, do not submit. Tell the user what remains.
 2. Commit the work on the task branch, following the repository's commit conventions, so
-   the user reviews a fixed version. Do not push; the user decides when to push. When the
+   the user reviews a fixed version. (Code review and QA usually have nothing to commit.) Do not push; the user decides when to push. When the
    user sent the task back, add a new commit for the changes rather than amending, so the next
    review can see what changed.
 3. Write the evidence as Markdown to a file outside the repository, such as
@@ -175,6 +198,14 @@ initiative, and never accept a task.
    - **Departures from the task**: anything done differently from the instructions, and why.
    - **Not verified or needs a decision**: what you could not check, and questions for the
      user.
+
+   A code review submits instead: **Verdict** (pass, pass with notes, needs fixes, or
+   blocked), **Findings** grouped as Blocking, Non-blocking, Missing evidence, and Residual
+   risk, each with its ID, file and line, and the fix it needs; and **Scope**: what was reviewed,
+   against which commit. A QA task submits **Verdict**, **Results** (each test or scenario,
+   platform, build, environment, pass/fail/blocked, and its evidence), and **Findings**. For a
+   parity outcome, record each scenario result with `verification.record` as well.
+
 4. From inside the task's workspace, run
    `ORCA workbench task submit --body-file <file> --json`. Without a task id it submits the
    running task in the workspace that contains the current directory; pass the id (the

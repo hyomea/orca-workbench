@@ -56,6 +56,7 @@ export const CLI_BOOLEAN_FLAGS = new Set([
   'takeover-legacy',
   'tasks',
   'text-stdin',
+  'undo',
   'unread',
   'value-stdin',
   'wait',

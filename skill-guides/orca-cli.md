@@ -286,7 +286,8 @@ repositories), features, work items, roles, tasks, test plans, and notes. Use
 `ORCA workbench` to read them, plan a ticket into them, apply changes atomically, and start
 and submit tasks. The commands, batch format, submission steps,
 and review boundary are in `references/workbench.md`. Load it before changing Workbench
-records, and when the user asks you to submit a Workbench task.
+records, when a Workbench development task has steps to mark done, and when the user asks
+you to submit a Workbench task.
 
 ## Built-In Browser
 

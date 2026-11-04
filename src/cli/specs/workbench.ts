@@ -62,6 +62,18 @@ export const WORKBENCH_COMMAND_SPECS: CommandSpec[] = [
     ]
   },
   {
+    path: ['workbench', 'task', 'step'],
+    summary: 'Mark a development step done at the current commit, or reopen it',
+    usage: 'orca workbench task step <step> [--task <task>] [--undo] [--json]',
+    allowedFlags: [...LOCAL_COMMAND_FLAGS, 'step', 'task', 'undo'],
+    positionalArgs: ['step'],
+    examples: ['orca workbench task step S2', 'orca workbench task step S2 --undo'],
+    notes: [
+      'Without --task, uses the running task in the workspace that contains the current directory.',
+      'Commit the step first: the workspace must have no uncommitted changes, and the step records the commit.'
+    ]
+  },
+  {
     path: ['workbench', 'note', 'propose'],
     summary: 'Propose an initiative note for the user to review in Workbench',
     usage:
