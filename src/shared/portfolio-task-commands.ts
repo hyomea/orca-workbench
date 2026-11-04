@@ -79,7 +79,8 @@ export function applyPortfolioTaskCommand(
       if (command.status === 'accepted' && task.status !== 'review') {
         throw new Error('Submit evidence for review before accepting this task.')
       }
-      if (command.status === 'accepted' && !command.codeReview) {
+      // The user's own look at the code is recorded for development; review and QA are the check.
+      if (command.status === 'accepted' && task.stage === 'development' && !command.codeReview) {
         throw new Error('Record whether you reviewed the code or skipped it before accepting.')
       }
       if (command.status === 'accepted') {
@@ -100,7 +101,9 @@ export function applyPortfolioTaskCommand(
         at: now,
         status: command.status,
         note: command.note,
-        ...(command.status === 'accepted' ? { codeReview: command.codeReview } : {}),
+        ...(command.status === 'accepted' && command.codeReview
+          ? { codeReview: command.codeReview }
+          : {}),
         ...(command.status === 'review' && command.commit ? { commit: command.commit } : {})
       })
       return true

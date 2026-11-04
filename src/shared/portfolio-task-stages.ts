@@ -169,3 +169,28 @@ export function assertPortfolioDevelopmentAcceptable(
     }
   }
 }
+
+// Why a task cannot start yet, for the page to show before the user tries.
+export function portfolioStageBlocker(
+  state: PortfolioState,
+  task: PortfolioTask
+): string | undefined {
+  try {
+    assertPortfolioStageReady(state, task)
+    return undefined
+  } catch (failure) {
+    return failure instanceof Error ? failure.message : String(failure)
+  }
+}
+
+export function portfolioAcceptBlocker(
+  state: PortfolioState,
+  task: PortfolioTask
+): string | undefined {
+  try {
+    assertPortfolioDevelopmentAcceptable(state, task)
+    return undefined
+  } catch (failure) {
+    return failure instanceof Error ? failure.message : String(failure)
+  }
+}

@@ -17,7 +17,8 @@ import {
 import { PortfolioSelect } from './portfolio-controls'
 import { PortfolioSpecification } from './PortfolioSpecification'
 import { PortfolioWorkItemReview } from './PortfolioWorkItemReview'
-import { workItemKinds, workItemStatuses } from './portfolio-feature-labels'
+import { workItemKinds, workItemStatuses, workPlatformName } from './portfolio-feature-labels'
+import { stageName } from './portfolio-track-labels'
 import { PortfolioTickets } from './PortfolioTickets'
 import { PortfolioOutcomeScope } from './PortfolioOutcomeScope'
 
@@ -199,9 +200,11 @@ export function PortfolioWorkItemDetail({
               >
                 <span className="break-words">
                   {task.title}
-                  {task.platform && (
-                    <span className="ml-2 text-xs text-muted-foreground">{task.platform}</span>
-                  )}
+                  <span className="ml-2 text-xs text-muted-foreground">
+                    {[stageName(task.stage), task.platform && workPlatformName(task.platform)]
+                      .filter(Boolean)
+                      .join(' · ')}
+                  </span>
                 </span>
                 <Badge variant="outline">{task.status}</Badge>
               </Button>

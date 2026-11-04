@@ -13,7 +13,6 @@ import { portfolioRoleLabelById } from '../../../../shared/portfolio-roles'
 import type { AgentStatusEntry } from '../../../../shared/agent-status-types'
 import { PortfolioComposer, type PortfolioComposerKind } from './PortfolioComposer'
 import { PortfolioTaskDetail, type PortfolioWorkspace } from './PortfolioTaskDetail'
-import { portfolioDefaultWorkspace } from './portfolio-task-workspace'
 import { PortfolioWelcome } from './PortfolioWelcome'
 import { PortfolioNavigation } from './PortfolioNavigation'
 import { PortfolioFeatures } from './PortfolioFeatures'
@@ -276,10 +275,10 @@ export function PortfolioBoard({
       {selectedTask && (
         <PortfolioTaskDetail
           key={selectedTask.id}
+          state={state}
           task={selectedTask}
           roleName={portfolioRoleLabelById(state, selectedTask.roleId)}
           workspaces={projectWorkspaces}
-          defaultWorkspaceId={portfolioDefaultWorkspace(state, selectedTask, projectWorkspaces)}
           activity={observation}
           reviewComments={reviewComments}
           busy={busy}

@@ -2058,9 +2058,9 @@
     }
   },
   "portfolio": {
-    "acceptedCount_one": "Accepted ({{count}})",
-    "acceptedCount_other": "Accepted ({{count}})",
     "attachDesignLink": "Attach design link",
+    "doneCount_one": "Done ({{count}})",
+    "doneCount_other": "Done ({{count}})",
     "featureCounts": "{{count}} outcomes · specification v{{version}}",
     "jiraApplyWithAC": "Applying replaces the name, description, acceptance criteria, and Jira reference below. Review these fields before saving.",
     "jiraApplyWithoutAC": "Applying replaces the name, description, and Jira reference below. No labeled AC section was found; your existing acceptance criteria will be kept.",
@@ -2069,6 +2069,12 @@
     "referenceOnlyHint": "Paste requirements and reference links here. Links are not imported or analyzed automatically. An improvement should describe the complete proposed specification before publication.",
     "selectWorkItem": "Select an outcome to review its context, tasks, and history.",
     "specificationHint": "Draft requirements in an initial delivery outcome. Review and accept the work, then explicitly publish its specification.",
+    "summaryAgents_one": "Agents working: {{count}}",
+    "summaryAgents_other": "Agents working: {{count}}",
+    "summaryAttention_one": "Needs attention: {{count}}",
+    "summaryAttention_other": "Needs attention: {{count}}",
+    "summaryYou_one": "Needs you: {{count}}",
+    "summaryYou_other": "Needs you: {{count}}",
     "tasksInTasksPage_one": "Start, follow, and review this initiative’s {{count}} task in Tasks.",
     "tasksInTasksPage_other": "Start, follow, and review this initiative’s {{count}} tasks in Tasks.",
     "useTicketContent": "Use ticket content"

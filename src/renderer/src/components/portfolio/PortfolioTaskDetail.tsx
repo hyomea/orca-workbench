@@ -15,58 +15,23 @@ import { getIntlLocale, translate } from '@/i18n/i18n'
 import type {
   PortfolioCodeReview,
   PortfolioCommand,
+  PortfolioState,
   PortfolioTask
 } from '../../../../shared/portfolio'
+import {
+  portfolioAcceptBlocker,
+  portfolioStageBlocker
+} from '../../../../shared/portfolio-task-stages'
 import type { AgentStatusEntry } from '../../../../shared/agent-status-types'
 import { PortfolioField, PortfolioSelect } from './portfolio-controls'
 import { PortfolioTaskDecision } from './PortfolioTaskDecision'
-import { portfolioTaskLane, type PortfolioTaskAttention } from './portfolio-task-lanes'
+import { portfolioTaskLane } from './portfolio-task-lanes'
 import type { PortfolioTaskReviewComments } from './portfolio-task-review-actions'
+import { portfolioDefaultWorkspace } from './portfolio-task-workspace'
+import { stageName, taskNextStep } from './portfolio-track-labels'
+import { PortfolioTaskSteps } from './PortfolioTaskSteps'
 
 export type PortfolioWorkspace = { id: string; repoId: string; name: string }
-
-function nextStep(lane: string, attention?: PortfolioTaskAttention): string {
-  if (lane === 'decide') {
-    return translate(
-      'portfolio.nextDecide',
-      'The agent submitted its result. Read the evidence, look at the code if you want to, then accept or send it back.'
-    )
-  }
-  if (lane === 'ready') {
-    return translate('portfolio.nextReady', 'Choose a workspace and start the agent.')
-  }
-  if (lane === 'running') {
-    return translate(
-      'portfolio.nextRunning',
-      'The agent is working. When it is done, ask it in its workspace to submit the task.'
-    )
-  }
-  if (lane === 'accepted') {
-    return translate('portfolio.nextAccepted', 'Accepted. Nothing left to do.')
-  }
-  switch (attention) {
-    case 'blocked':
-      return translate(
-        'portfolio.nextBlocked',
-        'This task is marked blocked. Resolve the blocker, then return it to planned.'
-      )
-    case 'launch-uncertain':
-      return translate(
-        'portfolio.unknownLaunch',
-        'Launch outcome is unresolved. Retry checks the original request; it does not request a new execution.'
-      )
-    case 'agent-needs-input':
-      return translate(
-        'portfolio.nextInput',
-        'The agent is waiting for your answer in its workspace.'
-      )
-    default:
-      return translate(
-        'portfolio.nextStopped',
-        'The agent stopped without submitting a result. If the work is done, ask it in its workspace to submit the task; if the work cannot be used, end this execution.'
-      )
-  }
-}
 
 function Markdown({ content }: { content: string }): React.JSX.Element {
   return <CommentMarkdownAsync content={content} variant="document" className="text-sm" />
@@ -82,10 +47,10 @@ function Collapsible({ title, children }: { title: string; children: ReactNode }
 }
 
 export function PortfolioTaskDetail({
+  state,
   task,
   roleName,
   workspaces,
-  defaultWorkspaceId,
   activity,
   reviewComments,
   busy,
@@ -96,10 +61,10 @@ export function PortfolioTaskDetail({
   onOpenWorkspace,
   onReviewChanges
 }: {
+  state: PortfolioState
   task: PortfolioTask
   roleName: string
   workspaces: readonly PortfolioWorkspace[]
-  defaultWorkspaceId?: string
   activity?: AgentStatusEntry
   reviewComments?: PortfolioTaskReviewComments
   busy: boolean
@@ -110,7 +75,9 @@ export function PortfolioTaskDetail({
   onOpenWorkspace: (id: string) => void
   onReviewChanges?: (worktreeId: string) => void
 }): React.JSX.Element {
-  const [workspaceId, setWorkspaceId] = useState(defaultWorkspaceId ?? workspaces[0]?.id ?? '')
+  const [workspaceId, setWorkspaceId] = useState(() =>
+    portfolioDefaultWorkspace(state, task, workspaces)
+  )
   const [note, setNote] = useState('')
   const submittedCommit =
     task.status === 'review' || task.status === 'accepted'
@@ -125,6 +92,8 @@ export function PortfolioTaskDetail({
   const unresolved = attempt && (attempt.state === 'pending' || attempt.state === 'unknown')
   const { lane, attention } = portfolioTaskLane(task, activity, now)
   const canStart = task.status === 'todo' && (!attempt || attempt.state === 'closed')
+  const stageBlocker = canStart ? portfolioStageBlocker(state, task) : undefined
+  const acceptBlocker = lane === 'decide' ? portfolioAcceptBlocker(state, task) : undefined
   const workspaceName = workspaces.find((entry) => entry.id === attempt?.worktreeId)?.name
   async function transition(
     status: 'todo' | 'blocked' | 'review' | 'accepted',
@@ -182,7 +151,9 @@ export function PortfolioTaskDetail({
           <SheetHeader>
             <SheetTitle>{task.title}</SheetTitle>
             <SheetDescription>
-              {[roleName, attempt?.agent, workspaceName].filter(Boolean).join(' · ')}
+              {[stageName(task.stage), roleName, attempt?.agent, workspaceName]
+                .filter(Boolean)
+                .join(' · ')}
             </SheetDescription>
           </SheetHeader>
           <div className="flex flex-col gap-5 p-4 text-sm">
@@ -198,7 +169,14 @@ export function PortfolioTaskDetail({
               <h3 className="text-xs font-medium uppercase text-muted-foreground">
                 {translate('portfolio.nextStep', 'Next step')}
               </h3>
-              <p className="leading-relaxed">{nextStep(lane, attention)}</p>
+              <p className="leading-relaxed">
+                {acceptBlocker && task.stage === 'development'
+                  ? translate(
+                      'portfolio.nextLaterStages',
+                      'Development is submitted. Code review and QA run next from the Tasks page; accept development after they are accepted.'
+                    )
+                  : taskNextStep(lane, attention)}
+              </p>
               {attempt?.warning && (
                 <p role="alert" className="whitespace-pre-wrap text-destructive">
                   {attempt.warning}
@@ -226,8 +204,9 @@ export function PortfolioTaskDetail({
                       )}
                     </p>
                   )}
+                  {stageBlocker && <p className="text-muted-foreground">{stageBlocker}</p>}
                   <Button
-                    disabled={busy || !workspaceId}
+                    disabled={busy || !workspaceId || Boolean(stageBlocker)}
                     onClick={() => void onLaunch(task.id, workspaceId)}
                   >
                     {busy
@@ -259,6 +238,9 @@ export function PortfolioTaskDetail({
               {(attention === 'agent-stopped' || attention === 'agent-unseen') && endExecution}
               {lane === 'decide' && attempt && (
                 <PortfolioTaskDecision
+                  stage={task.stage}
+                  evidence={task.evidence}
+                  acceptBlocker={acceptBlocker}
                   busy={busy}
                   note={note}
                   onNoteChange={setNote}
@@ -269,10 +251,19 @@ export function PortfolioTaskDetail({
                   onAccept={() =>
                     void transition('accepted', translate('portfolio.accepted', 'Accepted'))
                   }
-                  onReturn={() => void transition('todo')}
+                  onReturn={() =>
+                    void (task.stage === 'development'
+                      ? transition('todo')
+                      : onSave({ kind: 'task.sendBack', taskId: task.id, note }).then((saved) => {
+                          if (saved) {
+                            setNote('')
+                          }
+                        }))
+                  }
                 />
               )}
             </section>
+            {task.stage === 'development' && <PortfolioTaskSteps steps={task.steps} />}
             {task.evidence && (
               <section className="space-y-2">
                 <h3 className="font-medium">

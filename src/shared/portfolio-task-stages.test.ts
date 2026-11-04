@@ -8,7 +8,12 @@ import {
   type PortfolioState,
   type PortfolioTask
 } from './portfolio'
-import { portfolioTrackTask, type PortfolioTaskStage } from './portfolio-task-stages'
+import {
+  portfolioAcceptBlocker,
+  portfolioStageBlocker,
+  portfolioTrackTask,
+  type PortfolioTaskStage
+} from './portfolio-task-stages'
 
 function apply(state: PortfolioState, command: unknown, id = 'change', now = 1): void {
   applyPortfolioCommand(state, PortfolioCommand.parse(command), id, now)
@@ -140,6 +145,9 @@ it('keeps one task per stage for each outcome and platform', () => {
 it('runs code review and QA in order on the development branch', () => {
   const state = fixture()
   expect(() => launch(state, 'codeReview')).toThrow('after development submits')
+  expect(portfolioStageBlocker(state, task(state, 'codeReview'))).toBe(
+    'Start this after development submits its work.'
+  )
   launch(state, 'development')
   apply(state, {
     kind: 'task.transition',
@@ -155,7 +163,12 @@ it('runs code review and QA in order on the development branch', () => {
   expect(prompt).toContain('Development task: development (submitted at commit abc1234)')
   submit(state, 'codeReview')
   expect(() => accept(state, 'development')).toThrow('Accept the code review before')
-  accept(state, 'codeReview')
+  expect(portfolioAcceptBlocker(state, task(state, 'development'))).toBe(
+    'Accept the code review before accepting development.'
+  )
+  // Accepting a review records the user's decision on its findings, not their own code review.
+  apply(state, { kind: 'task.transition', taskId: 'codeReview', status: 'accepted', note: 'OK' })
+  expect(task(state, 'codeReview').history.at(-1)).not.toHaveProperty('codeReview')
   launch(state, 'qa')
   submit(state, 'qa')
   accept(state, 'qa')

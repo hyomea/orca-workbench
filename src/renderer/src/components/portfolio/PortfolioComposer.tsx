@@ -16,6 +16,8 @@ import { portfolioRoleLabel } from '../../../../shared/portfolio-roles'
 
 type PortfolioRole = PortfolioState['roles'][number]
 import { PortfolioField, PortfolioSelect } from './portfolio-controls'
+import { stageName } from './portfolio-track-labels'
+import { PORTFOLIO_STAGES } from './portfolio-tracks'
 
 export type PortfolioComposerKind =
   | 'project'
@@ -60,6 +62,7 @@ export function PortfolioComposer({
   const [agentName, setAgentName] = useState(role?.agentName ?? '')
   const [error, setError] = useState('')
   const [platform, setPlatform] = useState('shared')
+  const [stage, setStage] = useState('development')
   const [linkedItem, setLinkedItem] = useState(workItemId ?? 'none')
   const items = state.workItems.filter(
     (item) => item.status !== 'accepted' && item.projectId === projectId
@@ -103,6 +106,7 @@ export function PortfolioComposer({
                 ...(linkedItem !== 'none' ? { workItemId: linkedItem } : {}),
                 roleId,
                 platform,
+                stage,
                 title: name,
                 instructions: description,
                 acceptanceCriteria: criteria
@@ -265,12 +269,19 @@ export function PortfolioComposer({
                   options={[
                     {
                       id: 'shared',
-                      name: translate('portfolio.sharedWork', 'Shared / discovery / QA')
+                      name: translate('portfolio.sharedPlatform', 'Shared / discovery')
                     },
                     { id: 'ios', name: 'iOS' },
                     { id: 'android', name: 'Android' },
                     { id: 'backend', name: translate('portfolio.backendWork', 'Backend / API') }
                   ]}
+                />
+                <PortfolioSelect
+                  label={translate('portfolio.taskStage', 'Stage')}
+                  value={stage}
+                  onChange={setStage}
+                  disabled={busy}
+                  options={PORTFOLIO_STAGES.map((id) => ({ id, name: stageName(id) }))}
                 />
                 <PortfolioSelect
                   label={translate('portfolio.workItem', 'Outcome')}
