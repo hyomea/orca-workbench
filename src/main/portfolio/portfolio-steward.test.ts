@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { expect, it } from 'vitest'
 import { PortfolioStore } from './portfolio-store'
+import { applyPortfolioCommand, PortfolioCommand } from '../../shared/portfolio'
 import { preparePortfolioSteward } from './portfolio-steward'
 import { setPersonalNotesFolder } from './personal-notes'
 
@@ -45,6 +46,29 @@ it('points the steward at the personal notes folder once one is chosen', async (
     expect(await readFile(join(path, 'CLAUDE.md'), 'utf8')).toContain(`in \`${notes}\``)
     const settings = JSON.parse(await readFile(join(path, '.claude', 'settings.json'), 'utf8'))
     expect(settings.permissions.additionalDirectories).toEqual([notes])
+  } finally {
+    await rm(directory, { recursive: true, force: true })
+  }
+})
+
+it('introduces the steward by the name the user gave it', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'orca-steward-'))
+  try {
+    const store = new PortfolioStore(join(directory, 'workbench', 'portfolio.json'))
+    const { path } = await preparePortfolioSteward(store)
+    expect(await readFile(join(path, 'CLAUDE.md'), 'utf8')).not.toContain('Your name is')
+    await store.update(0, (state) =>
+      applyPortfolioCommand(
+        state,
+        PortfolioCommand.parse({ kind: 'steward.rename', name: 'Coco' }),
+        'rename',
+        1
+      )
+    )
+    await preparePortfolioSteward(store)
+    expect(await readFile(join(path, 'CLAUDE.md'), 'utf8')).toContain(
+      '## Role\n\nYour name is Coco. The user also calls you the coordinator.\n\nYou are the user'
+    )
   } finally {
     await rm(directory, { recursive: true, force: true })
   }

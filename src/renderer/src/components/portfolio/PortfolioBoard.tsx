@@ -126,7 +126,11 @@ export function PortfolioBoard({
           </Tooltip>
           <Button variant="outline" size="sm" disabled={busy} onClick={onOpenSteward}>
             <Bot aria-hidden="true" />
-            {translate('portfolio.openSteward', 'Steward')}
+            {state.stewardName
+              ? translate('portfolio.openStewardNamed', '{{name}} · Coordinator', {
+                  name: state.stewardName
+                })
+              : translate('portfolio.openSteward', 'Steward')}
           </Button>
           <PortfolioPersonalNotesMenu
             disabled={busy}

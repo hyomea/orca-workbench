@@ -106,7 +106,8 @@ feature only for a product capability, with `feature.create`. A task
 needs a role; create one with `role.create` in the same batch when none fits.
 Change a role with `role.update`, passing its current fields as `expected`; the optional
 `agentName` gives the role's agent a personal name. A change reaches tasks started afterwards,
-not agents already running.
+not agents already running. The steward (the user's coordinator) gets its personal name with
+`steward.rename` (`null` clears it); it takes effect the next time the steward opens.
 
 ## Planning from a ticket
 

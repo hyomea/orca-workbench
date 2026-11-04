@@ -6,7 +6,10 @@ import { readPersonalNotesFolder } from './personal-notes'
 const OWN_NOTES = 'steward-notes.md'
 
 // Orca owns CLAUDE.md so its instructions track the CLI; the user's additions live in OWN_NOTES.
-const stewardInstructions = (personalNotes: string): string => `# Orca Workbench steward
+const stewardInstructions = (
+  personalNotes: string,
+  name: string | undefined
+): string => `# Orca Workbench steward
 
 Orca regenerates this file each time the steward opens. Put your own standing instructions in
 \`${OWN_NOTES}\`, which is imported below and never overwritten.
@@ -14,7 +17,7 @@ Orca regenerates this file each time the steward opens. Put your own standing in
 @${OWN_NOTES}
 
 ## Role
-
+${name ? `\nYour name is ${name}. The user also calls you the coordinator.\n` : ''}
 You are the user's steward for Orca Workbench (the Workbench page): initiatives, outcomes,
 features, roles, tasks, test plans, and initiative notes. An initiative is a business goal
 across repositories; stored records and flags call it a project (\`projectId\`,
@@ -143,9 +146,12 @@ export async function preparePortfolioSteward(store: PortfolioStore): Promise<{ 
   const path = portfolioStewardDirectory(store)
   await mkdir(path, { recursive: true })
   const folder = await readPersonalNotesFolder(store)
-  await writeFile(join(path, 'CLAUDE.md'), stewardInstructions(personalNotesSection(folder)), {
-    mode: 0o600
-  })
+  const { stewardName } = await store.read()
+  await writeFile(
+    join(path, 'CLAUDE.md'),
+    stewardInstructions(personalNotesSection(folder), stewardName),
+    { mode: 0o600 }
+  )
   // Project-scoped, so these rules apply only to steward sessions. Users add theirs in settings.local.json.
   await mkdir(join(path, '.claude'), { recursive: true })
   await writeFile(

@@ -91,6 +91,8 @@ export const PortfolioState = z.object({
   workItems: z.array(PortfolioWorkItem),
   revision: z.number().int().nonnegative(),
   organization: Name,
+  // The steward (the user's coordinator agent) by the personal name the user gave it.
+  stewardName: Name.optional(),
   projects: z.array(PortfolioProjectInput.extend({ id: Id })),
   roles: z.array(PortfolioRoleInput.extend({ id: Id })),
   tasks: z.array(PortfolioTask)
@@ -147,6 +149,7 @@ export const PortfolioCommand = z.discriminatedUnion('kind', [
   ...PortfolioRoleCommands,
   ...PortfolioTaskStageCommands,
   z.object({ kind: z.literal('organization.rename'), name: Name }),
+  z.object({ kind: z.literal('steward.rename'), name: Name.nullable() }),
   z.object({ kind: z.literal('project.create'), project: PortfolioProjectInput }),
   z.object({
     kind: z.literal('project.update'),
@@ -201,6 +204,13 @@ export function applyPortfolioCommand(
   switch (command.kind) {
     case 'organization.rename':
       state.organization = command.name
+      return
+    case 'steward.rename':
+      if (command.name) {
+        state.stewardName = command.name
+      } else {
+        delete state.stewardName
+      }
       return
     case 'project.create':
       state.projects.push({
