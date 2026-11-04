@@ -20,13 +20,18 @@ import type {
 } from '../../../../shared/portfolio'
 import {
   portfolioAcceptBlocker,
-  portfolioStageBlocker
+  portfolioOpenExecution,
+  portfolioStageBlocker,
+  portfolioTrackTask
 } from '../../../../shared/portfolio-task-stages'
 import type { AgentStatusEntry } from '../../../../shared/agent-status-types'
 import { PortfolioField, PortfolioSelect } from './portfolio-controls'
 import { PortfolioTaskDecision } from './PortfolioTaskDecision'
 import { portfolioTaskLane } from './portfolio-task-lanes'
-import type { PortfolioTaskReviewComments } from './portfolio-task-review-actions'
+import {
+  relayPortfolioFindings,
+  type PortfolioTaskReviewComments
+} from './portfolio-task-review-actions'
 import { portfolioDefaultWorkspace } from './portfolio-task-workspace'
 import { stageName, taskNextStep } from './portfolio-track-labels'
 import { PortfolioTaskSteps } from './PortfolioTaskSteps'
@@ -79,6 +84,7 @@ export function PortfolioTaskDetail({
     portfolioDefaultWorkspace(state, task, workspaces)
   )
   const [note, setNote] = useState('')
+  const [relayNotice, setRelayNotice] = useState('')
   const submittedCommit =
     task.status === 'review' || task.status === 'accepted'
       ? task.history.findLast((event) => event.status === 'review')?.commit
@@ -108,6 +114,18 @@ export function PortfolioTaskDetail({
     }
     if (await onSave(command)) {
       setNote('')
+    }
+  }
+  // A development session that is still open gets the findings in its own pane.
+  async function sendBack(): Promise<void> {
+    const development = portfolioTrackTask(state, task, 'development')
+    const findings = note
+    if (!(await onSave({ kind: 'task.sendBack', taskId: task.id, note: findings }))) {
+      return
+    }
+    setNote('')
+    if (development && portfolioOpenExecution(development)) {
+      setRelayNotice((await relayPortfolioFindings(development, task, findings)) ?? '')
     }
   }
   const endExecution = attempt && attempt.state !== 'closed' && (
@@ -177,6 +195,11 @@ export function PortfolioTaskDetail({
                     )
                   : taskNextStep(lane, attention)}
               </p>
+              {relayNotice && (
+                <p role="alert" className="whitespace-pre-wrap text-destructive">
+                  {relayNotice}
+                </p>
+              )}
               {attempt?.warning && (
                 <p role="alert" className="whitespace-pre-wrap text-destructive">
                   {attempt.warning}
@@ -252,13 +275,7 @@ export function PortfolioTaskDetail({
                     void transition('accepted', translate('portfolio.accepted', 'Accepted'))
                   }
                   onReturn={() =>
-                    void (task.stage === 'development'
-                      ? transition('todo')
-                      : onSave({ kind: 'task.sendBack', taskId: task.id, note }).then((saved) => {
-                          if (saved) {
-                            setNote('')
-                          }
-                        }))
+                    void (task.stage === 'development' ? transition('todo') : sendBack())
                   }
                 />
               )}

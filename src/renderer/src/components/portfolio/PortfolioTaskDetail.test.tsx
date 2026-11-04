@@ -9,6 +9,8 @@ vi.mock('@/i18n/i18n', () => ({
   translate: (_key: string, fallback: string, values?: Record<string, unknown>) =>
     fallback.replace(/\{\{(\w+)\}\}/g, (_, name: string) => String(values?.[name] ?? ''))
 }))
+const sendMessageToAgent = vi.hoisted(() => vi.fn(async () => ({ status: 'sent' })))
+vi.mock('@/lib/agent-message-send', () => ({ sendMessageToAgent }))
 afterEach(cleanup)
 
 const task: PortfolioTask = {
@@ -135,10 +137,18 @@ it('sends a code review’s chosen findings back to development', async () => {
     stage: 'codeReview',
     evidence: '**B-1** missing test\n**N-1** naming'
   }
+  // Development still has its agent session open, so the findings go into its pane.
   const development: PortfolioTask = {
     ...submitted,
     workItemId: 'outcome',
-    platform: 'android'
+    platform: 'android',
+    attempts: [
+      {
+        ...task.attempts[0],
+        worktreeId: 'repo::/work/ENG-5952',
+        paneKey: 'tab-1:4f5c2a1e-8b9d-4c3e-a2f1-0d9e8c7b6a50'
+      }
+    ]
   }
   const { onSave } = renderDetail({
     task: review,
@@ -166,6 +176,35 @@ it('sends a code review’s chosen findings back to development', async () => {
     taskId: 'review',
     note: 'B-1 missing test'
   })
+  expect(sendMessageToAgent).toHaveBeenCalledWith({
+    worktreeId: 'repo::/work/ENG-5952',
+    target: { kind: 'terminal', tabId: 'tab-1', leafId: '4f5c2a1e-8b9d-4c3e-a2f1-0d9e8c7b6a50' },
+    prompt: expect.stringMatching(
+      /from code review \(Workbench task review\)[\s\S]*B-1 missing test$/
+    )
+  })
+})
+
+it('tells the user to paste the findings when they cannot reach the development agent', async () => {
+  sendMessageToAgent.mockResolvedValueOnce({ status: 'no-active-terminal' })
+  const review: PortfolioTask = { ...submitted, id: 'review', workItemId: 'o', stage: 'qa' }
+  const development: PortfolioTask = {
+    ...submitted,
+    workItemId: 'o',
+    attempts: [{ ...task.attempts[0], paneKey: 'tab-1:4f5c2a1e-8b9d-4c3e-a2f1-0d9e8c7b6a50' }]
+  }
+  renderDetail({ task: review, state: { ...emptyPortfolio(), tasks: [development, review] } })
+  await act(async () => {
+    fireEvent.change(screen.getByLabelText('Findings to send back'), {
+      target: { value: 'Crash on rotate' }
+    })
+  })
+  await act(async () => {
+    fireEvent.click(screen.getByRole('button', { name: 'Send back to development' }))
+  })
+  expect(screen.getByRole('alert').textContent).toMatch(
+    /^Findings saved, but they could not be sent to the development agent: .+ Paste them into its session\.$/
+  )
 })
 
 it('explains why development cannot be accepted before its review and QA', () => {

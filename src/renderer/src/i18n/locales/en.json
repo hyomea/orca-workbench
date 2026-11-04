@@ -23527,6 +23527,8 @@
     "trackSummary": "Summary",
     "trackWaiting": "Waiting",
     "trackWorking": "Agent working",
-    "useSubmittedFindings": "Start from the submitted report"
+    "useSubmittedFindings": "Start from the submitted report",
+    "relayNoPane": "Findings saved, but the development agent’s terminal is unknown. Paste them into its session.",
+    "relayFailed": "Findings saved, but they could not be sent to the development agent: {{reason}} Paste them into its session."
   }
 }
