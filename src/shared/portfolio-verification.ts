@@ -80,10 +80,22 @@ export const PortfolioVerificationCommands = [
   z.object({ kind: z.literal('verification.fix'), workItemId: Id, resultId: Id, roleId: Id })
 ] as const
 
+// Test results describe the code as development left it, so a running development task blocks them.
+export function developmentExecutionOpen(state: PortfolioState, workItemId: string): boolean {
+  return state.tasks.some(
+    (task) =>
+      task.workItemId === workItemId &&
+      task.stage === 'development' &&
+      task.attempts.at(-1) !== undefined &&
+      task.attempts.at(-1)?.state !== 'closed'
+  )
+}
+
 export function verificationTaskSnapshot(state: PortfolioState, workItemId: string): string {
   return JSON.stringify(
     state.tasks
-      .filter((task) => task.workItemId === workItemId)
+      // Only development changes the code under test; QA and review runs do not outdate results.
+      .filter((task) => task.workItemId === workItemId && task.stage === 'development')
       .map((task) => ({
         id: task.id,
         attempts: task.attempts.map((attempt) => attempt.operationId),

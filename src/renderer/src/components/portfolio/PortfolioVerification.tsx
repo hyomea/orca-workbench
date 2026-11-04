@@ -5,6 +5,7 @@ import { translate } from '@/i18n/i18n'
 import type { PortfolioCommand, PortfolioState } from '../../../../shared/portfolio'
 import type { PortfolioWorkItem } from '../../../../shared/portfolio-features'
 import {
+  developmentExecutionOpen,
   verificationProgress,
   verificationTaskSnapshot,
   type PortfolioTestResult
@@ -54,12 +55,7 @@ export function PortfolioVerification({
   const { verification, plan, cells, passed, total, ready } = verificationProgress(state, item.id)
   const cell = cells.find((entry) => `${entry.scenario.id}:${entry.platform}` === selected)
   const locked = item.status === 'accepted'
-  const openExecution = state.tasks.some(
-    (task) =>
-      task.workItemId === item.id &&
-      task.attempts.at(-1) &&
-      task.attempts.at(-1)?.state !== 'closed'
-  )
+  const openExecution = developmentExecutionOpen(state, item.id)
   return (
     <section className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -248,7 +244,7 @@ export function PortfolioVerification({
                 <p className="text-xs text-muted-foreground">
                   {translate(
                     'portfolio.closeBeforeTesting',
-                    'Stop and close linked executions before recording tests.'
+                    'Stop and close linked development executions before recording tests.'
                   )}
                 </p>
               )}

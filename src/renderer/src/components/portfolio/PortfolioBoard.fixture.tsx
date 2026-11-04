@@ -44,6 +44,8 @@ const state: PortfolioState = {
       acceptanceCriteria: 'Reviewed against web and mobile flows.',
       status: 'accepted',
       evidence: 'Contract reviewed.',
+      stage: 'development',
+      steps: [],
       attempts: [],
       history: []
     },
@@ -56,6 +58,8 @@ const state: PortfolioState = {
       acceptanceCriteria: 'Integration tests pass.',
       status: 'running',
       evidence: '',
+      stage: 'development',
+      steps: [],
       attempts: [],
       history: []
     },
@@ -68,6 +72,8 @@ const state: PortfolioState = {
       acceptanceCriteria: 'Refresh and sign out verified.',
       status: 'review',
       evidence: 'Test evidence attached.',
+      stage: 'development',
+      steps: [],
       attempts: [],
       history: []
     },
@@ -80,6 +86,8 @@ const state: PortfolioState = {
       acceptanceCriteria: 'Migration plan agreed.',
       status: 'blocked',
       evidence: '',
+      stage: 'development',
+      steps: [],
       attempts: [],
       history: []
     },
@@ -92,6 +100,8 @@ const state: PortfolioState = {
       acceptanceCriteria: 'Operator flow verified.',
       status: 'todo',
       evidence: '',
+      stage: 'development',
+      steps: [],
       attempts: [],
       history: []
     }

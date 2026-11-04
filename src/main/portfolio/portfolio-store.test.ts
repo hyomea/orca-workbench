@@ -47,7 +47,8 @@ async function fixture(): Promise<{ store: PortfolioStore; file: string }> {
           roleId: 'role',
           title: 'Session contract',
           instructions: 'Implement the contract',
-          acceptanceCriteria: 'Contract tests pass'
+          acceptanceCriteria: 'Contract tests pass',
+          stage: 'development'
         }
       },
       'task',

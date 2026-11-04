@@ -85,6 +85,7 @@ export function PortfolioTaskDetail({
   task,
   roleName,
   workspaces,
+  defaultWorkspaceId,
   activity,
   reviewComments,
   busy,
@@ -98,6 +99,7 @@ export function PortfolioTaskDetail({
   task: PortfolioTask
   roleName: string
   workspaces: readonly PortfolioWorkspace[]
+  defaultWorkspaceId?: string
   activity?: AgentStatusEntry
   reviewComments?: PortfolioTaskReviewComments
   busy: boolean
@@ -108,7 +110,7 @@ export function PortfolioTaskDetail({
   onOpenWorkspace: (id: string) => void
   onReviewChanges?: (worktreeId: string) => void
 }): React.JSX.Element {
-  const [workspaceId, setWorkspaceId] = useState(workspaces[0]?.id ?? '')
+  const [workspaceId, setWorkspaceId] = useState(defaultWorkspaceId ?? workspaces[0]?.id ?? '')
   const [note, setNote] = useState('')
   const submittedCommit =
     task.status === 'review' || task.status === 'accepted'

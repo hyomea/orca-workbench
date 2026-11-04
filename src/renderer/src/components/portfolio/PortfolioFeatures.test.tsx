@@ -234,6 +234,7 @@ it('creates an agent task linked to the selected work item', async () => {
       projectId: 'project',
       workItemId: 'bug',
       roleId: 'role',
+      stage: 'development',
       platform: 'shared',
       title: 'Fix iOS count',
       instructions: 'Correct the calculation',

@@ -20,6 +20,8 @@ const task: PortfolioTask = {
   acceptanceCriteria: 'Tests pass',
   status: 'running',
   evidence: '',
+  stage: 'development',
+  steps: [],
   history: [],
   attempts: [
     {

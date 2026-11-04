@@ -477,3 +477,36 @@ it('rejects a proposal drafted against an older feature version', () => {
   apply(state, { kind: 'workItem.create', workItem: proposal, expectedBaseVersion: 1 }, 'proposal')
   expect(state.workItems.at(-1)?.baseVersion).toBe(1)
 })
+
+it('returns a failed result to the platform’s development task instead of creating a new one', () => {
+  const state = fixture()
+  apply(
+    state,
+    {
+      kind: 'task.create',
+      task: {
+        projectId: 'project',
+        workItemId: 'item',
+        roleId: 'engineer',
+        platform: 'android',
+        title: 'Build counts on Android',
+        instructions: 'Implement',
+        acceptanceCriteria: 'Counts shown'
+      }
+    },
+    'android-dev'
+  )
+  plan(state)
+  confirm(state)
+  const android = record(state, 'android', 'fail')
+  apply(state, {
+    kind: 'verification.fix',
+    workItemId: 'item',
+    resultId: android,
+    roleId: 'engineer'
+  })
+  expect(state.tasks.map((task) => task.id)).toEqual(['android-dev'])
+  expect(verificationProgress(state, 'item').verification?.results[0].fixTaskId).toBe('android-dev')
+  const prompt = preparePortfolioAttempt(state, 'android-dev', 'w', 'android', 'op', 2).prompt
+  expect(prompt).toContain(`Returned from QA: android result ${android} (fail) for scenario counts`)
+})

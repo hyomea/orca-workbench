@@ -1,5 +1,13 @@
 import type { PortfolioCommand, PortfolioState, PortfolioTask } from './portfolio'
 import { workItemForTask } from './portfolio-feature-commands'
+import {
+  assertPortfolioDevelopmentAcceptable,
+  assertPortfolioTrackSlot,
+  portfolioOpenExecution,
+  portfolioTaskEvent,
+  portfolioTrackTask,
+  returnPortfolioFindings
+} from './portfolio-task-stages'
 
 export function portfolioTask(state: PortfolioState, taskId: string): PortfolioTask {
   const task = state.tasks.find((entry) => entry.id === taskId)
@@ -26,11 +34,13 @@ export function applyPortfolioTaskCommand(
       if (command.task.workItemId) {
         workItemForTask(state, command.task.projectId, command.task.workItemId)
       }
+      assertPortfolioTrackSlot(state, { ...command.task, id })
       state.tasks.push({
         ...command.task,
         id,
         status: 'todo',
         evidence: '',
+        steps: [],
         attempts: [],
         history: [{ id: `${id}:0`, at: now, status: 'todo', note: 'Task created' }]
       })
@@ -72,6 +82,9 @@ export function applyPortfolioTaskCommand(
       if (command.status === 'accepted' && !command.codeReview) {
         throw new Error('Record whether you reviewed the code or skipped it before accepting.')
       }
+      if (command.status === 'accepted') {
+        assertPortfolioDevelopmentAcceptable(state, task)
+      }
       if (command.status === 'review') {
         task.evidence = command.note
       }
@@ -92,7 +105,100 @@ export function applyPortfolioTaskCommand(
       })
       return true
     }
+    case 'task.update': {
+      const task = portfolioTask(state, command.taskId)
+      if (task.status !== 'todo' || portfolioOpenExecution(task)) {
+        throw new Error('Only a task that is not running can be edited.')
+      }
+      if (!state.roles.some((role) => role.id === command.task.roleId)) {
+        throw new Error('Choose an existing role.')
+      }
+      const { platform: _platform, ...rest } = task
+      const next = { ...rest, ...command.task }
+      assertPortfolioTrackSlot(state, next)
+      state.tasks[state.tasks.indexOf(task)] = next
+      portfolioTaskEvent(next, now, 'Task details changed')
+      return true
+    }
+    case 'task.delete': {
+      const task = portfolioTask(state, command.taskId)
+      if (task.status !== 'todo' || portfolioOpenExecution(task)) {
+        throw new Error('Only a task that is not running can be deleted.')
+      }
+      if (
+        state.verification.some((entry) =>
+          entry.results.some((result) => result.fixTaskId === task.id)
+        )
+      ) {
+        throw new Error('A test result links to this task; keep it for that record.')
+      }
+      state.tasks.splice(state.tasks.indexOf(task), 1)
+      return true
+    }
+    case 'task.steps': {
+      const task = developmentTask(state, command.taskId)
+      if (new Set(command.steps.map((step) => step.id)).size !== command.steps.length) {
+        throw new Error('Each step needs a unique ID.')
+      }
+      // Re-planning keeps the progress of steps that stay in the plan.
+      task.steps = command.steps.map(
+        (step) =>
+          task.steps.find((entry) => entry.id === step.id && entry.title === step.title) ?? {
+            ...step,
+            done: false
+          }
+      )
+      return true
+    }
+    case 'task.step': {
+      const task = developmentTask(state, command.taskId)
+      const index = task.steps.findIndex((entry) => entry.id === command.stepId)
+      if (index === -1) {
+        throw new Error('This task has no step with that ID.')
+      }
+      const { commit: _commit, ...step } = task.steps[index]
+      task.steps[index] = {
+        ...step,
+        done: command.done,
+        ...(command.done && command.commit ? { commit: command.commit } : {})
+      }
+      return true
+    }
+    case 'task.sendBack': {
+      const task = portfolioTask(state, command.taskId)
+      if (task.stage === 'development' || task.status !== 'review') {
+        throw new Error('Send back findings from a submitted code review or QA task.')
+      }
+      const development = portfolioTrackTask(state, task, 'development')
+      if (!development) {
+        throw new Error('This outcome has no development task for this platform.')
+      }
+      const attempt = task.attempts.at(-1)
+      if (attempt && (attempt.state === 'pending' || attempt.state === 'unknown')) {
+        throw new Error('Resolve the uncertain launch before changing this task.')
+      }
+      // This round is over; reviewing the next submission starts a new execution.
+      if (attempt) {
+        attempt.state = 'closed'
+      }
+      task.status = 'todo'
+      task.evidence = ''
+      portfolioTaskEvent(task, now, `Sent back to development: ${command.note}`)
+      returnPortfolioFindings(state, development, task.stage, command.note, now)
+      return true
+    }
     default:
       return false
   }
+}
+
+function developmentTask(state: PortfolioState, taskId: string): PortfolioTask {
+  const task = portfolioTask(state, taskId)
+  if (task.stage !== 'development') {
+    throw new Error('Only development tasks have steps.')
+  }
+  if (task.status === 'accepted') {
+    throw new Error('This task is accepted; its steps are final.')
+  }
+  return task
 }

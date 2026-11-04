@@ -18,6 +18,8 @@ function task(
     acceptanceCriteria: 'Tests pass',
     status,
     evidence: '',
+    stage: 'development',
+    steps: [],
     history: [],
     attempts: attempt
       ? [

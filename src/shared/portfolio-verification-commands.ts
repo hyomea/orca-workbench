@@ -1,6 +1,11 @@
 import { applyPortfolioCommand, type PortfolioCommand, type PortfolioState } from './portfolio'
-import { verificationProgress, verificationTaskSnapshot } from './portfolio-verification'
+import {
+  developmentExecutionOpen,
+  verificationProgress,
+  verificationTaskSnapshot
+} from './portfolio-verification'
 import { portfolioTicketsText } from './portfolio-features'
+import { returnPortfolioFindings } from './portfolio-task-stages'
 
 export function applyPortfolioVerificationCommand(
   state: PortfolioState,
@@ -78,15 +83,10 @@ export function applyPortfolioVerificationCommand(
     if (!plan.scenarios.some((scenario) => scenario.id === command.result.scenarioId)) {
       throw new Error('Choose a scenario from the current plan.')
     }
-    if (
-      state.tasks.some(
-        (task) =>
-          task.workItemId === item.id &&
-          task.attempts.at(-1) &&
-          task.attempts.at(-1)?.state !== 'closed'
+    if (developmentExecutionOpen(state, item.id)) {
+      throw new Error(
+        'Stop and close linked development executions before recording a test result.'
       )
-    ) {
-      throw new Error('Stop and close linked executions before recording a test result.')
     }
     verification.results.push({
       ...command.result,
@@ -112,30 +112,51 @@ export function applyPortfolioVerificationCommand(
   if (result.fixTaskId || (result.outcome === 'pass' && result.review?.decision !== 'rejected')) {
     throw new Error('Choose a failed, blocked, or rejected result without a linked fix.')
   }
-  applyPortfolioCommand(
-    state,
-    {
-      kind: 'task.create',
-      task: {
-        projectId: item.projectId,
-        workItemId: item.id,
-        roleId: command.roleId,
-        platform: result.platform,
-        title: `Fix ${result.platform}: ${cell.scenario.criterion}`.slice(0, 200),
-        instructions: `Resolve finding ${result.id} on ${result.platform}. The execution context includes its original scenario, build, environment, evidence, and review. Verify the fix against the current shared test plan.`,
-        acceptanceCriteria: `${cell.scenario.expected}\n${cell.scenario.platformNotes}\nRe-run the shared plan on iOS and Android after the fix; attach fresh evidence for review.`
-      }
-    },
-    id,
-    now
+  // A platform with a development task gets the failure back in that same session.
+  const development = state.tasks.findLast(
+    (task) =>
+      task.stage === 'development' &&
+      task.workItemId === item.id &&
+      task.platform === result.platform
   )
-  result.fixTaskId = id
+  if (development) {
+    returnPortfolioFindings(
+      state,
+      development,
+      'qa',
+      `${result.platform} result ${result.id} (${result.outcome}) for scenario ${cell.scenario.id}: ${cell.scenario.criterion}\n${result.evidence}${result.review ? `\nReview: ${result.review.note}` : ''}`,
+      now
+    )
+    result.fixTaskId = development.id
+  } else {
+    applyPortfolioCommand(
+      state,
+      {
+        kind: 'task.create',
+        task: {
+          projectId: item.projectId,
+          workItemId: item.id,
+          roleId: command.roleId,
+          platform: result.platform,
+          stage: 'development',
+          title: `Fix ${result.platform}: ${cell.scenario.criterion}`.slice(0, 200),
+          instructions: `Resolve finding ${result.id} on ${result.platform}. The execution context includes its original scenario, build, environment, evidence, and review. Verify the fix against the current shared test plan.`,
+          acceptanceCriteria: `${cell.scenario.expected}\n${cell.scenario.platformNotes}\nRe-run the shared plan on iOS and Android after the fix; attach fresh evidence for review.`
+        }
+      },
+      id,
+      now
+    )
+    result.fixTaskId = id
+  }
   item.status = 'active'
   item.history.push({
     id: `${item.id}:${item.history.length}`,
     at: now,
     status: 'active',
-    note: `Fix task created from ${result.platform} result ${result.id}`
+    note: development
+      ? `Returned to development from ${result.platform} result ${result.id}`
+      : `Fix task created from ${result.platform} result ${result.id}`
   })
   return true
 }

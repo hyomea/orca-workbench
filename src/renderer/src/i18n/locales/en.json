@@ -23270,7 +23270,7 @@
     "coverageConfirmed": "Coverage confirmed",
     "scenarioDetails": "Steps, data, and expected behavior",
     "recordTestResult": "Record test result",
-    "closeBeforeTesting": "Stop and close linked executions before recording tests.",
+    "closeBeforeTesting": "Stop and close linked development executions before recording tests.",
     "readyForWorkReview": "All planned platform checks have reviewed passing evidence. Review linked tasks, then accept the outcome.",
     "verificationHistory": "Test plan and result history",
     "planVersionHistory": "Plan v{{version}}",

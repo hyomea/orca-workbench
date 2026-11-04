@@ -8,6 +8,7 @@ import type { PortfolioCommand, PortfolioTask } from '../../../../shared/portfol
 import { portfolioRoleLabelById } from '../../../../shared/portfolio-roles'
 import { PortfolioSelect } from './portfolio-controls'
 import { PortfolioTaskDetail } from './PortfolioTaskDetail'
+import { portfolioDefaultWorkspace } from './portfolio-task-workspace'
 import {
   portfolioTaskLane,
   portfolioTaskObservation,
@@ -106,6 +107,11 @@ export function PortfolioTaskQueue({
     })
   const selected = tasks.find((entry) => entry.task.id === selectedTaskId)
   const accepted = tasks.filter((entry) => entry.lane === 'accepted')
+  const selectedWorkspaces = workspaces.filter((workspace) =>
+    state.projects
+      .find((project) => project.id === selected?.task.projectId)
+      ?.repoIds.includes(workspace.repoId)
+  )
   const card = (entry: (typeof tasks)[number]) => (
     <PortfolioTaskQueueCard
       key={entry.task.id}
@@ -201,11 +207,8 @@ export function PortfolioTaskQueue({
           key={selected.task.id}
           task={selected.task}
           roleName={portfolioRoleLabelById(state, selected.task.roleId)}
-          workspaces={workspaces.filter((workspace) =>
-            state.projects
-              .find((project) => project.id === selected.task.projectId)
-              ?.repoIds.includes(workspace.repoId)
-          )}
+          workspaces={selectedWorkspaces}
+          defaultWorkspaceId={portfolioDefaultWorkspace(state, selected.task, selectedWorkspaces)}
           activity={selected.observation}
           reviewComments={reviewComments}
           busy={busy}

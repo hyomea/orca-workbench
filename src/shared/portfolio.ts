@@ -18,6 +18,11 @@ import {
 import { PortfolioCodeReview, PortfolioCommit } from './portfolio-review'
 import { applyPortfolioTaskCommand } from './portfolio-task-commands'
 import {
+  PortfolioTaskStage,
+  PortfolioTaskStageCommands,
+  PortfolioTaskStep
+} from './portfolio-task-stages'
+import {
   applyPortfolioRoleCommand,
   PortfolioAgent,
   PortfolioRoleCommands,
@@ -43,7 +48,8 @@ export const PortfolioTaskInput = z.object({
   instructions: Description,
   acceptanceCriteria: Description,
   workItemId: Id.optional(),
-  platform: PortfolioWorkPlatform.optional()
+  platform: PortfolioWorkPlatform.optional(),
+  stage: PortfolioTaskStage.default('development')
 })
 export const PortfolioAttempt = z.object({
   operationId: Id,
@@ -61,6 +67,8 @@ export const PortfolioTask = PortfolioTaskInput.extend({
   id: Id,
   status: PortfolioTaskStatus,
   evidence: z.string(),
+  // The development plan; the same session works through it, committing each step.
+  steps: z.array(PortfolioTaskStep).default([]),
   attempts: z.array(PortfolioAttempt),
   history: z.array(
     z.object({
@@ -69,7 +77,8 @@ export const PortfolioTask = PortfolioTaskInput.extend({
       status: PortfolioTaskStatus,
       note: z.string(),
       codeReview: PortfolioCodeReview.optional(),
-      commit: PortfolioCommit.optional()
+      commit: PortfolioCommit.optional(),
+      returnedFrom: PortfolioTaskStage.optional()
     })
   )
 })
@@ -136,6 +145,7 @@ export const PortfolioCommand = z.discriminatedUnion('kind', [
   ...PortfolioVerificationCommands,
   ...PortfolioNoteCommands,
   ...PortfolioRoleCommands,
+  ...PortfolioTaskStageCommands,
   z.object({ kind: z.literal('organization.rename'), name: Name }),
   z.object({ kind: z.literal('project.create'), project: PortfolioProjectInput }),
   z.object({
