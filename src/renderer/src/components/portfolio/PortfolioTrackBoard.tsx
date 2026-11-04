@@ -112,8 +112,10 @@ function TrackCell({
         </span>
       )}
       {isCurrent && status.tone === 'agent' && cell.observation?.lastAssistantMessage && (
-        <span className="line-clamp-2 block text-muted-foreground">
-          {cell.observation.lastAssistantMessage}
+        // line-clamp sets its own display, so the span must not also be `block`.
+        <span className="line-clamp-2 break-words text-muted-foreground">
+          {/* A preview only: Markdown markers would read as noise in two lines. */}
+          {cell.observation.lastAssistantMessage.replace(/[*`#]/g, '')}
         </span>
       )}
     </button>
