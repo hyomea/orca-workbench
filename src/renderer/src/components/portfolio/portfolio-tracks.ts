@@ -114,9 +114,13 @@ export function portfolioTracks(
   const tracks: PortfolioTrack[] = []
   for (const item of state.workItems.filter(inScope)) {
     const tasks = state.tasks.filter((task) => task.workItemId === item.id)
+    // A row per ticket the outcome has, plus any platform that already has tasks; a platform
+    // listed without a ticket reference is not shown until its ticket exists or work starts.
     const platforms = [
       ...new Set<PortfolioWorkPlatform | undefined>([
-        ...item.tickets.map((ticket) => ticket.platform),
+        ...item.tickets
+          .filter((ticket) => ticket.reference.trim())
+          .map((ticket) => ticket.platform),
         ...tasks.map((task) => task.platform)
       ])
     ]
@@ -130,7 +134,9 @@ export function portfolioTracks(
             title: item.title,
             item,
             platform,
-            ticket: item.tickets.find((ticket) => ticket.platform === platform)?.reference
+            ticket:
+              item.tickets.find((ticket) => ticket.platform === platform)?.reference.trim() ||
+              undefined
           },
           tasks.filter((task) => task.platform === platform),
           activity,
@@ -150,4 +156,44 @@ export function portfolioTracks(
     )
   }
   return tracks.sort((a, b) => ORDER[a.next] - ORDER[b.next])
+}
+
+export type PortfolioTrackGroup = {
+  key: string
+  title: string
+  projectId: string
+  item?: PortfolioWorkItem
+  tracks: PortfolioTrack[]
+}
+
+// Rows grouped under their outcome, most urgent outcome first; tasks outside an outcome stay
+// one group each.
+export function portfolioTrackGroups(tracks: readonly PortfolioTrack[]): PortfolioTrackGroup[] {
+  const groups = new Map<string, PortfolioTrackGroup>()
+  for (const track of tracks) {
+    const key = track.item?.id ?? track.key
+    const group = groups.get(key)
+    if (group) {
+      group.tracks.push(track)
+    } else {
+      groups.set(key, {
+        key,
+        title: track.title,
+        projectId: track.projectId,
+        item: track.item,
+        tracks: [track]
+      })
+    }
+  }
+  return [...groups.values()]
+}
+
+// A ticket link reads as its key, such as ENG-5952.
+export function portfolioTicketLabel(reference: string): string {
+  try {
+    const url = new URL(reference)
+    return url.pathname.split('/').findLast(Boolean) ?? reference
+  } catch {
+    return reference
+  }
 }

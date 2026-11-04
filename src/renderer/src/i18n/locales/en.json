@@ -23516,7 +23516,7 @@
     "summaryYou_other": "Needs you: {{count}}",
     "taskStage": "Stage",
     "trackAccepted": "Accepted",
-    "trackColumn": "Outcome · platform",
+    "trackColumn": "Outcome / ticket",
     "trackDecide": "Needs your decision",
     "trackDone": "Done",
     "trackExternal": "Tracked on {{ticket}}",
@@ -23529,6 +23529,8 @@
     "trackWorking": "Agent working",
     "useSubmittedFindings": "Start from the submitted report",
     "relayNoPane": "Findings saved, but the development agent’s terminal is unknown. Paste them into its session.",
-    "relayFailed": "Findings saved, but they could not be sent to the development agent: {{reason}} Paste them into its session."
+    "relayFailed": "Findings saved, but they could not be sent to the development agent: {{reason}} Paste them into its session.",
+    "trackNoPlatform": "No platform",
+    "trackNoOutcome": "Task without an outcome"
   }
 }

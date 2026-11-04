@@ -6,9 +6,16 @@ import { portfolioRoleLabelById } from '../../../../shared/portfolio-roles'
 import type { PortfolioTaskStage } from '../../../../shared/portfolio-task-stages'
 import { workPlatformName } from './portfolio-feature-labels'
 import { attentionLabel, stageName } from './portfolio-track-labels'
-import { PORTFOLIO_STAGES, type PortfolioTrack, type PortfolioTrackCell } from './portfolio-tracks'
+import {
+  PORTFOLIO_STAGES,
+  portfolioTicketLabel,
+  portfolioTrackGroups,
+  type PortfolioTrack,
+  type PortfolioTrackCell,
+  type PortfolioTrackGroup
+} from './portfolio-tracks'
 
-const GRID = 'grid grid-cols-[minmax(12rem,1.4fr)_repeat(3,minmax(9rem,1fr))_minmax(6rem,0.6fr)]'
+const GRID = 'grid grid-cols-[minmax(9rem,0.9fr)_repeat(3,minmax(9rem,1fr))_minmax(5rem,0.5fr)]'
 
 function cellStatus(track: PortfolioTrack, stage: PortfolioTaskStage, cell: PortfolioTrackCell) {
   const position = PORTFOLIO_STAGES.indexOf(stage)
@@ -59,7 +66,9 @@ function TrackCell({
         )}
       >
         {external
-          ? translate('portfolio.trackExternal', 'Tracked on {{ticket}}', { ticket: track.ticket })
+          ? translate('portfolio.trackExternal', 'Tracked on {{ticket}}', {
+              ticket: portfolioTicketLabel(track.ticket ?? '')
+            })
           : translate('portfolio.trackNotPlanned', 'Not planned')}
       </div>
     )
@@ -114,26 +123,27 @@ function TrackCell({
 function TrackRow({
   state,
   track,
-  showProject,
   onSelectTask
 }: {
   state: PortfolioState
   track: PortfolioTrack
-  showProject: boolean
   onSelectTask: (taskId: string) => void
 }): React.JSX.Element {
-  const project = showProject
-    ? state.projects.find((entry) => entry.id === track.projectId)?.name
-    : undefined
   return (
-    <div role="row" className={cn(GRID, 'items-start gap-2 border-t border-border/50 py-2')}>
-      <div role="rowheader" className="min-w-0 space-y-0.5 text-sm">
-        <span className="block break-words font-medium">{track.title}</span>
-        <span className="block text-xs text-muted-foreground">
-          {[track.platform ? workPlatformName(track.platform) : undefined, track.ticket, project]
-            .filter(Boolean)
-            .join(' · ')}
+    <div role="row" className={cn(GRID, 'items-start gap-2 py-1 pl-3')}>
+      <div role="rowheader" className="min-w-0 pt-2 text-xs">
+        <span className="font-medium">
+          {track.platform
+            ? workPlatformName(track.platform)
+            : track.item
+              ? translate('portfolio.trackNoPlatform', 'No platform')
+              : translate('portfolio.trackNoOutcome', 'Task without an outcome')}
         </span>
+        {track.ticket && (
+          <span className="ml-1.5 text-muted-foreground" title={track.ticket}>
+            {portfolioTicketLabel(track.ticket)}
+          </span>
+        )}
       </div>
       {PORTFOLIO_STAGES.map((stage) => (
         <div role="cell" key={stage} className="min-w-0">
@@ -148,6 +158,35 @@ function TrackRow({
           </span>
         )}
       </div>
+    </div>
+  )
+}
+
+function TrackGroup({
+  state,
+  group,
+  showProject,
+  onSelectTask
+}: {
+  state: PortfolioState
+  group: PortfolioTrackGroup
+  showProject: boolean
+  onSelectTask: (taskId: string) => void
+}): React.JSX.Element {
+  const project = showProject
+    ? state.projects.find((entry) => entry.id === group.projectId)?.name
+    : undefined
+  return (
+    <div role="rowgroup" aria-label={group.title} className="border-t border-border/50 py-2">
+      <div role="row" className="flex flex-wrap items-baseline gap-x-2 px-0 pb-1">
+        <span role="rowheader" className="break-words text-sm font-medium">
+          {group.title}
+        </span>
+        {project && <span className="text-xs text-muted-foreground">{project}</span>}
+      </div>
+      {group.tracks.map((track) => (
+        <TrackRow key={track.key} state={state} track={track} onSelectTask={onSelectTask} />
+      ))}
     </div>
   )
 }
@@ -193,7 +232,7 @@ export function PortfolioTrackBoard({
   ]
   const header = (
     <div role="row" className={cn(GRID, 'gap-2 pb-1 text-xs font-medium text-muted-foreground')}>
-      <span role="columnheader">{translate('portfolio.trackColumn', 'Outcome · platform')}</span>
+      <span role="columnheader">{translate('portfolio.trackColumn', 'Outcome / ticket')}</span>
       {PORTFOLIO_STAGES.map((stage) => (
         <span role="columnheader" key={stage}>
           {stageName(stage)}
@@ -203,11 +242,11 @@ export function PortfolioTrackBoard({
     </div>
   )
   const rows = (list: readonly PortfolioTrack[]) =>
-    list.map((track) => (
-      <TrackRow
-        key={track.key}
+    portfolioTrackGroups(list).map((group) => (
+      <TrackGroup
+        key={group.key}
         state={state}
-        track={track}
+        group={group}
         showProject={showProject}
         onSelectTask={onSelectTask}
       />

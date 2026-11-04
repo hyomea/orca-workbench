@@ -52,7 +52,8 @@ function fixture(): PortfolioState {
         acceptanceCriteria: 'Tests run on PRs',
         designReferences: '',
         tickets: [
-          { platform: 'android', reference: 'ENG-5952' },
+          { platform: 'android', reference: 'https://luduscom.atlassian.net/browse/ENG-5952' },
+          { platform: 'ios', reference: '' },
           { platform: 'backend', reference: 'ENG-7872' }
         ],
         parity: false
@@ -103,10 +104,13 @@ it('shows each outcome platform as a row of stages and opens a stage’s task', 
     />
   )
   expect(screen.getByText('Needs you: 1')).toBeTruthy()
-  const [android, backend] = screen
+  // One group per outcome; a platform without a ticket number has no row yet.
+  const group = screen.getByRole('rowgroup', { name: 'Test foundation' })
+  const [android, backend, ...others] = within(group)
     .getAllByRole('row')
-    .filter((row) => within(row).queryByRole('rowheader'))
-  expect(within(android).getByText('Android · ENG-5952')).toBeTruthy()
+    .filter((row) => within(row).queryByRole('rowheader')?.textContent !== 'Test foundation')
+  expect(others).toEqual([])
+  expect(within(android).getByRole('rowheader').textContent).toBe('AndroidENG-5952')
   const development = within(android).getByRole('button', {
     name: 'Development: Android development'
   })
@@ -120,6 +124,7 @@ it('shows each outcome platform as a row of stages and opens a stage’s task', 
   ).toBeTruthy()
   expect(within(android).getByText('Not planned')).toBeTruthy()
   expect(within(backend).getByText('Tracked on ENG-7872')).toBeTruthy()
+  expect(screen.queryByText('iOS')).toBeNull()
   fireEvent.click(development)
   expect(onSelectTask).toHaveBeenCalledWith('development')
 })
