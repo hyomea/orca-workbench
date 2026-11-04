@@ -135,11 +135,22 @@ export function returnPortfolioFindings(
   }
 }
 
+// A submission is the entry that moved the task into review; later entries can keep that status
+// (such as an execution closed during review) without being a new submission.
+function latestSubmissionIndex(task: PortfolioTask): number {
+  return task.history.findLastIndex(
+    (entry, index) => entry.status === 'review' && task.history[index - 1]?.status !== 'review'
+  )
+}
+
+export function portfolioSubmittedCommit(task: PortfolioTask): string | undefined {
+  return task.history[latestSubmissionIndex(task)]?.commit
+}
+
 // Findings returned since the development task last submitted, for its next launch prompt.
 export function portfolioReturnedFindings(task: PortfolioTask): string[] {
-  const lastSubmission = task.history.findLastIndex((entry) => entry.status === 'review')
   return task.history
-    .slice(lastSubmission + 1)
+    .slice(latestSubmissionIndex(task) + 1)
     .filter((entry) => entry.returnedFrom)
     .map((entry) => entry.note)
 }
@@ -151,6 +162,12 @@ export function assertPortfolioStageReady(state: PortfolioState, task: Portfolio
   const development = portfolioTrackTask(state, task, 'development')
   if (!development || (development.status !== 'review' && development.status !== 'accepted')) {
     throw new Error('Start this after development submits its work.')
+  }
+  // Review and QA look at a fixed version, so development must have submitted a commit.
+  if (!portfolioSubmittedCommit(development)) {
+    throw new Error(
+      'Development has no submitted commit. Ask the development agent to commit and submit.'
+    )
   }
   const review = portfolioTrackTask(state, task, 'codeReview')
   if (task.stage === 'qa' && review && review.status !== 'accepted') {

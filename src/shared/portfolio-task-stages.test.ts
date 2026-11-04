@@ -84,7 +84,13 @@ function launch(state: PortfolioState, id: string, worktree = 'branch'): string 
 }
 
 function submit(state: PortfolioState, id: string): void {
-  apply(state, { kind: 'task.transition', taskId: id, status: 'review', note: `${id} result` })
+  apply(state, {
+    kind: 'task.transition',
+    taskId: id,
+    status: 'review',
+    note: `${id} result`,
+    commit: 'abc1234'
+  })
 }
 
 function accept(state: PortfolioState, id: string): void {
@@ -149,6 +155,10 @@ it('runs code review and QA in order on the development branch', () => {
     'Start this after development submits its work.'
   )
   launch(state, 'development')
+  // A submission without a commit (as before submissions recorded one) cannot be reviewed.
+  apply(state, { kind: 'task.transition', taskId: 'development', status: 'review', note: 'Built' })
+  expect(() => launch(state, 'codeReview')).toThrow('Development has no submitted commit')
+  apply(state, { kind: 'task.transition', taskId: 'development', status: 'blocked', note: 'Fix' })
   apply(state, {
     kind: 'task.transition',
     taskId: 'development',
@@ -221,6 +231,8 @@ it('gives returned findings to the next development launch when the session was 
   launch(state, 'development')
   submit(state, 'development')
   apply(state, { kind: 'task.closeExecution', taskId: 'development', note: 'Closed it' })
+  // Closing the run keeps the task in review; the submitted commit still counts.
+  expect(task(state, 'development').history.at(-1)).toMatchObject({ status: 'review' })
   launch(state, 'codeReview')
   submit(state, 'codeReview')
   accept(state, 'codeReview')

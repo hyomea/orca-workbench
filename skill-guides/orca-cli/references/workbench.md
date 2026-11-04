@@ -124,7 +124,8 @@ An outcome on one platform is a track. Each track has one task per stage, set wi
 1. `development`: one agent session builds the whole track in one workspace and branch. Its
    work is planned as steps inside the task, not as separate tasks.
 2. `codeReview`: a reviewer role reviews the submitted branch in a new session, without
-   editing code. It starts only after development submits.
+   editing code. It starts only after development submits with a commit (`task submit`
+   records it), and reviews that commit.
 3. `qa`: a QA role tests the reviewed work: the tests, the outcome's acceptance criteria, and
    for a parity outcome the shared test plan on both platforms. It starts only after the user
    accepts the code review.

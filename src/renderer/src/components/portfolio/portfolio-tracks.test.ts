@@ -86,7 +86,13 @@ it('moves the current stage forward as each stage is submitted and accepted', ()
   const android = () => tracks(state).find((row) => row.platform === 'android')!
   preparePortfolioAttempt(state, 'development', 'w', 'r', 'op', 1).state = 'launched'
   expect(android()).toMatchObject({ current: 'development', next: 'agent' })
-  apply(state, { kind: 'task.transition', taskId: 'development', status: 'review', note: 'Done' })
+  apply(state, {
+    kind: 'task.transition',
+    taskId: 'development',
+    status: 'review',
+    note: 'Done',
+    commit: 'abc1234'
+  })
   expect(android()).toMatchObject({ current: 'codeReview', next: 'start' })
   preparePortfolioAttempt(state, 'codeReview', 'w', 'r', 'op2', 2).state = 'launched'
   apply(state, { kind: 'task.transition', taskId: 'codeReview', status: 'review', note: 'Pass' })

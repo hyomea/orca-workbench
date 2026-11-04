@@ -22,6 +22,7 @@ import {
   portfolioAcceptBlocker,
   portfolioOpenExecution,
   portfolioStageBlocker,
+  portfolioSubmittedCommit,
   portfolioTrackTask
 } from '../../../../shared/portfolio-task-stages'
 import type { AgentStatusEntry } from '../../../../shared/agent-status-types'
@@ -87,7 +88,7 @@ export function PortfolioTaskDetail({
   const [relayNotice, setRelayNotice] = useState('')
   const submittedCommit =
     task.status === 'review' || task.status === 'accepted'
-      ? task.history.findLast((event) => event.status === 'review')?.commit
+      ? portfolioSubmittedCommit(task)
       : undefined
   const [stopNote, setStopNote] = useState('')
   const [codeReview, setCodeReview] = useState<PortfolioCodeReview | null>(
