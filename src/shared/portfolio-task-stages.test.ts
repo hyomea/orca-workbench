@@ -186,6 +186,38 @@ it('runs code review and QA in order on the development branch', () => {
   expect(task(state, 'development').status).toBe('accepted')
 })
 
+it('lets QA test the commit an accepted code review recorded', () => {
+  const state = fixture()
+  // Development submitted before submissions recorded a commit; the reviewer's submission did.
+  launch(state, 'development')
+  apply(state, { kind: 'task.transition', taskId: 'development', status: 'review', note: 'Built' })
+  state.tasks
+    .find((entry) => entry.id === 'codeReview')!
+    .history.push({
+      id: 'codeReview:legacy',
+      at: 1,
+      status: 'review',
+      note: 'Pass',
+      commit: 'def5678'
+    })
+  task(state, 'codeReview').status = 'review'
+  expect(portfolioStageBlocker(state, task(state, 'qa'))).toBe(
+    'Start QA after you accept the code review.'
+  )
+  apply(state, { kind: 'task.transition', taskId: 'codeReview', status: 'accepted', note: 'OK' })
+  expect(launch(state, 'qa')).toContain('(submitted at commit def5678)')
+})
+
+it('keeps QA blocked when neither development nor the code review recorded a commit', () => {
+  const state = fixture()
+  launch(state, 'development')
+  apply(state, { kind: 'task.transition', taskId: 'development', status: 'review', note: 'Built' })
+  apply(state, { kind: 'task.delete', taskId: 'codeReview' })
+  expect(portfolioStageBlocker(state, task(state, 'qa'))).toBe(
+    'Development has no submitted commit. Ask the development agent to commit and submit.'
+  )
+})
+
 it('keeps two development sessions out of one workspace', () => {
   const state = fixture()
   apply(state, {

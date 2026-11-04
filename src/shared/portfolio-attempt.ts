@@ -8,7 +8,7 @@ import { portfolioFeaturePrompt } from './portfolio-feature-commands'
 import {
   assertPortfolioStageReady,
   portfolioReturnedFindings,
-  portfolioSubmittedCommit,
+  portfolioStageCommit,
   portfolioTrackTask
 } from './portfolio-task-stages'
 
@@ -106,7 +106,7 @@ function portfolioStagePrompt(state: PortfolioState, task: PortfolioTask): strin
     ]
   }
   const development = portfolioTrackTask(state, task, 'development')
-  const commit = development && portfolioSubmittedCommit(development)
+  const commit = portfolioStageCommit(state, task)
   return [
     task.stage === 'codeReview'
       ? 'Stage: code review. Review the development work on this branch; do not edit code.'

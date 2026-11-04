@@ -147,6 +147,22 @@ export function portfolioSubmittedCommit(task: PortfolioTask): string | undefine
   return task.history[latestSubmissionIndex(task)]?.commit
 }
 
+// The version a code review or QA task looks at: what development submitted. QA can also take
+// the commit an accepted code review recorded, since the reviewer adds no commits of its own and
+// development may have been submitted before submissions recorded one.
+export function portfolioStageCommit(
+  state: PortfolioState,
+  task: PortfolioTask
+): string | undefined {
+  const development = portfolioTrackTask(state, task, 'development')
+  const submitted = development && portfolioSubmittedCommit(development)
+  if (submitted || task.stage !== 'qa') {
+    return submitted
+  }
+  const review = portfolioTrackTask(state, task, 'codeReview')
+  return review?.status === 'accepted' ? portfolioSubmittedCommit(review) : undefined
+}
+
 // Findings returned since the development task last submitted, for its next launch prompt.
 export function portfolioReturnedFindings(task: PortfolioTask): string[] {
   return task.history
@@ -163,15 +179,15 @@ export function assertPortfolioStageReady(state: PortfolioState, task: Portfolio
   if (!development || (development.status !== 'review' && development.status !== 'accepted')) {
     throw new Error('Start this after development submits its work.')
   }
-  // Review and QA look at a fixed version, so development must have submitted a commit.
-  if (!portfolioSubmittedCommit(development)) {
-    throw new Error(
-      'Development has no submitted commit. Ask the development agent to commit and submit.'
-    )
-  }
   const review = portfolioTrackTask(state, task, 'codeReview')
   if (task.stage === 'qa' && review && review.status !== 'accepted') {
     throw new Error('Start QA after you accept the code review.')
+  }
+  // Review and QA look at a fixed version, so there must be a commit to look at.
+  if (!portfolioStageCommit(state, task)) {
+    throw new Error(
+      'Development has no submitted commit. Ask the development agent to commit and submit.'
+    )
   }
 }
 
