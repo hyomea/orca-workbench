@@ -18,6 +18,7 @@ import {
 import { PortfolioCodeReview, PortfolioCommit } from './portfolio-review'
 import { applyPortfolioTaskCommand } from './portfolio-task-commands'
 import {
+  PortfolioReturnSource,
   PortfolioTaskStage,
   PortfolioTaskStageCommands,
   PortfolioTaskStep
@@ -78,7 +79,7 @@ export const PortfolioTask = PortfolioTaskInput.extend({
       note: z.string(),
       codeReview: PortfolioCodeReview.optional(),
       commit: PortfolioCommit.optional(),
-      returnedFrom: PortfolioTaskStage.optional()
+      returnedFrom: PortfolioReturnSource.optional()
     })
   )
 })

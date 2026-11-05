@@ -190,6 +190,18 @@ export function applyPortfolioTaskCommand(
       returnPortfolioFindings(state, development, task.stage, command.note, now)
       return true
     }
+    case 'task.returnPrFeedback': {
+      const task = portfolioTask(state, command.taskId)
+      if (task.stage !== 'development' || task.status !== 'accepted') {
+        throw new Error('Return PR feedback to an accepted development task.')
+      }
+      const attempt = task.attempts.at(-1)
+      if (attempt && (attempt.state === 'pending' || attempt.state === 'unknown')) {
+        throw new Error('Resolve the uncertain launch before changing this task.')
+      }
+      returnPortfolioFindings(state, task, 'pr', command.note, now, command.rerunChecks)
+      return true
+    }
     default:
       return false
   }

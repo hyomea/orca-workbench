@@ -10,6 +10,9 @@ const Description = z.string().trim().min(1).max(20000)
 // One development session builds a track (an outcome on one platform); review and QA follow it.
 export const PortfolioTaskStage = z.enum(['development', 'codeReview', 'qa'])
 export type PortfolioTaskStage = z.infer<typeof PortfolioTaskStage>
+// Where findings returned to development came from: a later stage, or review on the PR.
+export const PortfolioReturnSource = z.enum(['codeReview', 'qa', 'pr'])
+export type PortfolioReturnSource = z.infer<typeof PortfolioReturnSource>
 export const PortfolioTaskStep = z.object({
   id: Id,
   title: Name,
@@ -42,13 +45,26 @@ export const PortfolioTaskStageCommands = [
     commit: PortfolioCommit.optional()
   }),
   // Code review or QA returns findings to the development task of the same track.
-  z.object({ kind: z.literal('task.sendBack'), taskId: Id, note: Description })
+  z.object({ kind: z.literal('task.sendBack'), taskId: Id, note: Description }),
+  // PR review feedback reopens accepted development; code review and QA run again only if asked.
+  z.object({
+    kind: z.literal('task.returnPrFeedback'),
+    taskId: Id,
+    note: Description,
+    rerunChecks: z.boolean()
+  })
 ] as const
 
 export const PORTFOLIO_STAGE_NAMES: Record<PortfolioTaskStage, string> = {
   development: 'development',
   codeReview: 'code review',
   qa: 'QA'
+}
+
+const RETURN_SOURCE_NAMES: Record<PortfolioReturnSource, string> = {
+  codeReview: 'code review',
+  qa: 'QA',
+  pr: 'PR review'
 }
 
 export function portfolioTrackTask(
@@ -76,7 +92,7 @@ export function portfolioTaskEvent(
   task: PortfolioTask,
   now: number,
   note: string,
-  from?: PortfolioTaskStage
+  from?: PortfolioReturnSource
 ): void {
   task.history.push({
     id: `${task.id}:${task.history.length}`,
@@ -104,24 +120,20 @@ export function assertPortfolioTrackSlot(
 }
 
 // Reopens the track's development task with findings: a live session gets them relayed,
-// a closed one receives them in its next launch prompt. Later stages must run again on the
-// next submission, so their finished results are cleared.
+// a closed one receives them in its next launch prompt. Later stages run again on the next
+// submission unless the user keeps their results (small fixes from PR review).
 export function returnPortfolioFindings(
   state: PortfolioState,
   development: PortfolioTask,
-  from: PortfolioTaskStage,
+  from: PortfolioReturnSource,
   note: string,
-  now: number
+  now: number,
+  rerunChecks = true
 ): void {
   development.status = portfolioOpenExecution(development) ? 'running' : 'todo'
   development.evidence = ''
-  portfolioTaskEvent(
-    development,
-    now,
-    `Returned from ${PORTFOLIO_STAGE_NAMES[from]}: ${note}`,
-    from
-  )
-  for (const stage of ['codeReview', 'qa'] as const) {
+  portfolioTaskEvent(development, now, `Returned from ${RETURN_SOURCE_NAMES[from]}: ${note}`, from)
+  for (const stage of rerunChecks ? (['codeReview', 'qa'] as const) : []) {
     const later = portfolioTrackTask(state, development, stage)
     if (later && (later.status === 'review' || later.status === 'accepted')) {
       const attempt = later.attempts.at(-1)

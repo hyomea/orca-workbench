@@ -280,6 +280,65 @@ it('gives returned findings to the next development launch when the session was 
   expect(launch(state, 'codeReview')).not.toContain('Crash on rotate')
 })
 
+function acceptAll(state: PortfolioState): void {
+  launch(state, 'development')
+  submit(state, 'development')
+  for (const stage of ['codeReview', 'qa'] as const) {
+    launch(state, stage)
+    submit(state, stage)
+    accept(state, stage)
+  }
+  accept(state, 'development')
+}
+
+it('returns PR feedback to accepted development and keeps review and QA for small fixes', () => {
+  const state = fixture()
+  expect(() =>
+    apply(state, {
+      kind: 'task.returnPrFeedback',
+      taskId: 'development',
+      note: 'Rename',
+      rerunChecks: false
+    })
+  ).toThrow('accepted development task')
+  acceptAll(state)
+  apply(state, {
+    kind: 'task.returnPrFeedback',
+    taskId: 'development',
+    note: 'Rename the helper',
+    rerunChecks: false
+  })
+  // The development session is still open, so it is running again with the feedback.
+  expect(task(state, 'development')).toMatchObject({ status: 'running', evidence: '' })
+  expect(task(state, 'development').history.at(-1)).toMatchObject({
+    returnedFrom: 'pr',
+    note: 'Returned from PR review: Rename the helper'
+  })
+  expect(task(state, 'codeReview').status).toBe('accepted')
+  expect(task(state, 'qa').status).toBe('accepted')
+  submit(state, 'development')
+  accept(state, 'development')
+  expect(task(state, 'development').status).toBe('accepted')
+})
+
+it('runs code review and QA again when PR feedback needs a bigger change', () => {
+  const state = fixture()
+  acceptAll(state)
+  apply(state, { kind: 'task.closeExecution', taskId: 'development', note: 'Closed it' })
+  apply(state, {
+    kind: 'task.returnPrFeedback',
+    taskId: 'development',
+    note: 'Restructure the cache',
+    rerunChecks: true
+  })
+  expect(task(state, 'development').status).toBe('todo')
+  expect(task(state, 'codeReview').status).toBe('todo')
+  expect(task(state, 'qa').status).toBe('todo')
+  expect(launch(state, 'development')).toContain(
+    'Address these findings first:\nReturned from PR review: Restructure the cache'
+  )
+})
+
 it('tracks development steps and keeps progress when the plan changes', () => {
   const state = fixture()
   apply(state, {
