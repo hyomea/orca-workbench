@@ -56,7 +56,10 @@ function TrackCell({
   onSelectTask: (taskId: string) => void
 }): React.JSX.Element {
   const cell = track.cells[stage]
-  const isCurrent = track.current === stage
+  // Team work waiting on its PR stays with code review, where the team's review happens.
+  const isCurrent =
+    track.current === stage ||
+    (stage === 'codeReview' && track.current === 'merge' && Boolean(cell))
   if (!cell) {
     const external = track.current === 'external' && stage === 'development'
     return (
@@ -124,8 +127,7 @@ function TrackCell({
   )
 }
 
-// A team initiative's PR: under code review while the team reviews it, then in Done until it
-// merges. The task opened is the one whose detail shows the PR.
+// A team initiative's PR, shown with code review until it merges.
 function PrLine({ pr }: { pr: PortfolioTrackPr }): React.JSX.Element {
   return (
     <span
@@ -150,7 +152,8 @@ function DoneCell({
   track: PortfolioTrack
   onSelectTask: (taskId: string) => void
 }): React.JSX.Element | null {
-  const review = track.cells.codeReview?.task ?? track.cells.development?.task
+  // Only a track without a code review task shows its PR here.
+  const review = track.cells.codeReview ? undefined : track.cells.development?.task
   if (track.current === 'merge' && track.pr && review) {
     return (
       <button

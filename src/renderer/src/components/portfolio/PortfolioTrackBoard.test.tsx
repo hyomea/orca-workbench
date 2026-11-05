@@ -5,6 +5,7 @@ import {
   applyPortfolioCommand,
   emptyPortfolio,
   PortfolioCommand,
+  preparePortfolioAttempt,
   type PortfolioState
 } from '../../../../shared/portfolio'
 import { portfolioTracks } from './portfolio-tracks'
@@ -127,4 +128,47 @@ it('shows each outcome platform as a row of stages and opens a stage’s task', 
   expect(screen.queryByText('iOS')).toBeNull()
   fireEvent.click(development)
   expect(onSelectTask).toHaveBeenCalledWith('development')
+})
+
+it('keeps a team track with an open PR under code review instead of done', () => {
+  const state = fixture()
+  apply(state, { kind: 'project.reviewMode', projectId: 'project', mode: 'team' })
+  preparePortfolioAttempt(state, 'development', 'w', 'r', 'op', 1).state = 'launched'
+  apply(state, {
+    kind: 'task.transition',
+    taskId: 'development',
+    status: 'review',
+    note: 'Built',
+    commit: 'abc1234'
+  })
+  preparePortfolioAttempt(state, 'codeReview', 'w', 'r', 'op2', 2).state = 'launched'
+  apply(state, { kind: 'task.transition', taskId: 'codeReview', status: 'review', note: 'Pass' })
+  apply(state, { kind: 'task.transition', taskId: 'codeReview', status: 'accepted', note: 'OK' })
+  apply(state, {
+    kind: 'task.transition',
+    taskId: 'development',
+    status: 'accepted',
+    note: 'OK',
+    codeReview: 'reviewed'
+  })
+  render(
+    <PortfolioTrackBoard
+      state={state}
+      tracks={portfolioTracks(state, undefined, {}, 10, (worktreeId) => ({
+        worktreeId,
+        status: 'inReview',
+        number: 276
+      }))}
+      showProject={false}
+      onSelectTask={() => {}}
+    />
+  )
+  const android = screen
+    .getAllByRole('row')
+    .find((row) => within(row).queryByRole('rowheader')?.textContent === 'AndroidENG-5952')!
+  const review = within(android).getByRole('button', { name: 'Code review: Android codeReview' })
+  expect(within(review).getByText('#276 · Waiting on review or CI')).toBeTruthy()
+  expect(review.className).toContain('border-foreground/40')
+  expect(within(android).queryByText('Done')).toBeNull()
+  expect(screen.getByText('PRs in review: 1')).toBeTruthy()
 })
