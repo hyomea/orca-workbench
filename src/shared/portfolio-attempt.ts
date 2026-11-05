@@ -111,6 +111,27 @@ function portfolioStagePrompt(state: PortfolioState, task: PortfolioTask): strin
     task.stage === 'codeReview'
       ? 'Stage: code review. Review the development work on this branch; do not edit code.'
       : 'Stage: QA. Test the development work on this branch; do not edit product code.',
-    `Development task: ${development?.title ?? 'unknown'}${commit ? ` (submitted at commit ${commit})` : ''}`
+    `Development task: ${development?.title ?? 'unknown'}${commit ? ` (submitted at commit ${commit})` : ''}`,
+    ...portfolioTeamReviewPrompt(state, task),
+    ...portfolioReturnedFindings(task).map((note) => `Triage this new feedback first:\n${note}`)
+  ]
+}
+
+// In team mode the agent also triages the team's feedback; the user decides what goes back.
+function portfolioTeamReviewPrompt(state: PortfolioState, task: PortfolioTask): string[] {
+  if (state.projects.find((project) => project.id === task.projectId)?.reviewMode !== 'team') {
+    return []
+  }
+  const verdicts = 'must fix, not needed (with the reason), or needs discussion'
+  if (task.stage === 'codeReview') {
+    return [
+      `Team review: the branch's pull request also gets review from the team. Read its comments with \`gh\` (read only; do not post, resolve, or push), and give each one a verdict: ${verdicts}, with a drafted reply the user can post.`
+    ]
+  }
+  const link = state.workItems.find((item) => item.id === task.workItemId)?.qaFeedbackUrl
+  return [
+    link
+      ? `External QA: the QA team records feedback at ${link}. Read it (read only; do not edit it), and give each item a verdict: ${verdicts}.`
+      : 'External QA: this outcome has no QA feedback link yet. Ask the user for it before triaging external QA feedback.'
   ]
 }

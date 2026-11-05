@@ -23,10 +23,13 @@ export type PortfolioTrackPr = {
   status: PortfolioPrStatus
   number?: number
   url?: string
+  // What reading the PR's comments needs.
+  repo?: { path: string; id: string }
+  prRepo?: PRInfo['prRepo']
 }
 
-// The PR of an accepted track's workspace; undefined once the workspace is gone (such as removed
-// after merging), when Workbench can no longer follow it.
+// The PR of a track's workspace; undefined once the workspace is gone (such as removed after
+// merging), when Workbench can no longer follow it.
 export type PortfolioPrLookup = (worktreeId: string) => PortfolioTrackPr | undefined
 
 export function portfolioPrStatus(pr: PRInfo | null): PortfolioPrStatus {
@@ -81,7 +84,14 @@ export function portfolioWorktreePr(
   return {
     worktreeId,
     status: portfolioPrStatus(pr),
-    ...(pr ? { number: pr.number, url: pr.url } : {})
+    ...(pr
+      ? {
+          number: pr.number,
+          url: pr.url,
+          repo: { path: repo.path, id: repo.id },
+          prRepo: pr.prRepo
+        }
+      : {})
   }
 }
 

@@ -6,7 +6,7 @@ import { portfolioRoleLabelById } from '../../../../shared/portfolio-roles'
 import type { PortfolioTaskStage } from '../../../../shared/portfolio-task-stages'
 import { workPlatformName } from './portfolio-feature-labels'
 import { attentionLabel, stageName } from './portfolio-track-labels'
-import { prStatusLabel } from './portfolio-track-pr'
+import { prStatusLabel, type PortfolioTrackPr } from './portfolio-track-pr'
 import {
   PORTFOLIO_STAGES,
   portfolioTicketLabel,
@@ -16,12 +16,12 @@ import {
   type PortfolioTrackGroup
 } from './portfolio-tracks'
 
-const GRID = 'grid grid-cols-[minmax(9rem,0.9fr)_repeat(4,minmax(9rem,1fr))_minmax(5rem,0.5fr)]'
+const GRID = 'grid grid-cols-[minmax(9rem,0.9fr)_repeat(3,minmax(9rem,1fr))_minmax(8rem,0.7fr)]'
 
 function cellStatus(track: PortfolioTrack, stage: PortfolioTaskStage, cell: PortfolioTrackCell) {
   const position = PORTFOLIO_STAGES.indexOf(stage)
   const current =
-    track.current === 'done' || track.current === 'external' || track.current === 'pr'
+    track.current === 'done' || track.current === 'external' || track.current === 'merge'
       ? PORTFOLIO_STAGES.length
       : PORTFOLIO_STAGES.indexOf(track.current)
   if (position > current) {
@@ -104,6 +104,7 @@ function TrackCell({
         )}
         {status.text}
       </span>
+      {stage === 'codeReview' && track.pr && <PrLine pr={track.pr} />}
       {stage === 'development' && steps.length > 0 && (
         <span className="block text-muted-foreground">
           {translate('portfolio.trackSteps', 'Steps {{done}}/{{total}}', {
@@ -123,54 +124,55 @@ function TrackCell({
   )
 }
 
-// The branch PR after development is accepted; it opens the development task, where PR
-// feedback goes back to the same session.
-function PrCell({
+// A team initiative's PR: under code review while the team reviews it, then in Done until it
+// merges. The task opened is the one whose detail shows the PR.
+function PrLine({ pr }: { pr: PortfolioTrackPr }): React.JSX.Element {
+  return (
+    <span
+      className={cn(
+        'flex items-center gap-1',
+        (pr.status === 'merged' || pr.status === 'checking') && 'text-muted-foreground',
+        (pr.status === 'ciFailing' || pr.status === 'closed') && 'text-destructive'
+      )}
+    >
+      <GitPullRequest className="size-3 shrink-0" aria-hidden="true" />
+      <span className="truncate">
+        {pr.number ? `#${pr.number} · ${prStatusLabel(pr.status)}` : prStatusLabel(pr.status)}
+      </span>
+    </span>
+  )
+}
+
+function DoneCell({
   track,
   onSelectTask
 }: {
   track: PortfolioTrack
   onSelectTask: (taskId: string) => void
-}): React.JSX.Element {
-  const development = track.cells.development?.task
-  if (!track.pr || !development) {
+}): React.JSX.Element | null {
+  const review = track.cells.codeReview?.task ?? track.cells.development?.task
+  if (track.current === 'merge' && track.pr && review) {
     return (
-      <div
-        className={cn(
-          'rounded-md border border-dashed border-border/60 p-2 text-xs text-muted-foreground',
-          track.current === 'done' && 'border-transparent'
-        )}
+      <button
+        type="button"
+        aria-label={`${translate('portfolio.trackMerge', 'Merge')}: ${review.title}`}
+        onClick={() => onSelectTask(review.id)}
+        className="w-full rounded-md border border-foreground/40 bg-card p-2 text-left text-xs shadow-xs outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
       >
-        {track.current === 'done' ? '' : translate('portfolio.trackWaiting', 'Waiting')}
-      </div>
+        <PrLine pr={track.pr} />
+      </button>
     )
   }
-  const { status, number } = track.pr
+  if (track.current !== 'done') {
+    return null
+  }
   return (
-    <button
-      type="button"
-      aria-label={`${translate('portfolio.stagePr', 'PR')}: ${development.title}`}
-      onClick={() => onSelectTask(development.id)}
-      className={cn(
-        'w-full space-y-1 rounded-md border border-border bg-card p-2 text-left text-xs shadow-xs outline-none hover:border-muted-foreground/35 hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring',
-        track.current === 'pr' && 'border-foreground/40'
-      )}
-    >
-      <span className="block truncate font-medium">
-        {number ? `#${number}` : translate('portfolio.stagePr', 'PR')}
-      </span>
-      <span
-        className={cn(
-          'flex items-center gap-1',
-          (status === 'merged' || status === 'checking') && 'text-muted-foreground',
-          (status === 'ciFailing' || status === 'closed') && 'text-destructive',
-          (track.next === 'decide' || track.next === 'start') && 'font-medium'
-        )}
-      >
-        {status === 'merged' && <CircleCheck className="size-3" aria-hidden="true" />}
-        {prStatusLabel(status)}
-      </span>
-    </button>
+    <span className="flex items-center gap-1 pt-2 text-xs text-muted-foreground">
+      <CircleCheck className="size-3" aria-hidden="true" />
+      {track.pr?.status === 'merged'
+        ? translate('portfolio.prMerged', 'Merged')
+        : translate('portfolio.trackDone', 'Done')}
+    </span>
   )
 }
 
@@ -205,15 +207,7 @@ function TrackRow({
         </div>
       ))}
       <div role="cell" className="min-w-0">
-        <PrCell track={track} onSelectTask={onSelectTask} />
-      </div>
-      <div role="cell" className="pt-2 text-xs text-muted-foreground">
-        {track.current === 'done' && (
-          <span className="flex items-center gap-1">
-            <CircleCheck className="size-3" aria-hidden="true" />
-            {translate('portfolio.trackDone', 'Done')}
-          </span>
-        )}
+        <DoneCell track={track} onSelectTask={onSelectTask} />
       </div>
     </div>
   )
@@ -248,7 +242,7 @@ function TrackGroup({
   )
 }
 
-// Each outcome platform as a pipeline: development, code review, QA, PR, done.
+// Each outcome platform as a pipeline: development, code review, QA, done (merged, for a team).
 export function PortfolioTrackBoard({
   state,
   tracks,
@@ -302,7 +296,6 @@ export function PortfolioTrackBoard({
           {stageName(stage)}
         </span>
       ))}
-      <span role="columnheader">{translate('portfolio.stagePr', 'PR')}</span>
       <span role="columnheader">{translate('portfolio.trackDone', 'Done')}</span>
     </div>
   )
@@ -333,7 +326,7 @@ export function PortfolioTrackBoard({
         ))}
       </ul>
       <div className="overflow-x-auto scrollbar-sleek">
-        <div role="table" className="min-w-[58rem]">
+        <div role="table" className="min-w-[48rem]">
           {header}
           {rows(open)}
           {open.length === 0 && (
@@ -356,7 +349,7 @@ export function PortfolioTrackBoard({
             })}
           </summary>
           <div className="mt-2 overflow-x-auto scrollbar-sleek">
-            <div role="table" className="min-w-[58rem]">
+            <div role="table" className="min-w-[48rem]">
               {header}
               {rows(done)}
             </div>

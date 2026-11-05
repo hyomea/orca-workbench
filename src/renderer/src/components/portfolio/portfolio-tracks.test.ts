@@ -112,8 +112,12 @@ it('moves the current stage forward as each stage is submitted and accepted', ()
   expect(android()).toMatchObject({ current: 'done', next: 'none' })
 })
 
-it('follows accepted development as its branch PR until it merges', () => {
+it('shows a team initiative’s PR under code review, then waits in done until it merges', () => {
   const state = fixture()
+  const android = (status?: PortfolioPrStatus) =>
+    portfolioTracks(state, 'project', {}, 10, (worktreeId) =>
+      status ? { worktreeId, status, number: 7 } : undefined
+    ).find((row) => row.platform === 'android')!
   preparePortfolioAttempt(state, 'development', 'w', 'r', 'op', 1).state = 'launched'
   apply(state, {
     kind: 'task.transition',
@@ -121,6 +125,14 @@ it('follows accepted development as its branch PR until it merges', () => {
     status: 'review',
     note: 'Done',
     commit: 'abc1234'
+  })
+  // A personal initiative never looks for a PR.
+  expect(android('inReview')).not.toHaveProperty('pr')
+  apply(state, { kind: 'project.reviewMode', projectId: 'project', mode: 'team' })
+  expect(android('inReview')).toMatchObject({
+    current: 'codeReview',
+    next: 'start',
+    pr: { worktreeId: 'w', number: 7 }
   })
   apply(state, { kind: 'task.delete', taskId: 'codeReview' })
   apply(state, { kind: 'task.delete', taskId: 'qa' })
@@ -131,14 +143,9 @@ it('follows accepted development as its branch PR until it merges', () => {
     note: 'OK',
     codeReview: 'reviewed'
   })
-  const android = (status?: PortfolioPrStatus) =>
-    portfolioTracks(state, 'project', {}, 10, (worktreeId) =>
-      status ? { worktreeId, status, number: 7 } : undefined
-    ).find((row) => row.platform === 'android')!
-  expect(android('none')).toMatchObject({ current: 'pr', next: 'start', pr: { worktreeId: 'w' } })
-  expect(android('inReview')).toMatchObject({ current: 'pr', next: 'waiting' })
-  expect(android('ciFailing')).toMatchObject({ current: 'pr', next: 'attention' })
-  expect(android('changesRequested')).toMatchObject({ current: 'pr', next: 'decide' })
+  expect(android('inReview')).toMatchObject({ current: 'merge', next: 'waiting' })
+  expect(android('readyToMerge')).toMatchObject({ current: 'merge', next: 'decide' })
+  expect(android('ciFailing')).toMatchObject({ current: 'merge', next: 'attention' })
   expect(android('merged')).toMatchObject({ current: 'done', next: 'none' })
   // A removed workspace can no longer be followed, so the track counts as done.
   expect(android()).toMatchObject({ current: 'done', next: 'none' })

@@ -62,8 +62,11 @@ export const PortfolioFeature = PortfolioFeatureInput.extend({
   versions: z.array(PortfolioFeatureVersion),
   parity: PortfolioFeatureParity.optional()
 })
+const QaFeedbackUrl = z.string().trim().url().max(2000)
 export const PortfolioWorkItem = PortfolioWorkItemInput.extend({
   designAttachments: PortfolioDesignAttachments,
+  // Where external QA records its feedback (such as a Notion page), for team-mode QA to triage.
+  qaFeedbackUrl: QaFeedbackUrl.optional(),
   id: Id,
   baseVersion: z.number().int().nonnegative(),
   status: PortfolioWorkItemStatus,
@@ -129,7 +132,9 @@ export const PortfolioFeatureCommands = [
     tickets: z.array(PortfolioTicket).max(20),
     parity: z.boolean(),
     // Omitted keeps the feature link; null removes it; an id links the outcome to that feature.
-    feature: Id.nullable().optional()
+    feature: Id.nullable().optional(),
+    // Omitted keeps the external QA feedback link; null removes it.
+    qaFeedbackUrl: QaFeedbackUrl.nullable().optional()
   }),
   // featureId links an outcome that has no feature yet to the one its specification belongs to.
   z.object({

@@ -29,13 +29,14 @@ import { PortfolioField, PortfolioSelect } from './portfolio-controls'
 import { PortfolioTaskDecision } from './PortfolioTaskDecision'
 import { portfolioTaskLane } from './portfolio-task-lanes'
 import {
+  requestPortfolioTriage,
   returnPortfolioFindingsToDevelopment,
   type PortfolioTaskReviewComments
 } from './portfolio-task-review-actions'
 import { portfolioDefaultWorkspace } from './portfolio-task-workspace'
 import { stageName, taskNextStep } from './portfolio-track-labels'
 import { PortfolioTaskSteps } from './PortfolioTaskSteps'
-import { PortfolioTaskPr } from './PortfolioTaskPr'
+import { PortfolioTaskTriage } from './PortfolioTaskTriage'
 import { PortfolioEndExecution } from './PortfolioEndExecution'
 
 export type PortfolioWorkspace = { id: string; repoId: string; name: string }
@@ -133,11 +134,10 @@ export function PortfolioTaskDetail({
       setRelayNotice(notice)
     }
   }
-  async function returnPrFeedback(feedback: string, rerunChecks: boolean): Promise<boolean> {
-    const notice = await returnPortfolioFindingsToDevelopment(
-      () => onSave({ kind: 'task.returnPrFeedback', taskId: task.id, note: feedback, rerunChecks }),
+  async function requestTriage(feedback: string): Promise<boolean> {
+    const notice = await requestPortfolioTriage(
+      () => onSave({ kind: 'task.requestTriage', taskId: task.id, note: feedback }),
       task,
-      'pr',
       feedback
     )
     if (notice !== false) {
@@ -273,14 +273,16 @@ export function PortfolioTaskDetail({
                 />
               )}
             </section>
-            {task.stage === 'development' && task.status === 'accepted' && (
-              <PortfolioTaskPr
-                task={task}
-                busy={busy}
-                onReturnFeedback={returnPrFeedback}
-                onOpenWorkspace={onOpenWorkspace}
-              />
-            )}
+            {task.stage !== 'development' &&
+              state.projects.find((project) => project.id === task.projectId)?.reviewMode ===
+                'team' && (
+                <PortfolioTaskTriage
+                  state={state}
+                  task={task}
+                  busy={busy}
+                  onRequestTriage={requestTriage}
+                />
+              )}
             {task.stage === 'development' && <PortfolioTaskSteps steps={task.steps} />}
             {task.evidence && (
               <section className="space-y-2">

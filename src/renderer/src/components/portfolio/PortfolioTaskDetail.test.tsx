@@ -4,6 +4,7 @@ import { afterEach, expect, it, vi } from 'vitest'
 import { emptyPortfolio, type PortfolioTask } from '../../../../shared/portfolio'
 import { PortfolioTaskDetail } from './PortfolioTaskDetail'
 import type * as PortfolioTrackPrModule from './portfolio-track-pr'
+import { useAppStore } from '@/store'
 
 vi.mock('@/i18n/i18n', () => ({
   getIntlLocale: () => 'en',
@@ -18,7 +19,8 @@ vi.mock('./portfolio-track-pr', async (original) => ({
     worktreeId,
     status: 'changesRequested',
     number: 12,
-    url: 'https://github.com/o/r/pull/12'
+    url: 'https://github.com/o/r/pull/12',
+    repo: { path: '/repo', id: 'repo' }
   }),
   usePortfolioPrRefresh: () => {}
 }))
@@ -214,7 +216,7 @@ it('tells the user to paste the findings when they cannot reach the development 
     fireEvent.click(screen.getByRole('button', { name: 'Send back to development' }))
   })
   expect(screen.getByRole('alert').textContent).toMatch(
-    /^Findings saved, but they could not be sent to the development agent: .+ Paste them into its session\.$/
+    /^Saved, but it could not be sent to the agent: .+ Paste the message into its session\.$/
   )
 })
 
@@ -267,38 +269,63 @@ it('shows the development steps and why a later stage cannot start yet', () => {
   expect(screen.getByRole('button', { name: 'Start agent' }).hasAttribute('disabled')).toBe(true)
 })
 
-it('sends PR feedback from accepted development back to its open session', async () => {
-  const accepted: PortfolioTask = {
+it('asks a team code review to triage the PR comments posted since it last submitted', async () => {
+  const review: PortfolioTask = {
     ...task,
-    status: 'accepted',
+    id: 'review',
+    workItemId: 'outcome',
+    platform: 'android',
+    stage: 'codeReview',
+    status: 'review',
+    history: [
+      { id: 'review:0', at: Date.parse('2026-11-05T10:00:00Z'), status: 'review', note: 'Pass' }
+    ],
     attempts: [{ ...task.attempts[0], paneKey: 'tab-1:4f5c2a1e-8b9d-4c3e-a2f1-0d9e8c7b6a50' }]
   }
+  const development: PortfolioTask = { ...task, workItemId: 'outcome', platform: 'android' }
+  const state = {
+    ...emptyPortfolio(),
+    projects: [
+      { id: 'p', name: 'Mobile', objective: 'Ship', repoIds: [], reviewMode: 'team' as const }
+    ],
+    tasks: [development, review]
+  }
+  const fetchPRComments = vi.fn(async () => [
+    comment(1, '2026-11-05T09:00:00Z', 'Already reviewed'),
+    comment(2, '2026-11-05T11:00:00Z', 'Rename this helper')
+  ])
+  useAppStore.setState({ fetchPRComments })
   sendMessageToAgent.mockClear()
-  const { onSave } = renderDetail({
-    state: { ...emptyPortfolio(), tasks: [accepted] },
-    task: accepted
-  })
+  const { onSave } = renderDetail({ state, task: review })
   const pr = screen.getByRole('region', { name: 'Pull request' })
   expect(within(pr).getByText('Pull request #12')).toBeTruthy()
   expect(within(pr).getByText('Changes requested')).toBeTruthy()
+  expect(await within(pr).findByText('New PR comments since the last review: 1')).toBeTruthy()
   await act(async () => {
-    fireEvent.change(within(pr).getByLabelText('PR feedback to address'), {
-      target: { value: 'Rename the helper' }
-    })
+    fireEvent.click(within(pr).getByRole('button', { name: 'Ask the reviewer to triage them' }))
   })
-  await act(async () => {
-    fireEvent.click(within(pr).getByRole('button', { name: 'Send PR feedback to development' }))
-  })
+  expect(fetchPRComments).toHaveBeenCalledWith('/repo', 12, { repoId: 'repo', prRepo: null })
   expect(onSave).toHaveBeenCalledWith({
-    kind: 'task.returnPrFeedback',
-    taskId: 't1',
-    note: 'Rename the helper',
-    rerunChecks: false
+    kind: 'task.requestTriage',
+    taskId: 'review',
+    note: '- octo on src/A.kt:4: Rename this helper\n  https://github.com/o/r/pull/12#2'
   })
   expect(sendMessageToAgent).toHaveBeenCalledWith(
     expect.objectContaining({
-      worktreeId: 'w',
-      prompt: expect.stringMatching(/from PR review for your task t1[\s\S]*Rename the helper$/)
+      prompt: expect.stringMatching(/triage new PR review comments for your Workbench task review/)
     })
   )
 })
+
+function comment(id: number, createdAt: string, body: string) {
+  return {
+    id,
+    author: 'octo',
+    authorAvatarUrl: '',
+    body,
+    createdAt,
+    url: `https://github.com/o/r/pull/12#${id}`,
+    path: 'src/A.kt',
+    line: 4
+  }
+}

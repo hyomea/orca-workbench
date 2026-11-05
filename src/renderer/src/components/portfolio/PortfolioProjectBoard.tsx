@@ -9,6 +9,8 @@ import {
   type PortfolioState,
   type PortfolioTask
 } from '../../../../shared/portfolio'
+import type { PortfolioReviewMode } from '../../../../shared/portfolio-task-stages'
+import { PortfolioSelect } from './portfolio-controls'
 
 export function PortfolioProjectBoard({
   project,
@@ -19,6 +21,7 @@ export function PortfolioProjectBoard({
   onEditProject,
   onCreateRole,
   onOpenTasks,
+  onReviewModeChange,
   outcomeContent,
   featureContent,
   notesContent
@@ -31,6 +34,7 @@ export function PortfolioProjectBoard({
   onEditProject: () => void
   onCreateRole: () => void
   onOpenTasks: () => void
+  onReviewModeChange?: (mode: PortfolioReviewMode) => void
   outcomeContent?: ReactNode
   featureContent?: ReactNode
   notesContent?: ReactNode
@@ -81,6 +85,34 @@ export function PortfolioProjectBoard({
                 </Badge>
               ))}
             </div>
+            {onReviewModeChange && (
+              <div className="max-w-md space-y-1">
+                <PortfolioSelect
+                  label={translate('portfolio.reviewMode', 'Review and QA')}
+                  value={project.reviewMode ?? 'personal'}
+                  onChange={(mode) => onReviewModeChange(mode as PortfolioReviewMode)}
+                  options={[
+                    {
+                      id: 'personal',
+                      name: translate('portfolio.reviewPersonal', 'Personal: agents only')
+                    },
+                    {
+                      id: 'team',
+                      name: translate(
+                        'portfolio.reviewTeam',
+                        'Team: agents plus PR review and external QA'
+                      )
+                    }
+                  ]}
+                />
+                <p className="text-xs text-muted-foreground">
+                  {translate(
+                    'portfolio.reviewModeHint',
+                    'In a team initiative, code review and QA agents also triage the PR’s comments and the outcome’s QA feedback, and work is done when its PR merges.'
+                  )}
+                </p>
+              </div>
+            )}
           </div>
         </details>
       </header>

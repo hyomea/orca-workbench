@@ -2066,6 +2066,8 @@
     "jiraApplyWithoutAC": "Applying replaces the name, description, and Jira reference below. No labeled AC section was found; your existing acceptance criteria will be kept.",
     "jiraContentApplied": "Ticket content applied. Review the draft below before saving.",
     "noWorkItems": "Add an initial delivery, bug, improvement, or issue that needs triage.",
+    "prNewComments_one": "New PR comments since the last review: {{count}}",
+    "prNewComments_other": "New PR comments since the last review: {{count}}",
     "referenceOnlyHint": "Paste requirements and reference links here. Links are not imported or analyzed automatically. An improvement should describe the complete proposed specification before publication.",
     "selectWorkItem": "Select an outcome to review its context, tasks, and history.",
     "specificationHint": "Draft requirements in an initial delivery outcome. Review and accept the work, then explicitly publish its specification.",

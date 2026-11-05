@@ -41,9 +41,10 @@ export type PortfolioTrack = {
   platform?: PortfolioWorkPlatform
   ticket?: string
   cells: Partial<Record<PortfolioTaskStage, PortfolioTrackCell>>
-  // The first stage still open; after development is accepted, its PR until it merges.
-  current: PortfolioTaskStage | 'pr' | 'done' | 'external'
+  // The first stage still open; in a team initiative, accepted work then waits to merge.
+  current: PortfolioTaskStage | 'merge' | 'done' | 'external'
   next: PortfolioTrackNext
+  // A team initiative's PR for the branch development runs on, once development started.
   pr?: PortfolioTrackPr
 }
 
@@ -91,7 +92,7 @@ function track(
   tasks: readonly PortfolioTask[],
   activity: Record<string, AgentStatusEntry>,
   now: number,
-  prFor: PortfolioPrLookup
+  prFor: PortfolioPrLookup | undefined
 ): PortfolioTrack {
   const cells: PortfolioTrack['cells'] = {}
   for (const task of tasks) {
@@ -108,26 +109,30 @@ function track(
       next: external ? 'none' : 'plan'
     }
   }
+  const worktreeId = development.task.attempts.at(-1)?.worktreeId
+  const pr = prFor && worktreeId ? prFor(worktreeId) : undefined
+  const at = (current: PortfolioTrack['current'], next: PortfolioTrackNext): PortfolioTrack => ({
+    ...base,
+    cells,
+    current,
+    next,
+    ...(pr ? { pr } : {})
+  })
   const submitted = development.task.status === 'review' || development.task.status === 'accepted'
   if (!submitted) {
-    return { ...base, cells, current: 'development', next: nextFor(development) }
+    return at('development', nextFor(development))
   }
   for (const stage of ['codeReview', 'qa'] as const) {
     const cell = cells[stage]
     if (cell && cell.task.status !== 'accepted') {
-      return { ...base, cells, current: stage, next: nextFor(cell) }
+      return at(stage, nextFor(cell))
     }
   }
   if (development.task.status !== 'accepted') {
-    return { ...base, cells, current: 'development', next: 'decide' }
+    return at('development', 'decide')
   }
-  // Accepted work continues as the PR of the branch development ran on.
-  const worktreeId = development.task.attempts.at(-1)?.worktreeId
-  const pr = worktreeId ? prFor(worktreeId) : undefined
-  if (!pr || pr.status === 'merged') {
-    return { ...base, cells, current: 'done', next: 'none', ...(pr ? { pr } : {}) }
-  }
-  return { ...base, cells, current: 'pr', next: PR_NEXT[pr.status], pr }
+  // Team work is done once its PR merges; a removed workspace can no longer be followed.
+  return !pr || pr.status === 'merged' ? at('done', 'none') : at('merge', PR_NEXT[pr.status])
 }
 
 // One row per outcome and platform: its tickets and its tasks' platforms, in that order.
@@ -141,6 +146,9 @@ export function portfolioTracks(
 ): PortfolioTrack[] {
   const inScope = <T extends { projectId: string }>(entry: T) =>
     !projectId || entry.projectId === projectId
+  // Personal initiatives finish at acceptance; only team ones follow a PR.
+  const teamPr = (id: string) =>
+    state.projects.find((project) => project.id === id)?.reviewMode === 'team' ? prFor : undefined
   const tracks: PortfolioTrack[] = []
   for (const item of state.workItems.filter(inScope)) {
     const tasks = state.tasks.filter((task) => task.workItemId === item.id)
@@ -171,7 +179,7 @@ export function portfolioTracks(
           tasks.filter((task) => task.platform === platform),
           activity,
           now,
-          prFor
+          teamPr(item.projectId)
         )
       )
     }
@@ -183,7 +191,7 @@ export function portfolioTracks(
         [task],
         activity,
         now,
-        prFor
+        teamPr(task.projectId)
       )
     )
   }

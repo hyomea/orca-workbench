@@ -10,8 +10,13 @@ const Description = z.string().trim().min(1).max(20000)
 // One development session builds a track (an outcome on one platform); review and QA follow it.
 export const PortfolioTaskStage = z.enum(['development', 'codeReview', 'qa'])
 export type PortfolioTaskStage = z.infer<typeof PortfolioTaskStage>
-// Where findings returned to development came from: a later stage, or review on the PR.
-export const PortfolioReturnSource = z.enum(['codeReview', 'qa', 'pr'])
+// How an initiative reviews and tests: its agents alone (personal), or its agents together with
+// the team's PR review and external QA, which the agents triage (team).
+export const PortfolioReviewMode = z.enum(['personal', 'team'])
+export type PortfolioReviewMode = z.infer<typeof PortfolioReviewMode>
+// Where returned findings came from: code review or QA (sent to development), or the team's PR
+// review or external QA (sent to the code review or QA agent to triage).
+export const PortfolioReturnSource = z.enum(['codeReview', 'qa', 'pr', 'externalQa'])
 export type PortfolioReturnSource = z.infer<typeof PortfolioReturnSource>
 export const PortfolioTaskStep = z.object({
   id: Id,
@@ -46,13 +51,8 @@ export const PortfolioTaskStageCommands = [
   }),
   // Code review or QA returns findings to the development task of the same track.
   z.object({ kind: z.literal('task.sendBack'), taskId: Id, note: Description }),
-  // PR review feedback reopens accepted development; code review and QA run again only if asked.
-  z.object({
-    kind: z.literal('task.returnPrFeedback'),
-    taskId: Id,
-    note: Description,
-    rerunChecks: z.boolean()
-  })
+  // In team mode, new PR comments or external QA feedback reopen code review or QA to triage them.
+  z.object({ kind: z.literal('task.requestTriage'), taskId: Id, note: Description })
 ] as const
 
 export const PORTFOLIO_STAGE_NAMES: Record<PortfolioTaskStage, string> = {
@@ -64,7 +64,8 @@ export const PORTFOLIO_STAGE_NAMES: Record<PortfolioTaskStage, string> = {
 const RETURN_SOURCE_NAMES: Record<PortfolioReturnSource, string> = {
   codeReview: 'code review',
   qa: 'QA',
-  pr: 'PR review'
+  pr: 'PR review',
+  externalQa: 'external QA'
 }
 
 export function portfolioTrackTask(
@@ -119,21 +120,30 @@ export function assertPortfolioTrackSlot(
   }
 }
 
-// Reopens the track's development task with findings: a live session gets them relayed,
-// a closed one receives them in its next launch prompt. Later stages run again on the next
-// submission unless the user keeps their results (small fixes from PR review).
+// Reopens a task with findings: a live session gets them relayed, a closed one receives them in
+// its next launch prompt.
+export function reopenPortfolioTask(
+  task: PortfolioTask,
+  from: PortfolioReturnSource,
+  note: string,
+  now: number
+): void {
+  task.status = portfolioOpenExecution(task) ? 'running' : 'todo'
+  task.evidence = ''
+  portfolioTaskEvent(task, now, `Returned from ${RETURN_SOURCE_NAMES[from]}: ${note}`, from)
+}
+
+// Reopens the track's development task with findings. Later stages must run again on the next
+// submission, so their finished results are cleared.
 export function returnPortfolioFindings(
   state: PortfolioState,
   development: PortfolioTask,
-  from: PortfolioReturnSource,
+  from: Exclude<PortfolioTaskStage, 'development'>,
   note: string,
-  now: number,
-  rerunChecks = true
+  now: number
 ): void {
-  development.status = portfolioOpenExecution(development) ? 'running' : 'todo'
-  development.evidence = ''
-  portfolioTaskEvent(development, now, `Returned from ${RETURN_SOURCE_NAMES[from]}: ${note}`, from)
-  for (const stage of rerunChecks ? (['codeReview', 'qa'] as const) : []) {
+  reopenPortfolioTask(development, from, note, now)
+  for (const stage of ['codeReview', 'qa'] as const) {
     const later = portfolioTrackTask(state, development, stage)
     if (later && (later.status === 'review' || later.status === 'accepted')) {
       const attempt = later.attempts.at(-1)
@@ -159,6 +169,10 @@ export function portfolioSubmittedCommit(task: PortfolioTask): string | undefine
   return task.history[latestSubmissionIndex(task)]?.commit
 }
 
+export function portfolioSubmittedAt(task: PortfolioTask): number | undefined {
+  return task.history[latestSubmissionIndex(task)]?.at
+}
+
 // The version a code review or QA task looks at: what development submitted. QA can also take
 // the commit an accepted code review recorded, since the reviewer adds no commits of its own and
 // development may have been submitted before submissions recorded one.
@@ -175,7 +189,7 @@ export function portfolioStageCommit(
   return review?.status === 'accepted' ? portfolioSubmittedCommit(review) : undefined
 }
 
-// Findings returned since the development task last submitted, for its next launch prompt.
+// Findings returned since the task last submitted, for its next launch prompt.
 export function portfolioReturnedFindings(task: PortfolioTask): string[] {
   return task.history
     .slice(latestSubmissionIndex(task) + 1)

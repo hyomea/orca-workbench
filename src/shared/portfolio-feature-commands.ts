@@ -122,6 +122,11 @@ export function applyPortfolioFeatureCommand(
     }
     item.tickets = command.tickets
     item.parity = command.parity
+    if (command.qaFeedbackUrl === null) {
+      delete item.qaFeedbackUrl
+    } else if (command.qaFeedbackUrl !== undefined) {
+      item.qaFeedbackUrl = command.qaFeedbackUrl
+    }
     if (command.feature === null) {
       delete item.featureId
     } else if (command.feature !== undefined && command.feature !== item.featureId) {

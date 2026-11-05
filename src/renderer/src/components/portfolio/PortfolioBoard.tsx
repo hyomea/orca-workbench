@@ -184,6 +184,9 @@ export function PortfolioBoard({
             }}
             onCreateRole={() => setComposer('role')}
             onOpenTasks={() => onOpenTasks(project.id)}
+            onReviewModeChange={(mode) =>
+              void onSave({ kind: 'project.reviewMode', projectId: project.id, mode })
+            }
             outcomeContent={
               <PortfolioFeatures
                 view="outcomes"

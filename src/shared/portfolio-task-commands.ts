@@ -6,6 +6,7 @@ import {
   portfolioOpenExecution,
   portfolioTaskEvent,
   portfolioTrackTask,
+  reopenPortfolioTask,
   returnPortfolioFindings
 } from './portfolio-task-stages'
 
@@ -190,16 +191,23 @@ export function applyPortfolioTaskCommand(
       returnPortfolioFindings(state, development, task.stage, command.note, now)
       return true
     }
-    case 'task.returnPrFeedback': {
+    case 'task.requestTriage': {
       const task = portfolioTask(state, command.taskId)
-      if (task.stage !== 'development' || task.status !== 'accepted') {
-        throw new Error('Return PR feedback to an accepted development task.')
+      const project = state.projects.find((entry) => entry.id === task.projectId)
+      if (project?.reviewMode !== 'team') {
+        throw new Error('Only a team initiative has PR review or external QA feedback to triage.')
+      }
+      if (
+        task.stage === 'development' ||
+        (task.status !== 'review' && task.status !== 'accepted')
+      ) {
+        throw new Error('Ask a submitted code review or QA task to triage new feedback.')
       }
       const attempt = task.attempts.at(-1)
       if (attempt && (attempt.state === 'pending' || attempt.state === 'unknown')) {
         throw new Error('Resolve the uncertain launch before changing this task.')
       }
-      returnPortfolioFindings(state, task, 'pr', command.note, now, command.rerunChecks)
+      reopenPortfolioTask(task, task.stage === 'qa' ? 'externalQa' : 'pr', command.note, now)
       return true
     }
     default:

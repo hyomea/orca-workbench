@@ -19,6 +19,7 @@ import { PortfolioCodeReview, PortfolioCommit } from './portfolio-review'
 import { applyPortfolioTaskCommand } from './portfolio-task-commands'
 import {
   PortfolioReturnSource,
+  PortfolioReviewMode,
   PortfolioTaskStage,
   PortfolioTaskStageCommands,
   PortfolioTaskStep
@@ -40,7 +41,9 @@ export const PortfolioTaskStatus = z.enum(['todo', 'running', 'blocked', 'review
 export const PortfolioProjectInput = z.object({
   name: Name,
   objective: Description,
-  repoIds: z.array(Id).max(100)
+  repoIds: z.array(Id).max(100),
+  // Absent means personal.
+  reviewMode: PortfolioReviewMode.optional()
 })
 export const PortfolioTaskInput = z.object({
   projectId: Id,
@@ -141,7 +144,8 @@ export type PortfolioState = z.infer<typeof PortfolioState>
 export type PortfolioTask = z.infer<typeof PortfolioTask>
 export type PortfolioAttempt = z.infer<typeof PortfolioAttempt>
 
-const ProjectDetails = PortfolioProjectInput
+// The review mode has its own command, so editing details never resets it by leaving it out.
+const ProjectDetails = PortfolioProjectInput.omit({ reviewMode: true })
 
 export const PortfolioCommand = z.discriminatedUnion('kind', [
   ...PortfolioFeatureCommands,
@@ -158,6 +162,7 @@ export const PortfolioCommand = z.discriminatedUnion('kind', [
     project: ProjectDetails,
     expected: ProjectDetails
   }),
+  z.object({ kind: z.literal('project.reviewMode'), projectId: Id, mode: PortfolioReviewMode }),
   z.object({ kind: z.literal('task.create'), task: PortfolioTaskInput }),
   z.object({ kind: z.literal('task.closeExecution'), taskId: Id, note: Description }),
   z.object({
@@ -220,6 +225,14 @@ export function applyPortfolioCommand(
         id
       })
       return
+    case 'project.reviewMode': {
+      const project = state.projects.find((entry) => entry.id === command.projectId)
+      if (!project) {
+        throw new Error('Initiative no longer exists. Refresh the initiative.')
+      }
+      project.reviewMode = command.mode
+      return
+    }
     case 'project.update': {
       const project = state.projects.find((entry) => entry.id === command.projectId)
       if (!project) {

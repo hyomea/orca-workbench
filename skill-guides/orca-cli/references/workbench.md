@@ -136,11 +136,17 @@ backend ticket owned by another team needs no tasks; the outcome links its ticke
 review and QA tasks always belong to an outcome. When the user sends findings back, they go
 to the track's development task, and code review and QA run again on the next submission.
 
-After the user accepts development, the track follows the pull request of the branch
-development ran on until it merges. The user pushes and opens the PR; agents never do. PR
-review feedback comes back the same way, as a `task.returnPrFeedback` command the user sends
-from the development task: it reopens development with the feedback, and code review and QA
-run again only when the user asks for it (`rerunChecks`).
+An initiative reviews in one of two modes, set by the user with `project.reviewMode`:
+
+- `personal` (the default): code review and QA are the agents' own, and a track is done when
+  the user accepts development.
+- `team`: the team also reviews the branch's pull request, and external QA records feedback
+  at the outcome's `qaFeedbackUrl` (such as a Notion page). The code review agent triages the
+  PR's comments and the QA agent that feedback: read only, a verdict per item (must fix, not
+  needed with the reason, or needs discussion), and drafted replies for the user to post. The
+  user asks for each new round from the task's page (`task.requestTriage`), decides what goes
+  back to development, and the track is done when its PR merges. The user pushes and opens
+  the PR; agents never push, open, comment on, or resolve anything there.
 
 ### Planning development steps
 
@@ -179,6 +185,10 @@ with `ORCA workbench task step <step-id>`, which records that commit and refuses
 changes are uncommitted. If a step turns out to mix purposes, such as a behavior change that
 first needs a broad rename, tell the user how you would split it before going on. When the
 prompt or the user gives findings from code review or QA, address them first, in new commits.
+
+In a team initiative, a code review or QA task also triages the team's feedback as its
+launch prompt describes, and a new round arrives as "Triage this new feedback first"; submit
+the updated report with `task submit`.
 
 In a code review or QA task, do not edit product code. Review or test the branch at the commit
 development submitted, and report findings with stable IDs (B-1 for blocking, N-1 for

@@ -6,10 +6,7 @@ import { translate } from '@/i18n/i18n'
 import { sendMessageToAgent } from '@/lib/agent-message-send'
 import { activeAgentNotesSendFailureMessage } from '@/lib/active-agent-note-send-result'
 import type { PortfolioTask } from '../../../../shared/portfolio'
-import {
-  portfolioOpenExecution,
-  type PortfolioReturnSource
-} from '../../../../shared/portfolio-task-stages'
+import { portfolioOpenExecution } from '../../../../shared/portfolio-task-stages'
 import { parsePaneKey } from '../../../../shared/stable-pane-id'
 
 // The combined diff snapshots git state when it opens, so wait for the workspace's first status read.
@@ -71,62 +68,77 @@ export function usePortfolioTaskReviewComments(
   }
 }
 
-// Sends findings the user returned to development into that task's still-open agent pane.
-// Returns why it could not, so the user can paste them; the findings are stored either way.
-const SOURCE_NAMES: Record<PortfolioReturnSource, string> = {
-  codeReview: 'code review',
-  qa: 'QA',
-  pr: 'PR review'
-}
-
-// Saves findings returned to development; a development session that is still open also gets
-// them in its own pane. Resolves to false when the save failed, else the notice to show.
-export async function returnPortfolioFindingsToDevelopment(
+// Saves findings the user returned to development; a development session that is still open
+// also gets them in its own pane. Resolves to false when the save failed, else the notice to show.
+export function returnPortfolioFindingsToDevelopment(
   save: () => Promise<boolean>,
   development: PortfolioTask | undefined,
-  source: PortfolioReturnSource,
+  source: 'codeReview' | 'qa',
   findings: string,
-  sourceTaskId?: string
+  sourceTaskId: string
+): Promise<string | false> {
+  return saveAndRelay(
+    save,
+    development,
+    [
+      `The user sent back findings from ${source === 'qa' ? 'QA' : 'code review'} (Workbench task ${sourceTaskId}) for your task ${development?.id}.`,
+      'Address them in new commits on this branch and mark affected steps, then tell the user it is ready to submit again.',
+      '',
+      findings
+    ].join('\n')
+  )
+}
+
+// Team mode: the code review or QA agent triages new PR comments or external QA feedback.
+export function requestPortfolioTriage(
+  save: () => Promise<boolean>,
+  task: PortfolioTask,
+  feedback: string
+): Promise<string | false> {
+  return saveAndRelay(
+    save,
+    task,
+    [
+      `The user asks you to triage new ${task.stage === 'qa' ? 'external QA feedback' : 'PR review comments'} for your Workbench task ${task.id}.`,
+      'Give each item a verdict (must fix, not needed with the reason, or needs discussion), then submit your updated report with `task submit`. Do not post, resolve, or edit the feedback itself.',
+      '',
+      feedback
+    ].join('\n')
+  )
+}
+
+// The message is stored either way; when it cannot reach the pane, the notice says so, and a
+// closed session receives it in its next launch prompt.
+async function saveAndRelay(
+  save: () => Promise<boolean>,
+  target: PortfolioTask | undefined,
+  prompt: string
 ): Promise<string | false> {
   if (!(await save())) {
     return false
   }
-  if (!development || !portfolioOpenExecution(development)) {
+  if (!target || !portfolioOpenExecution(target)) {
     return ''
   }
-  return (await relayPortfolioFindings(development, source, findings, sourceTaskId)) ?? ''
-}
-
-async function relayPortfolioFindings(
-  development: PortfolioTask,
-  source: PortfolioReturnSource,
-  findings: string,
-  sourceTaskId?: string
-): Promise<string | undefined> {
-  const attempt = development.attempts.at(-1)
+  const attempt = target.attempts.at(-1)
   const pane = attempt?.paneKey ? parsePaneKey(attempt.paneKey) : null
   if (!attempt || !pane) {
     return translate(
-      'portfolio.relayNoPane',
-      'Findings saved, but the development agent’s terminal is unknown. Paste them into its session.'
+      'portfolio.relayNoPaneAgent',
+      'Saved, but the agent’s terminal is unknown. Paste the message into its session.'
     )
   }
   const result = await sendMessageToAgent({
     worktreeId: attempt.worktreeId,
     target: { kind: 'terminal', tabId: pane.tabId, leafId: pane.leafId },
-    prompt: [
-      `The user sent back findings from ${SOURCE_NAMES[source]}${sourceTaskId ? ` (Workbench task ${sourceTaskId})` : ''} for your task ${development.id}.`,
-      'Address them in new commits on this branch and mark affected steps, then tell the user it is ready to submit again.',
-      '',
-      findings
-    ].join('\n')
+    prompt
   })
   if (result.status === 'sent' || result.status === 'unconfirmed') {
-    return undefined
+    return ''
   }
   return translate(
-    'portfolio.relayFailed',
-    'Findings saved, but they could not be sent to the development agent: {{reason}} Paste them into its session.',
+    'portfolio.relayFailedAgent',
+    'Saved, but it could not be sent to the agent: {{reason}} Paste the message into its session.',
     {
       reason: activeAgentNotesSendFailureMessage(result.status, {
         explicitTarget: true,

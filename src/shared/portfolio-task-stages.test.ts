@@ -291,51 +291,51 @@ function acceptAll(state: PortfolioState): void {
   accept(state, 'development')
 }
 
-it('returns PR feedback to accepted development and keeps review and QA for small fixes', () => {
+it('asks code review to triage new PR comments in a team initiative', () => {
   const state = fixture()
-  expect(() =>
-    apply(state, {
-      kind: 'task.returnPrFeedback',
-      taskId: 'development',
-      note: 'Rename',
-      rerunChecks: false
-    })
-  ).toThrow('accepted development task')
   acceptAll(state)
-  apply(state, {
-    kind: 'task.returnPrFeedback',
-    taskId: 'development',
-    note: 'Rename the helper',
-    rerunChecks: false
-  })
-  // The development session is still open, so it is running again with the feedback.
-  expect(task(state, 'development')).toMatchObject({ status: 'running', evidence: '' })
-  expect(task(state, 'development').history.at(-1)).toMatchObject({
+  const triage = { kind: 'task.requestTriage', taskId: 'codeReview', note: 'Two new comments' }
+  expect(() => apply(state, triage)).toThrow('Only a team initiative')
+  apply(state, { kind: 'project.reviewMode', projectId: 'project', mode: 'team' })
+  expect(() => apply(state, { ...triage, taskId: 'development' })).toThrow(
+    'submitted code review or QA task'
+  )
+  apply(state, triage)
+  // The review session is still open, so it is working again; development cannot be accepted
+  // until the user accepts the review again.
+  expect(task(state, 'codeReview')).toMatchObject({ status: 'running', evidence: '' })
+  expect(task(state, 'codeReview').history.at(-1)).toMatchObject({
     returnedFrom: 'pr',
-    note: 'Returned from PR review: Rename the helper'
+    note: 'Returned from PR review: Two new comments'
   })
-  expect(task(state, 'codeReview').status).toBe('accepted')
-  expect(task(state, 'qa').status).toBe('accepted')
-  submit(state, 'development')
-  accept(state, 'development')
   expect(task(state, 'development').status).toBe('accepted')
+  expect(task(state, 'qa').status).toBe('accepted')
 })
 
-it('runs code review and QA again when PR feedback needs a bigger change', () => {
+it('tells team-mode agents to triage PR comments and the outcome’s external QA feedback', () => {
   const state = fixture()
-  acceptAll(state)
-  apply(state, { kind: 'task.closeExecution', taskId: 'development', note: 'Closed it' })
+  apply(state, { kind: 'project.reviewMode', projectId: 'project', mode: 'team' })
+  launch(state, 'development')
+  submit(state, 'development')
+  expect(launch(state, 'codeReview')).toContain('Read its comments with `gh` (read only')
+  submit(state, 'codeReview')
+  accept(state, 'codeReview')
+  expect(launch(state, 'qa')).toContain('this outcome has no QA feedback link yet')
   apply(state, {
-    kind: 'task.returnPrFeedback',
-    taskId: 'development',
-    note: 'Restructure the cache',
-    rerunChecks: true
+    kind: 'workItem.scope',
+    workItemId: 'outcome',
+    tickets: [{ platform: 'android', reference: 'ENG-1' }],
+    parity: false,
+    qaFeedbackUrl: 'https://www.notion.so/qa-eng-1'
   })
-  expect(task(state, 'development').status).toBe('todo')
-  expect(task(state, 'codeReview').status).toBe('todo')
+  submit(state, 'qa')
+  apply(state, { kind: 'task.closeExecution', taskId: 'qa', note: 'Closed it' })
+  apply(state, { kind: 'task.requestTriage', taskId: 'qa', note: 'New QA round posted' })
   expect(task(state, 'qa').status).toBe('todo')
-  expect(launch(state, 'development')).toContain(
-    'Address these findings first:\nReturned from PR review: Restructure the cache'
+  const prompt = launch(state, 'qa')
+  expect(prompt).toContain('records feedback at https://www.notion.so/qa-eng-1')
+  expect(prompt).toContain(
+    'Triage this new feedback first:\nReturned from external QA: New QA round posted'
   )
 })
 
