@@ -47,6 +47,7 @@ export function PortfolioFeatures({
   const item = items.find((entry) => entry.id === itemId)
   const itemFeature = features.find((entry) => entry.id === item?.featureId)
   const current = feature?.versions.at(-1)
+  // An outcome opens as its own page; its list (or its feature's page) is one step back.
   const detail = item && (
     <PortfolioWorkItemDetail
       key={item.id}
@@ -63,7 +64,19 @@ export function PortfolioFeatures({
   )
   return (
     <div className="space-y-5">
-      {view === 'outcomes' ? (
+      {item ? (
+        <>
+          <Button variant="ghost" size="sm" className="-ml-2" onClick={() => setItemId('')}>
+            <ArrowLeft aria-hidden="true" />
+            {feature
+              ? translate('portfolio.backToFeature', 'Back to {{feature}}', {
+                  feature: feature.name
+                })
+              : translate('portfolio.allOutcomes', 'All outcomes')}
+          </Button>
+          {detail}
+        </>
+      ) : view === 'outcomes' ? (
         <>
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="space-y-1">
@@ -90,13 +103,7 @@ export function PortfolioFeatures({
               )}
             </div>
           )}
-          <PortfolioWorkItemList
-            items={items}
-            features={features}
-            selectedId={item?.id}
-            onSelect={setItemId}
-          />
-          {detail}
+          <PortfolioWorkItemList items={items} features={features} onSelect={setItemId} />
         </>
       ) : !feature ? (
         <>
@@ -213,13 +220,7 @@ export function PortfolioFeatures({
               </div>
             </details>
           )}
-          <PortfolioWorkItemList
-            items={items}
-            features={features}
-            selectedId={item?.id}
-            onSelect={setItemId}
-          />
-          {detail}
+          <PortfolioWorkItemList items={items} features={features} onSelect={setItemId} />
         </>
       )}
       {composer && (

@@ -1,7 +1,6 @@
 import { ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { cn } from '@/lib/utils'
 import { translate } from '@/i18n/i18n'
 import type { PortfolioFeature, PortfolioWorkItem } from '../../../../shared/portfolio-features'
 import { PortfolioTickets } from './PortfolioTickets'
@@ -11,12 +10,10 @@ const NO_FEATURES: readonly PortfolioFeature[] = []
 export function PortfolioWorkItemList({
   items,
   features = NO_FEATURES,
-  selectedId,
   onSelect
 }: {
   items: PortfolioWorkItem[]
   features?: readonly PortfolioFeature[]
-  selectedId?: string
   onSelect: (id: string) => void
 }): React.JSX.Element | null {
   if (!items.length) {
@@ -47,13 +44,8 @@ export function PortfolioWorkItemList({
               <Button
                 type="button"
                 variant="ghost"
-                aria-pressed={item.id === selectedId}
-                data-current={item.id === selectedId ? 'true' : undefined}
                 onClick={() => onSelect(item.id)}
-                className={cn(
-                  'grid h-auto w-full grid-cols-[minmax(0,1fr)_auto_1rem] gap-x-3 gap-y-2 rounded-none px-3 py-3 text-left font-normal whitespace-normal @2xl/work-items:grid-cols-[minmax(0,1fr)_9rem_7rem_1rem] @2xl/work-items:gap-x-4',
-                  item.id === selectedId && 'bg-accent'
-                )}
+                className="grid h-auto w-full grid-cols-[minmax(0,1fr)_auto_1rem] gap-x-3 gap-y-2 rounded-none px-3 py-3 text-left font-normal whitespace-normal @2xl/work-items:grid-cols-[minmax(0,1fr)_9rem_7rem_1rem] @2xl/work-items:gap-x-4"
               >
                 <span className="col-span-2 min-w-0 space-y-1 @2xl/work-items:col-span-1">
                   <span className="block break-words text-sm font-medium">{item.title}</span>

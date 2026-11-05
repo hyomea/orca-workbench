@@ -94,9 +94,9 @@ it('creates a feature and a parity outcome for it, then requires explicit review
       ]
     }
   })
+  expect(screen.getByText('No published specification yet')).toBeTruthy()
   fireEvent.click(screen.getByRole('button', { name: /First delivery/ }))
   expect(screen.getByText('Show sold and remaining counts')).toBeTruthy()
-  expect(screen.getByText('No published specification yet')).toBeTruthy()
   await tab('Review')
   enter('Evidence or review note', 'Both app builds checked')
   await click('In review')
@@ -136,7 +136,6 @@ it('creates a feature and a parity outcome for it, then requires explicit review
   enter('Evidence or review note', 'Reviewed both platform results')
   await click('Accepted')
   expect(commands.some((command) => command.kind === 'feature.publish')).toBe(false)
-  expect(screen.getByText('No published specification yet')).toBeTruthy()
   enter('Evidence or review note', 'Use this complete specification')
   await click('Publish as current specification')
   expect(commands.some((command) => command.kind === 'feature.publish')).toBe(false)
@@ -147,6 +146,8 @@ it('creates a feature and a parity outcome for it, then requires explicit review
       'This work published a specification. Create a new outcome for further changes.'
     )
   ).toBeTruthy()
+  await click('Back to {{feature}}')
+  expect(screen.getByText('Current specification v{{version}}')).toBeTruthy()
 })
 
 it('retains an unfinished work item when its editor closes and clears it only after save', async () => {
@@ -399,6 +400,50 @@ it('creates an outcome with no feature for platform-specific engineering work', 
   fireEvent.click(screen.getByRole('button', { name: /Test foundation/ }))
   await tab('Parity & tests')
   expect(screen.getByText(/no shared test plan is required/)).toBeTruthy()
+})
+
+it('opens each outcome as its own page and returns to the list', async () => {
+  const state = initialState()
+  for (const title of ['Test foundation', 'Multi check-in']) {
+    applyPortfolioCommand(
+      state,
+      {
+        kind: 'workItem.create',
+        workItem: {
+          projectId: 'project',
+          kind: 'engineering',
+          title,
+          description: '',
+          acceptanceCriteria: `${title} works`,
+          designReferences: '',
+          tickets: [],
+          parity: false
+        }
+      },
+      title,
+      1
+    )
+  }
+  render(
+    <PortfolioFeatures
+      state={state}
+      projectId="project"
+      draftScope="test"
+      busy={false}
+      error=""
+      onCreateTask={() => {}}
+      onCreateRole={() => {}}
+      onSelectTask={() => {}}
+      onSave={async () => true}
+    />
+  )
+  fireEvent.click(screen.getByRole('button', { name: /Test foundation/ }))
+  expect(screen.getByRole('heading', { name: 'Test foundation' })).toBeTruthy()
+  expect(screen.queryByRole('button', { name: /Multi check-in/ })).toBeNull()
+  await click('All outcomes')
+  fireEvent.click(screen.getByRole('button', { name: /Multi check-in/ }))
+  expect(screen.getByRole('heading', { name: 'Multi check-in' })).toBeTruthy()
+  expect(screen.queryByRole('heading', { name: 'Test foundation' })).toBeNull()
 })
 
 it('records a feature’s parity row with evidence for each platform', async () => {

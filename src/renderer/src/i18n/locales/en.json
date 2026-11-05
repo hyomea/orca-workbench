@@ -23192,6 +23192,8 @@
     "referenceOnlyHint": "Paste requirements and reference links here. Links are not imported or analyzed automatically. An improvement should describe the complete proposed specification before publication.",
     "discardFeatureDraft": "Discard this form draft? Saved features and outcomes will remain.",
     "allFeatures": "All features",
+    "allOutcomes": "All outcomes",
+    "backToFeature": "Back to {{feature}}",
     "features": "Features",
     "featuresHint": "The product capabilities this initiative maintains, each with its current specification. Outcomes that change a feature publish their specification here.",
     "featureCounts": "{{count}} outcomes · specification v{{version}}",
