@@ -3,6 +3,7 @@ import { act, cleanup, fireEvent, render, screen, within } from '@testing-librar
 import { afterEach, expect, it, vi } from 'vitest'
 import { emptyPortfolio, type PortfolioTask } from '../../../../shared/portfolio'
 import { PortfolioTaskDetail } from './PortfolioTaskDetail'
+import type * as PortfolioTrackPrModule from './portfolio-track-pr'
 
 vi.mock('@/i18n/i18n', () => ({
   getIntlLocale: () => 'en',
@@ -11,6 +12,16 @@ vi.mock('@/i18n/i18n', () => ({
 }))
 const sendMessageToAgent = vi.hoisted(() => vi.fn(async () => ({ status: 'sent' })))
 vi.mock('@/lib/agent-message-send', () => ({ sendMessageToAgent }))
+vi.mock('./portfolio-track-pr', async (original) => ({
+  ...(await original<typeof PortfolioTrackPrModule>()),
+  usePortfolioPrLookup: () => (worktreeId: string) => ({
+    worktreeId,
+    status: 'changesRequested',
+    number: 12,
+    url: 'https://github.com/o/r/pull/12'
+  }),
+  usePortfolioPrRefresh: () => {}
+}))
 afterEach(cleanup)
 
 const task: PortfolioTask = {
@@ -254,4 +265,40 @@ it('shows the development steps and why a later stage cannot start yet', () => {
   })
   expect(screen.getByText('Start this after development submits its work.')).toBeTruthy()
   expect(screen.getByRole('button', { name: 'Start agent' }).hasAttribute('disabled')).toBe(true)
+})
+
+it('sends PR feedback from accepted development back to its open session', async () => {
+  const accepted: PortfolioTask = {
+    ...task,
+    status: 'accepted',
+    attempts: [{ ...task.attempts[0], paneKey: 'tab-1:4f5c2a1e-8b9d-4c3e-a2f1-0d9e8c7b6a50' }]
+  }
+  sendMessageToAgent.mockClear()
+  const { onSave } = renderDetail({
+    state: { ...emptyPortfolio(), tasks: [accepted] },
+    task: accepted
+  })
+  const pr = screen.getByRole('region', { name: 'Pull request' })
+  expect(within(pr).getByText('Pull request #12')).toBeTruthy()
+  expect(within(pr).getByText('Changes requested')).toBeTruthy()
+  await act(async () => {
+    fireEvent.change(within(pr).getByLabelText('PR feedback to address'), {
+      target: { value: 'Rename the helper' }
+    })
+  })
+  await act(async () => {
+    fireEvent.click(within(pr).getByRole('button', { name: 'Send PR feedback to development' }))
+  })
+  expect(onSave).toHaveBeenCalledWith({
+    kind: 'task.returnPrFeedback',
+    taskId: 't1',
+    note: 'Rename the helper',
+    rerunChecks: false
+  })
+  expect(sendMessageToAgent).toHaveBeenCalledWith(
+    expect.objectContaining({
+      worktreeId: 'w',
+      prompt: expect.stringMatching(/from PR review for your task t1[\s\S]*Rename the helper$/)
+    })
+  )
 })

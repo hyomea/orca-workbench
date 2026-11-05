@@ -10,6 +10,7 @@ import { PortfolioTaskDetail } from './PortfolioTaskDetail'
 import { portfolioTaskObservation } from './portfolio-task-lanes'
 import { portfolioTracks } from './portfolio-tracks'
 import { PortfolioTrackBoard } from './PortfolioTrackBoard'
+import { usePortfolioPrLookup, usePortfolioPrRefresh } from './portfolio-track-pr'
 import { usePortfolioWorkbench } from './use-portfolio-workbench'
 import {
   openPortfolioTaskChanges,
@@ -18,7 +19,8 @@ import {
 
 const ALL_PROJECTS = 'all'
 
-// Workbench tasks in the Tasks page: each outcome platform as a development → review → QA pipeline.
+// Workbench tasks in the Tasks page: each outcome platform as a development → review → QA → PR
+// pipeline.
 export function PortfolioTaskQueue({
   initialProjectId
 }: {
@@ -33,6 +35,17 @@ export function PortfolioTaskQueue({
   const [selectedTaskId, setSelectedTaskId] = useState('')
   // A launch that stays silent past its grace period moves to "Needs attention" without new data.
   const now = useNow(30_000)
+  const prFor = usePortfolioPrLookup()
+  const tracks = state
+    ? portfolioTracks(
+        state,
+        projectId === ALL_PROJECTS ? undefined : projectId,
+        activity,
+        now,
+        prFor
+      )
+    : []
+  usePortfolioPrRefresh(tracks.flatMap((track) => (track.pr ? [track.pr.worktreeId] : [])))
   const reviewComments = usePortfolioTaskReviewComments(
     state?.tasks.find((task) => task.id === selectedTaskId)?.attempts.at(-1)?.worktreeId
   )
@@ -50,12 +63,6 @@ export function PortfolioTaskQueue({
       </div>
     )
   }
-  const tracks = portfolioTracks(
-    state,
-    projectId === ALL_PROJECTS ? undefined : projectId,
-    activity,
-    now
-  )
   const selectedTask = state.tasks.find((task) => task.id === selectedTaskId)
   const selectedWorkspaces = workspaces.filter((workspace) =>
     state.projects

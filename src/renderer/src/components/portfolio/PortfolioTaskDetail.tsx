@@ -20,7 +20,6 @@ import type {
 } from '../../../../shared/portfolio'
 import {
   portfolioAcceptBlocker,
-  portfolioOpenExecution,
   portfolioStageBlocker,
   portfolioSubmittedCommit,
   portfolioTrackTask
@@ -30,12 +29,14 @@ import { PortfolioField, PortfolioSelect } from './portfolio-controls'
 import { PortfolioTaskDecision } from './PortfolioTaskDecision'
 import { portfolioTaskLane } from './portfolio-task-lanes'
 import {
-  relayPortfolioFindings,
+  returnPortfolioFindingsToDevelopment,
   type PortfolioTaskReviewComments
 } from './portfolio-task-review-actions'
 import { portfolioDefaultWorkspace } from './portfolio-task-workspace'
 import { stageName, taskNextStep } from './portfolio-track-labels'
 import { PortfolioTaskSteps } from './PortfolioTaskSteps'
+import { PortfolioTaskPr } from './PortfolioTaskPr'
+import { PortfolioEndExecution } from './PortfolioEndExecution'
 
 export type PortfolioWorkspace = { id: string; repoId: string; name: string }
 
@@ -90,7 +91,6 @@ export function PortfolioTaskDetail({
     task.status === 'review' || task.status === 'accepted'
       ? portfolioSubmittedCommit(task)
       : undefined
-  const [stopNote, setStopNote] = useState('')
   const [codeReview, setCodeReview] = useState<PortfolioCodeReview | null>(
     reviewComments?.total ? 'reviewed' : null
   )
@@ -117,44 +117,36 @@ export function PortfolioTaskDetail({
       setNote('')
     }
   }
-  // A development session that is still open gets the findings in its own pane.
   async function sendBack(): Promise<void> {
-    const development = portfolioTrackTask(state, task, 'development')
-    const findings = note
-    if (!(await onSave({ kind: 'task.sendBack', taskId: task.id, note: findings }))) {
+    if (task.stage === 'development') {
       return
     }
-    setNote('')
-    if (development && portfolioOpenExecution(development)) {
-      setRelayNotice((await relayPortfolioFindings(development, task, findings)) ?? '')
+    const notice = await returnPortfolioFindingsToDevelopment(
+      () => onSave({ kind: 'task.sendBack', taskId: task.id, note }),
+      portfolioTrackTask(state, task, 'development'),
+      task.stage,
+      note,
+      task.id
+    )
+    if (notice !== false) {
+      setNote('')
+      setRelayNotice(notice)
     }
   }
+  async function returnPrFeedback(feedback: string, rerunChecks: boolean): Promise<boolean> {
+    const notice = await returnPortfolioFindingsToDevelopment(
+      () => onSave({ kind: 'task.returnPrFeedback', taskId: task.id, note: feedback, rerunChecks }),
+      task,
+      'pr',
+      feedback
+    )
+    if (notice !== false) {
+      setRelayNotice(notice)
+    }
+    return notice !== false
+  }
   const endExecution = attempt && attempt.state !== 'closed' && (
-    <div className="space-y-2">
-      <Textarea
-        aria-label={translate('portfolio.endExecutionNote', 'What you checked')}
-        placeholder={translate(
-          'portfolio.endExecutionPlaceholder',
-          'For example: the agent exited at a permission prompt; nothing was changed.'
-        )}
-        value={stopNote}
-        onChange={(event) => setStopNote(event.target.value)}
-        rows={2}
-        maxLength={20000}
-      />
-      <Button
-        variant="outline"
-        size="sm"
-        disabled={busy || !stopNote.trim()}
-        onClick={async () => {
-          if (await onSave({ kind: 'task.closeExecution', taskId: task.id, note: stopNote })) {
-            setStopNote('')
-          }
-        }}
-      >
-        {translate('portfolio.endExecution', 'End this execution')}
-      </Button>
-    </div>
+    <PortfolioEndExecution taskId={task.id} busy={busy} onSave={onSave} />
   )
   return (
     <Sheet
@@ -281,6 +273,14 @@ export function PortfolioTaskDetail({
                 />
               )}
             </section>
+            {task.stage === 'development' && task.status === 'accepted' && (
+              <PortfolioTaskPr
+                task={task}
+                busy={busy}
+                onReturnFeedback={returnPrFeedback}
+                onOpenWorkspace={onOpenWorkspace}
+              />
+            )}
             {task.stage === 'development' && <PortfolioTaskSteps steps={task.steps} />}
             {task.evidence && (
               <section className="space-y-2">

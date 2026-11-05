@@ -7,6 +7,7 @@ import {
   type PortfolioState
 } from '../../../../shared/portfolio'
 import { portfolioTracks } from './portfolio-tracks'
+import type { PortfolioPrStatus } from './portfolio-track-pr'
 
 function apply(state: PortfolioState, command: unknown, id = 'change'): void {
   applyPortfolioCommand(state, PortfolioCommand.parse(command), id, 1)
@@ -108,6 +109,38 @@ it('moves the current stage forward as each stage is submitted and accepted', ()
     note: 'OK',
     codeReview: 'skipped'
   })
+  expect(android()).toMatchObject({ current: 'done', next: 'none' })
+})
+
+it('follows accepted development as its branch PR until it merges', () => {
+  const state = fixture()
+  preparePortfolioAttempt(state, 'development', 'w', 'r', 'op', 1).state = 'launched'
+  apply(state, {
+    kind: 'task.transition',
+    taskId: 'development',
+    status: 'review',
+    note: 'Done',
+    commit: 'abc1234'
+  })
+  apply(state, { kind: 'task.delete', taskId: 'codeReview' })
+  apply(state, { kind: 'task.delete', taskId: 'qa' })
+  apply(state, {
+    kind: 'task.transition',
+    taskId: 'development',
+    status: 'accepted',
+    note: 'OK',
+    codeReview: 'reviewed'
+  })
+  const android = (status?: PortfolioPrStatus) =>
+    portfolioTracks(state, 'project', {}, 10, (worktreeId) =>
+      status ? { worktreeId, status, number: 7 } : undefined
+    ).find((row) => row.platform === 'android')!
+  expect(android('none')).toMatchObject({ current: 'pr', next: 'start', pr: { worktreeId: 'w' } })
+  expect(android('inReview')).toMatchObject({ current: 'pr', next: 'waiting' })
+  expect(android('ciFailing')).toMatchObject({ current: 'pr', next: 'attention' })
+  expect(android('changesRequested')).toMatchObject({ current: 'pr', next: 'decide' })
+  expect(android('merged')).toMatchObject({ current: 'done', next: 'none' })
+  // A removed workspace can no longer be followed, so the track counts as done.
   expect(android()).toMatchObject({ current: 'done', next: 'none' })
 })
 

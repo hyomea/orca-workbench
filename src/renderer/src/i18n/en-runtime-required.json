@@ -2073,6 +2073,8 @@
     "summaryAgents_other": "Agents working: {{count}}",
     "summaryAttention_one": "Needs attention: {{count}}",
     "summaryAttention_other": "Needs attention: {{count}}",
+    "summaryPrs_one": "PRs in review: {{count}}",
+    "summaryPrs_other": "PRs in review: {{count}}",
     "summaryYou_one": "Needs you: {{count}}",
     "summaryYou_other": "Needs you: {{count}}",
     "tasksInTasksPage_one": "Start, follow, and review this initiative’s {{count}} task in Tasks.",

@@ -11,6 +11,7 @@ import {
   type PortfolioTaskAttention,
   type PortfolioTaskLane
 } from './portfolio-task-lanes'
+import type { PortfolioPrLookup, PortfolioPrStatus, PortfolioTrackPr } from './portfolio-track-pr'
 
 export const PORTFOLIO_STAGES = ['development', 'codeReview', 'qa'] as const
 
@@ -21,9 +22,16 @@ export type PortfolioTrackCell = {
   observation?: AgentStatusEntry
 }
 
-// Who moves the track forward: the user (decide, unblock, start, or plan), an agent, or nobody
-// here (another team's ticket, or finished work).
-export type PortfolioTrackNext = 'decide' | 'attention' | 'start' | 'plan' | 'agent' | 'none'
+// Who moves the track forward: the user (decide, unblock, start, or plan), an agent, PR
+// reviewers and CI (waiting), or nobody here (another team's ticket, or finished work).
+export type PortfolioTrackNext =
+  | 'decide'
+  | 'attention'
+  | 'start'
+  | 'plan'
+  | 'agent'
+  | 'waiting'
+  | 'none'
 
 export type PortfolioTrack = {
   key: string
@@ -33,9 +41,10 @@ export type PortfolioTrack = {
   platform?: PortfolioWorkPlatform
   ticket?: string
   cells: Partial<Record<PortfolioTaskStage, PortfolioTrackCell>>
-  // The first stage still open; 'done' once development is accepted.
-  current: PortfolioTaskStage | 'done' | 'external'
+  // The first stage still open; after development is accepted, its PR until it merges.
+  current: PortfolioTaskStage | 'pr' | 'done' | 'external'
   next: PortfolioTrackNext
+  pr?: PortfolioTrackPr
 }
 
 const ORDER: Record<PortfolioTrackNext, number> = {
@@ -44,7 +53,19 @@ const ORDER: Record<PortfolioTrackNext, number> = {
   start: 2,
   plan: 3,
   agent: 4,
-  none: 5
+  waiting: 5,
+  none: 6
+}
+
+const PR_NEXT: Record<PortfolioPrStatus, PortfolioTrackNext> = {
+  checking: 'none',
+  none: 'start',
+  ciFailing: 'attention',
+  closed: 'attention',
+  changesRequested: 'decide',
+  readyToMerge: 'decide',
+  inReview: 'waiting',
+  merged: 'none'
 }
 
 function nextFor(cell: PortfolioTrackCell | undefined): PortfolioTrackNext {
@@ -69,7 +90,8 @@ function track(
   base: Omit<PortfolioTrack, 'cells' | 'current' | 'next'>,
   tasks: readonly PortfolioTask[],
   activity: Record<string, AgentStatusEntry>,
-  now: number
+  now: number,
+  prFor: PortfolioPrLookup
 ): PortfolioTrack {
   const cells: PortfolioTrack['cells'] = {}
   for (const task of tasks) {
@@ -96,9 +118,16 @@ function track(
       return { ...base, cells, current: stage, next: nextFor(cell) }
     }
   }
-  return development.task.status === 'accepted'
-    ? { ...base, cells, current: 'done', next: 'none' }
-    : { ...base, cells, current: 'development', next: 'decide' }
+  if (development.task.status !== 'accepted') {
+    return { ...base, cells, current: 'development', next: 'decide' }
+  }
+  // Accepted work continues as the PR of the branch development ran on.
+  const worktreeId = development.task.attempts.at(-1)?.worktreeId
+  const pr = worktreeId ? prFor(worktreeId) : undefined
+  if (!pr || pr.status === 'merged') {
+    return { ...base, cells, current: 'done', next: 'none', ...(pr ? { pr } : {}) }
+  }
+  return { ...base, cells, current: 'pr', next: PR_NEXT[pr.status], pr }
 }
 
 // One row per outcome and platform: its tickets and its tasks' platforms, in that order.
@@ -107,7 +136,8 @@ export function portfolioTracks(
   state: PortfolioState,
   projectId: string | undefined,
   activity: Record<string, AgentStatusEntry>,
-  now: number
+  now: number,
+  prFor: PortfolioPrLookup = () => undefined
 ): PortfolioTrack[] {
   const inScope = <T extends { projectId: string }>(entry: T) =>
     !projectId || entry.projectId === projectId
@@ -140,7 +170,8 @@ export function portfolioTracks(
           },
           tasks.filter((task) => task.platform === platform),
           activity,
-          now
+          now,
+          prFor
         )
       )
     }
@@ -151,7 +182,8 @@ export function portfolioTracks(
         { key: task.id, projectId: task.projectId, title: task.title, platform: task.platform },
         [task],
         activity,
-        now
+        now,
+        prFor
       )
     )
   }

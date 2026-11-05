@@ -6,6 +6,10 @@ import { translate } from '@/i18n/i18n'
 import { sendMessageToAgent } from '@/lib/agent-message-send'
 import { activeAgentNotesSendFailureMessage } from '@/lib/active-agent-note-send-result'
 import type { PortfolioTask } from '../../../../shared/portfolio'
+import {
+  portfolioOpenExecution,
+  type PortfolioReturnSource
+} from '../../../../shared/portfolio-task-stages'
 import { parsePaneKey } from '../../../../shared/stable-pane-id'
 
 // The combined diff snapshots git state when it opens, so wait for the workspace's first status read.
@@ -69,10 +73,35 @@ export function usePortfolioTaskReviewComments(
 
 // Sends findings the user returned to development into that task's still-open agent pane.
 // Returns why it could not, so the user can paste them; the findings are stored either way.
-export async function relayPortfolioFindings(
+const SOURCE_NAMES: Record<PortfolioReturnSource, string> = {
+  codeReview: 'code review',
+  qa: 'QA',
+  pr: 'PR review'
+}
+
+// Saves findings returned to development; a development session that is still open also gets
+// them in its own pane. Resolves to false when the save failed, else the notice to show.
+export async function returnPortfolioFindingsToDevelopment(
+  save: () => Promise<boolean>,
+  development: PortfolioTask | undefined,
+  source: PortfolioReturnSource,
+  findings: string,
+  sourceTaskId?: string
+): Promise<string | false> {
+  if (!(await save())) {
+    return false
+  }
+  if (!development || !portfolioOpenExecution(development)) {
+    return ''
+  }
+  return (await relayPortfolioFindings(development, source, findings, sourceTaskId)) ?? ''
+}
+
+async function relayPortfolioFindings(
   development: PortfolioTask,
-  from: PortfolioTask,
-  findings: string
+  source: PortfolioReturnSource,
+  findings: string,
+  sourceTaskId?: string
 ): Promise<string | undefined> {
   const attempt = development.attempts.at(-1)
   const pane = attempt?.paneKey ? parsePaneKey(attempt.paneKey) : null
@@ -86,7 +115,7 @@ export async function relayPortfolioFindings(
     worktreeId: attempt.worktreeId,
     target: { kind: 'terminal', tabId: pane.tabId, leafId: pane.leafId },
     prompt: [
-      `The user sent back findings from ${from.stage === 'qa' ? 'QA' : 'code review'} (Workbench task ${from.id}) for your task ${development.id}.`,
+      `The user sent back findings from ${SOURCE_NAMES[source]}${sourceTaskId ? ` (Workbench task ${sourceTaskId})` : ''} for your task ${development.id}.`,
       'Address them in new commits on this branch and mark affected steps, then tell the user it is ready to submit again.',
       '',
       findings
