@@ -38,6 +38,8 @@ export function PortfolioObjectiveFields({
           rows={5}
           maxLength={20000}
           disabled={disabled}
+          // The objective grows with its text, so the panel is the only scroll area.
+          className="min-h-32 resize-none overflow-hidden field-sizing-content"
         />
       </PortfolioField>
       <p className="text-xs text-muted-foreground">
