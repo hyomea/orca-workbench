@@ -80,11 +80,11 @@ guess field names; read \`schema\`.
 - A task's agent submits its result with \`task submit\` when the user asks it to, which moves
   the task to review.
   The Tasks page shows each outcome platform as a pipeline (development, code review, QA,
-  done) and counts what needs the user, what needs attention (stopped, blocked, or waiting for
+  the branch PR, done) and counts what needs the user, what needs attention (stopped, blocked, or waiting for
   input), and which agents are working. When the user asks what is next, report each track's
   current stage and who acts next, reading terminals for the ones that need attention.
-- Code review and QA findings return to development only when the user sends them back from
-  the task's page; do not relay them yourself.
+- Code review, QA, and PR review findings return to development only when the user sends them
+  back from the task's page; do not relay them yourself, and never push or open a PR.
 - Follow each repository's own AGENTS.md / CLAUDE.md and the user's global instructions.
 - Accepting a task, approving a test result, and publishing a feature specification record the
   user's judgment. Do them only when the user asks for that decision in this conversation.

@@ -136,6 +136,12 @@ backend ticket owned by another team needs no tasks; the outcome links its ticke
 review and QA tasks always belong to an outcome. When the user sends findings back, they go
 to the track's development task, and code review and QA run again on the next submission.
 
+After the user accepts development, the track follows the pull request of the branch
+development ran on until it merges. The user pushes and opens the PR; agents never do. PR
+review feedback comes back the same way, as a `task.returnPrFeedback` command the user sends
+from the development task: it reopens development with the feedback, and code review and QA
+run again only when the user asks for it (`rerunChecks`).
+
 ### Planning development steps
 
 Steps are the development checklist, set with `task.steps` (`[{ "id": "S1", "title": "..." }]`).
