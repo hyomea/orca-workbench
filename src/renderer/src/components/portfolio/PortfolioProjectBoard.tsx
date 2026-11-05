@@ -10,7 +10,6 @@ import {
   type PortfolioTask
 } from '../../../../shared/portfolio'
 import type { PortfolioReviewMode } from '../../../../shared/portfolio-task-stages'
-import { PortfolioSelect } from './portfolio-controls'
 
 export function PortfolioProjectBoard({
   project,
@@ -47,7 +46,13 @@ export function PortfolioProjectBoard({
       <header className="mb-5 space-y-3 border-b border-border pb-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="min-w-0 break-words text-lg font-semibold">{project.name}</h2>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {onReviewModeChange && (
+              <ReviewModeSwitch
+                mode={project.reviewMode ?? 'personal'}
+                onChange={onReviewModeChange}
+              />
+            )}
             <Button variant="ghost" size="sm" onClick={onEditProject}>
               {translate('portfolio.editProject', 'Edit initiative')}
             </Button>
@@ -85,34 +90,6 @@ export function PortfolioProjectBoard({
                 </Badge>
               ))}
             </div>
-            {onReviewModeChange && (
-              <div className="max-w-md space-y-1">
-                <PortfolioSelect
-                  label={translate('portfolio.reviewMode', 'Review and QA')}
-                  value={project.reviewMode ?? 'personal'}
-                  onChange={(mode) => onReviewModeChange(mode as PortfolioReviewMode)}
-                  options={[
-                    {
-                      id: 'personal',
-                      name: translate('portfolio.reviewPersonal', 'Personal: agents only')
-                    },
-                    {
-                      id: 'team',
-                      name: translate(
-                        'portfolio.reviewTeam',
-                        'Team: agents plus PR review and external QA'
-                      )
-                    }
-                  ]}
-                />
-                <p className="text-xs text-muted-foreground">
-                  {translate(
-                    'portfolio.reviewModeHint',
-                    'In a team initiative, code review and QA agents also triage the PR’s comments and the outcome’s QA feedback, and work is done when its PR merges.'
-                  )}
-                </p>
-              </div>
-            )}
           </div>
         </details>
       </header>
@@ -221,5 +198,53 @@ export function PortfolioProjectBoard({
           </section>
         ))}
     </main>
+  )
+}
+
+// Personal: the agents review and test. Team: they also triage the PR's review and external QA.
+function ReviewModeSwitch({
+  mode,
+  onChange
+}: {
+  mode: PortfolioReviewMode
+  onChange: (mode: PortfolioReviewMode) => void
+}): React.JSX.Element {
+  const options: { id: PortfolioReviewMode; name: string; hint: string }[] = [
+    {
+      id: 'personal',
+      name: translate('portfolio.reviewPersonalShort', 'Personal'),
+      hint: translate('portfolio.reviewPersonal', 'Personal: agents only')
+    },
+    {
+      id: 'team',
+      name: translate('portfolio.reviewTeamShort', 'Team'),
+      hint: translate(
+        'portfolio.reviewModeHint',
+        'In a team initiative, code review and QA agents also triage the PR’s comments and the outcome’s QA feedback, and work is done when its PR merges.'
+      )
+    }
+  ]
+  return (
+    <div
+      role="group"
+      aria-label={translate('portfolio.reviewMode', 'Review and QA')}
+      className="flex items-center gap-1 rounded-md border border-border p-0.5 text-xs"
+    >
+      <span className="px-1.5 text-muted-foreground">
+        {translate('portfolio.reviewMode', 'Review and QA')}
+      </span>
+      {options.map((option) => (
+        <Button
+          key={option.id}
+          variant={mode === option.id ? 'secondary' : 'ghost'}
+          size="xs"
+          aria-pressed={mode === option.id}
+          title={option.hint}
+          onClick={() => mode !== option.id && onChange(option.id)}
+        >
+          {option.name}
+        </Button>
+      ))}
+    </div>
   )
 }
