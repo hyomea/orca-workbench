@@ -8,7 +8,8 @@ const OWN_NOTES = 'steward-notes.md'
 // Orca owns CLAUDE.md so its instructions track the CLI; the user's additions live in OWN_NOTES.
 const stewardInstructions = (
   personalNotes: string,
-  name: string | undefined
+  name: string | undefined,
+  cli: string
 ): string => `# Orca Workbench steward
 
 Orca regenerates this file each time the steward opens. Put your own standing instructions in
@@ -30,9 +31,11 @@ here.
 
 ## Orca CLI
 
-Use the \`orca-cli\` skill to pick the right executable for this session (\`orca\` or, in a
-development build, \`orca-dev\`), shown below as \`ORCA\`. Use \`ORCA <command> --help\` for
-anything not listed here.
+Run Orca's CLI as \`${cli}\`, by that bare name, wherever \`ORCA\` appears below; it is first on
+this terminal's PATH. This replaces how the \`orca-cli\` skill picks the executable: do not
+use \`$ORCA_CLI_COMMAND\` or a full path, because your permission rules allow
+\`${cli} <command>\` and anything else asks the user each time. Use
+\`${cli} <command> --help\` for anything not listed here.
 
 Read command output directly. \`workbench status\` without \`--json\` prints a readable summary
 with ids. Use \`--json\` only when you need exact fields, and read it as printed: do not pipe
@@ -144,14 +147,18 @@ export function portfolioStewardDirectory(store: PortfolioStore): string {
   return join(dirname(store.file), 'steward')
 }
 
-export async function preparePortfolioSteward(store: PortfolioStore): Promise<{ path: string }> {
+// cli is the bare command that reaches this app's CLI: orca, or orca-dev in a development build.
+export async function preparePortfolioSteward(
+  store: PortfolioStore,
+  cli = 'orca'
+): Promise<{ path: string }> {
   const path = portfolioStewardDirectory(store)
   await mkdir(path, { recursive: true })
   const folder = await readPersonalNotesFolder(store)
   const { stewardName } = await store.read()
   await writeFile(
     join(path, 'CLAUDE.md'),
-    stewardInstructions(personalNotesSection(folder), stewardName),
+    stewardInstructions(personalNotesSection(folder), stewardName, cli),
     { mode: 0o600 }
   )
   // Project-scoped, so these rules apply only to steward sessions. Users add theirs in settings.local.json.

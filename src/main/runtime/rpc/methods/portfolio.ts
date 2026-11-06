@@ -28,6 +28,7 @@ import { AgentLaunchReplay } from '../../../../shared/rpc-contract/agent-launch-
 import { PortfolioStore } from '../../../portfolio/portfolio-store'
 import { exportPortfolioNotes } from '../../../portfolio/portfolio-note-files'
 import { preparePortfolioSteward } from '../../../portfolio/portfolio-steward'
+import { DEV_COMMAND_NAME } from '../../../cli/cli-install-constants'
 import {
   indexPersonalNotes,
   personalNoteAppliesTo,
@@ -94,7 +95,8 @@ export const PORTFOLIO_METHODS = [
     name: 'portfolio.prepareSteward',
     permission: 'workspace',
     params: PortfolioPrepareSteward,
-    handler: () => preparePortfolioSteward(store())
+    handler: () =>
+      preparePortfolioSteward(store(), getAppEnvironment().isPackaged() ? 'orca' : DEV_COMMAND_NAME)
   }),
   defineMethod({
     name: 'portfolio.exportNotes',
