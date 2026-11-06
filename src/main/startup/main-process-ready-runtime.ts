@@ -1,5 +1,6 @@
 import { app, nativeTheme } from 'electron'
 import { randomUUID } from 'node:crypto'
+import { join } from 'node:path'
 import { performance } from 'node:perf_hooks'
 import { StarNagService } from '../star-nag/service'
 import { AgentBrowserBridge } from '../browser/agent-browser-bridge'
@@ -28,6 +29,8 @@ import {
 import { initializeMainProcessAutomations } from './main-process-automations'
 import { initializeMainProcessPlugins } from './main-process-plugins'
 import { collectWorktreeTrashSweepRoots, sweepStaleWorktreeTrash } from '../worktree-trash'
+import { PortfolioStore } from '../portfolio/portfolio-store'
+import { portfolioStewardCli, refreshPortfolioSteward } from '../portfolio/portfolio-steward'
 import { loadWorktreeRemovalRecordsForStore } from './worktree-removal-records-load'
 import { runAfterFirstWindowShown } from './first-window-deferral'
 import { logStartupMilestone } from './startup-diagnostics'
@@ -102,6 +105,14 @@ export async function initializeReadyRuntimeServices(): Promise<void> {
   runAfterFirstWindowShown(() => {
     void pruneDesktopOrcadArtifactCache(app.getPath('userData')).catch((error) => {
       console.warn('[orcad-artifacts] Failed to bound the slot cache:', error)
+    })
+  }, WORKTREE_TRASH_SWEEP_FALLBACK_MS)
+  runAfterFirstWindowShown(() => {
+    const workbench = new PortfolioStore(
+      join(app.getPath('userData'), 'workbench', 'portfolio.json')
+    )
+    void refreshPortfolioSteward(workbench, portfolioStewardCli(app.isPackaged)).catch((error) => {
+      console.warn('[workbench] Failed to refresh the steward instructions:', error)
     })
   }, WORKTREE_TRASH_SWEEP_FALLBACK_MS)
   // The startup pass ran before browser sessions and any window existed, so `browser-cookies` paused.

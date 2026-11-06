@@ -1,7 +1,8 @@
-import { mkdir, writeFile } from 'node:fs/promises'
+import { mkdir, stat, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import type { PortfolioStore } from './portfolio-store'
 import { readPersonalNotesFolder } from './personal-notes'
+import { DEV_COMMAND_NAME } from '../cli/cli-install-constants'
 
 const OWN_NOTES = 'steward-notes.md'
 
@@ -149,6 +150,23 @@ const stewardSettings = (folder: string | null) => ({
 
 export function portfolioStewardDirectory(store: PortfolioStore): string {
   return join(dirname(store.file), 'steward')
+}
+
+// The bare command that reaches this app's CLI from its terminals.
+export function portfolioStewardCli(isPackaged: boolean): string {
+  return isPackaged ? 'orca' : DEV_COMMAND_NAME
+}
+
+// The instructions belong to the running build, but a steward session can also be reopened from
+// its own tab; refresh an existing steward folder at startup instead of only from the button.
+export async function refreshPortfolioSteward(store: PortfolioStore, cli: string): Promise<void> {
+  const exists = await stat(portfolioStewardDirectory(store)).then(
+    () => true,
+    () => false
+  )
+  if (exists) {
+    await preparePortfolioSteward(store, cli)
+  }
 }
 
 // cli is the bare command that reaches this app's CLI: orca, or orca-dev in a development build.

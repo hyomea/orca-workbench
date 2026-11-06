@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { expect, it } from 'vitest'
 import { PortfolioStore } from './portfolio-store'
 import { applyPortfolioCommand, PortfolioCommand } from '../../shared/portfolio'
-import { preparePortfolioSteward } from './portfolio-steward'
+import { preparePortfolioSteward, refreshPortfolioSteward } from './portfolio-steward'
 import { setPersonalNotesFolder } from './personal-notes'
 
 it('refreshes the steward instructions and keeps the user’s own notes', async () => {
@@ -71,6 +71,23 @@ it('introduces the steward by the name the user gave it', async () => {
     await preparePortfolioSteward(store)
     expect(await readFile(join(path, 'CLAUDE.md'), 'utf8')).toContain(
       '## Role\n\nYour name is Coco. The user also calls you the coordinator.\n\nYou are the user'
+    )
+  } finally {
+    await rm(directory, { recursive: true, force: true })
+  }
+})
+
+it('refreshes an existing steward folder at startup and leaves a missing one alone', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'orca-steward-'))
+  try {
+    const store = new PortfolioStore(join(directory, 'workbench', 'portfolio.json'))
+    await refreshPortfolioSteward(store, 'orca-dev')
+    await expect(readFile(join(directory, 'workbench', 'steward', 'CLAUDE.md'))).rejects.toThrow()
+    const { path } = await preparePortfolioSteward(store, 'orca')
+    await writeFile(join(path, 'CLAUDE.md'), 'stale')
+    await refreshPortfolioSteward(store, 'orca-dev')
+    expect(await readFile(join(path, 'CLAUDE.md'), 'utf8')).toContain(
+      "Run Orca's CLI as `orca-dev`"
     )
   } finally {
     await rm(directory, { recursive: true, force: true })
