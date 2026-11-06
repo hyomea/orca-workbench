@@ -4,7 +4,7 @@ import { translate } from '@/i18n/i18n'
 import type { PortfolioState } from '../../../../shared/portfolio'
 import { portfolioRoleLabelById } from '../../../../shared/portfolio-roles'
 import type { PortfolioTaskStage } from '../../../../shared/portfolio-task-stages'
-import { workPlatformName } from './portfolio-feature-labels'
+import { ticketRoleName, workPlatformName } from './portfolio-feature-labels'
 import { attentionLabel, stageName } from './portfolio-track-labels'
 import { prStatusLabel, type PortfolioTrackPr } from './portfolio-track-pr'
 import {
@@ -61,7 +61,6 @@ function TrackCell({
     track.current === stage ||
     (stage === 'codeReview' && track.current === 'merge' && Boolean(cell))
   if (!cell) {
-    const external = track.current === 'external' && stage === 'development'
     return (
       <div
         className={cn(
@@ -69,11 +68,7 @@ function TrackCell({
           isCurrent && 'border-foreground/40 text-foreground'
         )}
       >
-        {external
-          ? translate('portfolio.trackExternal', 'Tracked on {{ticket}}', {
-              ticket: portfolioTicketLabel(track.ticket ?? '')
-            })
-          : translate('portfolio.trackNotPlanned', 'Not planned')}
+        {emptyCellText(track, stage)}
       </div>
     )
   }
@@ -108,6 +103,11 @@ function TrackCell({
         {status.text}
       </span>
       {stage === 'codeReview' && track.pr && <PrLine pr={track.pr} />}
+      {stage === 'codeReview' && track.newCommits && (
+        <span className="block font-medium">
+          {translate('portfolio.trackNewCommits', 'New commits since your review')}
+        </span>
+      )}
       {stage === 'development' && steps.length > 0 && (
         <span className="block text-muted-foreground">
           {translate('portfolio.trackSteps', 'Steps {{done}}/{{total}}', {
@@ -125,6 +125,20 @@ function TrackCell({
       )}
     </button>
   )
+}
+
+function emptyCellText(track: PortfolioTrack, stage: PortfolioTaskStage): string {
+  if (stage === 'development' && track.current === 'external') {
+    return track.ticket
+      ? translate('portfolio.trackExternal', 'Tracked on {{ticket}}', {
+          ticket: portfolioTicketLabel(track.ticket)
+        })
+      : translate('portfolio.trackExternalPr', 'Tracked on its PR')
+  }
+  if (stage === 'development' && track.role === 'reviewer') {
+    return translate('portfolio.trackTeammate', 'Built by a teammate')
+  }
+  return translate('portfolio.trackNotPlanned', 'Not planned')
 }
 
 // A team initiative's PR, shown with code review until it merges.
@@ -202,6 +216,9 @@ function TrackRow({
           <span className="ml-1.5 text-muted-foreground" title={track.ticket}>
             {portfolioTicketLabel(track.ticket)}
           </span>
+        )}
+        {track.role !== 'author' && (
+          <span className="block text-muted-foreground">{ticketRoleName(track.role)}</span>
         )}
       </div>
       {PORTFOLIO_STAGES.map((stage) => (

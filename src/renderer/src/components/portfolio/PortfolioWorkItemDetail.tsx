@@ -110,6 +110,9 @@ export function PortfolioWorkItemDetail({
         <PortfolioOutcomeScope
           item={item}
           features={state.features.filter((entry) => entry.projectId === item.projectId)}
+          team={
+            state.projects.find((project) => project.id === item.projectId)?.reviewMode === 'team'
+          }
           busy={busy}
           onSave={onSave}
           onClose={() => setEditingScope(false)}

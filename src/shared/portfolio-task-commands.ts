@@ -9,6 +9,7 @@ import {
   reopenPortfolioTask,
   returnPortfolioFindings
 } from './portfolio-task-stages'
+import { portfolioTrackRole } from './portfolio-ticket-roles'
 
 export function portfolioTask(state: PortfolioState, taskId: string): PortfolioTask {
   const task = state.tasks.find((entry) => entry.id === taskId)
@@ -173,6 +174,9 @@ export function applyPortfolioTaskCommand(
       if (task.stage === 'development' || task.status !== 'review') {
         throw new Error('Send back findings from a submitted code review or QA task.')
       }
+      if (portfolioTrackRole(state, task) === 'reviewer') {
+        throw new Error('A teammate builds this platform; post your findings on their PR.')
+      }
       const development = portfolioTrackTask(state, task, 'development')
       if (!development) {
         throw new Error('This outcome has no development task for this platform.')
@@ -194,7 +198,7 @@ export function applyPortfolioTaskCommand(
     case 'task.requestTriage': {
       const task = portfolioTask(state, command.taskId)
       const project = state.projects.find((entry) => entry.id === task.projectId)
-      if (project?.reviewMode !== 'team') {
+      if (project?.reviewMode !== 'team' && portfolioTrackRole(state, task) !== 'reviewer') {
         throw new Error('Only a team initiative has PR review or external QA feedback to triage.')
       }
       if (

@@ -1,10 +1,14 @@
 import type { AgentStatusEntry } from '../../../../shared/agent-status-types'
 import type { PortfolioState, PortfolioTask } from '../../../../shared/portfolio'
 import type {
+  PortfolioTicketRole,
   PortfolioWorkItem,
   PortfolioWorkPlatform
 } from '../../../../shared/portfolio-features'
-import type { PortfolioTaskStage } from '../../../../shared/portfolio-task-stages'
+import {
+  portfolioSubmittedCommit,
+  type PortfolioTaskStage
+} from '../../../../shared/portfolio-task-stages'
 import {
   portfolioTaskLane,
   portfolioTaskObservation,
@@ -40,12 +44,18 @@ export type PortfolioTrack = {
   item?: PortfolioWorkItem
   platform?: PortfolioWorkPlatform
   ticket?: string
+  // The user's part on this platform; a reviewer's track follows a teammate's PR.
+  role: PortfolioTicketRole
+  prLink?: string
   cells: Partial<Record<PortfolioTaskStage, PortfolioTrackCell>>
   // The first stage still open; in a team initiative, accepted work then waits to merge.
   current: PortfolioTaskStage | 'merge' | 'done' | 'external'
   next: PortfolioTrackNext
-  // A team initiative's PR for the branch development runs on, once development started.
+  // A team initiative's PR for the branch development runs on, once development started; for a
+  // reviewer, the teammate's PR as checked out for the review.
   pr?: PortfolioTrackPr
+  // The teammate pushed after the reviewer's last submitted review.
+  newCommits?: boolean
 }
 
 const ORDER: Record<PortfolioTrackNext, number> = {
@@ -100,14 +110,18 @@ function track(
     cells[task.stage] = { task, observation, ...portfolioTaskLane(task, observation, now) }
   }
   const development = cells.development
+  // Before roles, a backend ticket without development was another team's work.
+  const external =
+    base.role === 'tracking' ||
+    (base.role === 'author' && !development && base.platform === 'backend' && Boolean(base.ticket))
+  if (external) {
+    return { ...base, cells, current: 'external', next: 'none' }
+  }
+  if (base.role === 'reviewer') {
+    return reviewerTrack(base, cells, prFor)
+  }
   if (!development) {
-    const external = base.platform === 'backend' && Boolean(base.ticket)
-    return {
-      ...base,
-      cells,
-      current: external ? 'external' : 'development',
-      next: external ? 'none' : 'plan'
-    }
+    return { ...base, cells, current: 'development', next: 'plan' }
   }
   const worktreeId = development.task.attempts.at(-1)?.worktreeId
   const pr = prFor && worktreeId ? prFor(worktreeId) : undefined
@@ -135,6 +149,40 @@ function track(
   return !pr || pr.status === 'merged' ? at('done', 'none') : at('merge', PR_NEXT[pr.status])
 }
 
+// The user reviews and tests a teammate's PR: code review, then QA, then done when it merges.
+function reviewerTrack(
+  base: Omit<PortfolioTrack, 'cells' | 'current' | 'next'>,
+  cells: PortfolioTrack['cells'],
+  prFor: PortfolioPrLookup | undefined
+): PortfolioTrack {
+  const review = cells.codeReview?.task
+  const worktreeId = (review ?? cells.qa?.task)?.attempts.at(-1)?.worktreeId
+  const pr = prFor && worktreeId ? prFor(worktreeId) : undefined
+  const reviewed = review && portfolioSubmittedCommit(review)
+  const newCommits = Boolean(reviewed && pr?.headSha && !pr.headSha.startsWith(reviewed))
+  const at = (current: PortfolioTrack['current'], next: PortfolioTrackNext): PortfolioTrack => ({
+    ...base,
+    cells,
+    current,
+    next,
+    ...(pr ? { pr } : {}),
+    ...(newCommits ? { newCommits } : {})
+  })
+  for (const stage of ['codeReview', 'qa'] as const) {
+    const cell = cells[stage]
+    if (!cell) {
+      return at(stage, 'plan')
+    }
+    if (cell.task.status !== 'accepted') {
+      return at(stage, newCommits && stage === 'codeReview' ? 'decide' : nextFor(cell))
+    }
+  }
+  if (newCommits) {
+    return at('codeReview', 'decide')
+  }
+  return !pr || pr.status === 'merged' ? at('done', 'none') : at('merge', 'waiting')
+}
+
 // One row per outcome and platform: its tickets and its tasks' platforms, in that order.
 // Tasks outside any outcome are rows of their own.
 export function portfolioTracks(
@@ -160,7 +208,7 @@ export function portfolioTracks(
     const platforms = [
       ...new Set<PortfolioWorkPlatform | undefined>([
         ...item.tickets
-          .filter((ticket) => ticket.reference.trim())
+          .filter((ticket) => ticket.reference.trim() || ticket.pr)
           .map((ticket) => ticket.platform),
         ...tasks.map((task) => task.platform)
       ])
@@ -175,9 +223,7 @@ export function portfolioTracks(
             title: item.title,
             item,
             platform,
-            ticket:
-              item.tickets.find((ticket) => ticket.platform === platform)?.reference.trim() ||
-              undefined
+            ...trackTicket(item, platform)
           },
           tasks.filter((task) => task.platform === platform),
           activity,
@@ -190,7 +236,13 @@ export function portfolioTracks(
   for (const task of state.tasks.filter((entry) => inScope(entry) && !entry.workItemId)) {
     tracks.push(
       track(
-        { key: task.id, projectId: task.projectId, title: task.title, platform: task.platform },
+        {
+          key: task.id,
+          projectId: task.projectId,
+          title: task.title,
+          platform: task.platform,
+          role: 'author'
+        },
         [task],
         activity,
         now,
@@ -199,6 +251,18 @@ export function portfolioTracks(
     )
   }
   return tracks.sort((a, b) => ORDER[a.next] - ORDER[b.next])
+}
+
+function trackTicket(
+  item: PortfolioWorkItem,
+  platform: PortfolioWorkPlatform | undefined
+): Pick<PortfolioTrack, 'ticket' | 'role' | 'prLink'> {
+  const ticket = item.tickets.find((entry) => entry.platform === platform)
+  return {
+    ticket: ticket?.reference.trim() || undefined,
+    role: (platform && ticket?.role) || 'author',
+    ...(ticket?.pr ? { prLink: ticket.pr } : {})
+  }
 }
 
 export type PortfolioTrackGroup = {

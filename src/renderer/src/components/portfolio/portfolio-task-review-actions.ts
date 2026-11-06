@@ -89,18 +89,27 @@ export function returnPortfolioFindingsToDevelopment(
   )
 }
 
-// Team mode: the code review or QA agent triages new PR comments or external QA feedback.
+// Team mode: the code review or QA agent triages new PR comments or external QA feedback; on a
+// teammate's PR the user reviews, the reviewer looks at the author's new commits.
 export function requestPortfolioTriage(
   save: () => Promise<boolean>,
   task: PortfolioTask,
-  feedback: string
+  feedback: string,
+  reviewer = false
 ): Promise<string | false> {
   return saveAndRelay(
     save,
     task,
     [
-      `The user asks you to triage new ${task.stage === 'qa' ? 'external QA feedback' : 'PR review comments'} for your Workbench task ${task.id}.`,
-      'Give each item a verdict (must fix, not needed with the reason, or needs discussion), then submit your updated report with `task submit`. Do not post, resolve, or edit the feedback itself.',
+      ...(reviewer
+        ? [
+            `The user asks for another review round for your Workbench task ${task.id}.`,
+            'Draft comments for what changed, then submit your updated report with `task submit`. Do not push, or post or resolve anything on the PR.'
+          ]
+        : [
+            `The user asks you to triage new ${task.stage === 'qa' ? 'external QA feedback' : 'PR review comments'} for your Workbench task ${task.id}.`,
+            'Give each item a verdict (must fix, not needed with the reason, or needs discussion), then submit your updated report with `task submit`. Do not post, resolve, or edit the feedback itself.'
+          ]),
       '',
       feedback
     ].join('\n')

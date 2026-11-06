@@ -2,6 +2,7 @@ import type { PortfolioCommand, PortfolioState, PortfolioTask } from './portfoli
 import { verificationProgress } from './portfolio-verification'
 import { PortfolioWorkItemInput, portfolioTicketsText } from './portfolio-features'
 import { applyFeatureChange, featureInProject } from './portfolio-feature-records'
+import { assertPortfolioTicketRoles } from './portfolio-ticket-roles'
 
 export function workItemForTask(state: PortfolioState, projectId: string, workItemId: string) {
   const item = state.workItems.find((entry) => entry.id === workItemId)
@@ -50,6 +51,7 @@ export function applyPortfolioFeatureCommand(
     if (command.workItem.kind === 'initial' && latest) {
       throw new Error('This feature already has a specification. Create an improvement instead.')
     }
+    assertPortfolioTicketRoles(state, { id }, command.workItem.tickets)
     state.workItems.push({
       ...command.workItem,
       designAttachments: structuredClone(latest?.designAttachments),
@@ -120,6 +122,7 @@ export function applyPortfolioFeatureCommand(
     if (item.status === 'accepted' || published) {
       throw new Error('Reopen the outcome before changing its tickets or parity.')
     }
+    assertPortfolioTicketRoles(state, item, command.tickets)
     item.tickets = command.tickets
     item.parity = command.parity
     if (command.qaFeedbackUrl === null) {
@@ -171,6 +174,7 @@ export function applyPortfolioFeatureCommand(
     if (command.workItem.kind === 'initial' && target?.versions.length) {
       throw new Error('Use an improvement for an existing specification.')
     }
+    assertPortfolioTicketRoles(state, item, command.workItem.tickets)
     if (target && !item.featureId) {
       item.baseVersion = target.versions.at(-1)?.version ?? 0
     }

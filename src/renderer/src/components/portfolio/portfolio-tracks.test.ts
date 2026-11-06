@@ -174,3 +174,81 @@ it('lists tasks outside an outcome as their own rows', () => {
   })
   expect(portfolioTracks(state, 'other', {}, 10)).toEqual([])
 })
+
+it('follows a teammate’s PR the user reviews: review, QA, new commits, then merge', () => {
+  const state = fixture()
+  apply(state, { kind: 'project.reviewMode', projectId: 'project', mode: 'team' })
+  const pr = 'https://github.com/ludus/ios-box-office/pull/9'
+  apply(state, {
+    kind: 'workItem.scope',
+    workItemId: 'outcome',
+    tickets: [
+      { platform: 'ios', reference: 'ENG-1', role: 'reviewer', pr },
+      { platform: 'android', reference: 'ENG-2' },
+      { platform: 'backend', reference: '', role: 'tracking', pr }
+    ],
+    parity: true
+  })
+  let head = 'abc1234ffff'
+  let status: PortfolioPrStatus = 'inReview'
+  const row = (platform: string) =>
+    portfolioTracks(state, 'project', {}, 10, (worktreeId) => ({
+      worktreeId,
+      status,
+      headSha: head
+    })).find((entry) => entry.platform === platform)!
+  expect(row('backend')).toMatchObject({ role: 'tracking', current: 'external', next: 'none' })
+  expect(row('ios')).toMatchObject({ role: 'reviewer', prLink: pr, current: 'codeReview' })
+  expect(row('ios').next).toBe('plan')
+  for (const stage of ['codeReview', 'qa'] as const) {
+    apply(
+      state,
+      {
+        kind: 'task.create',
+        task: {
+          projectId: 'project',
+          workItemId: 'outcome',
+          roleId: 'role',
+          platform: 'ios',
+          stage,
+          title: `iOS ${stage}`,
+          instructions: 'Check',
+          acceptanceCriteria: 'Done'
+        }
+      },
+      `ios-${stage}`
+    )
+  }
+  expect(row('ios')).toMatchObject({ current: 'codeReview', next: 'start' })
+  preparePortfolioAttempt(state, 'ios-codeReview', 'pr-9', 'r', 'op', 1).state = 'launched'
+  apply(state, {
+    kind: 'task.transition',
+    taskId: 'ios-codeReview',
+    status: 'review',
+    note: 'Comments',
+    commit: 'abc1234'
+  })
+  expect(row('ios')).toMatchObject({
+    current: 'codeReview',
+    next: 'decide',
+    pr: { worktreeId: 'pr-9' }
+  })
+  expect(row('ios')).not.toHaveProperty('newCommits')
+  apply(state, {
+    kind: 'task.transition',
+    taskId: 'ios-codeReview',
+    status: 'accepted',
+    note: 'OK'
+  })
+  expect(row('ios')).toMatchObject({ current: 'qa', next: 'start' })
+  preparePortfolioAttempt(state, 'ios-qa', 'pr-9', 'r', 'op-qa', 2).state = 'launched'
+  apply(state, { kind: 'task.transition', taskId: 'ios-qa', status: 'review', note: 'Pass' })
+  apply(state, { kind: 'task.transition', taskId: 'ios-qa', status: 'accepted', note: 'OK' })
+  expect(row('ios')).toMatchObject({ current: 'merge', next: 'waiting' })
+  // The author pushed again: the user decides whether to review another round.
+  head = 'def5678aaaa'
+  expect(row('ios')).toMatchObject({ current: 'codeReview', next: 'decide', newCommits: true })
+  head = 'abc1234ffff'
+  status = 'merged'
+  expect(row('ios')).toMatchObject({ current: 'done', next: 'none' })
+})

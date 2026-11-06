@@ -53,7 +53,10 @@ function formatStatus(state: PortfolioState): string {
       ]
       lines.push(`  Outcome (${details.join(', ')}) ${item.title} [${item.id}]`)
       for (const ticket of item.tickets) {
-        lines.push(`    Ticket ${ticket.platform ?? 'other'}: ${ticket.reference || 'none yet'}`)
+        const role = ticket.role && ticket.role !== 'author' ? ` (user is ${ticket.role})` : ''
+        lines.push(
+          `    Ticket ${ticket.platform ?? 'other'}${role}: ${ticket.reference || 'none yet'}${ticket.pr ? ` · PR ${ticket.pr}` : ''}`
+        )
       }
     }
     for (const feature of features) {

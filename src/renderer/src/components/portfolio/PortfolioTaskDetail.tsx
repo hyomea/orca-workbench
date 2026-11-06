@@ -24,6 +24,7 @@ import {
   portfolioSubmittedCommit,
   portfolioTrackTask
 } from '../../../../shared/portfolio-task-stages'
+import { portfolioTrackRole } from '../../../../shared/portfolio-ticket-roles'
 import type { AgentStatusEntry } from '../../../../shared/agent-status-types'
 import { PortfolioField, PortfolioSelect } from './portfolio-controls'
 import { PortfolioTaskDecision } from './PortfolioTaskDecision'
@@ -103,6 +104,7 @@ export function PortfolioTaskDetail({
   const stageBlocker = canStart ? portfolioStageBlocker(state, task) : undefined
   const acceptBlocker = lane === 'decide' ? portfolioAcceptBlocker(state, task) : undefined
   const workspaceName = workspaces.find((entry) => entry.id === attempt?.worktreeId)?.name
+  const reviewer = portfolioTrackRole(state, task) === 'reviewer'
   async function transition(
     status: 'todo' | 'blocked' | 'review' | 'accepted',
     fallbackNote?: string
@@ -138,7 +140,8 @@ export function PortfolioTaskDetail({
     const notice = await requestPortfolioTriage(
       () => onSave({ kind: 'task.requestTriage', taskId: task.id, note: feedback }),
       task,
-      feedback
+      feedback,
+      reviewer
     )
     if (notice !== false) {
       setRelayNotice(notice)
@@ -255,6 +258,7 @@ export function PortfolioTaskDetail({
               {lane === 'decide' && attempt && (
                 <PortfolioTaskDecision
                   stage={task.stage}
+                  reviewer={reviewer}
                   evidence={task.evidence}
                   acceptBlocker={acceptBlocker}
                   busy={busy}
@@ -274,8 +278,9 @@ export function PortfolioTaskDetail({
               )}
             </section>
             {task.stage !== 'development' &&
-              state.projects.find((project) => project.id === task.projectId)?.reviewMode ===
-                'team' && (
+              (reviewer ||
+                state.projects.find((project) => project.id === task.projectId)?.reviewMode ===
+                  'team') && (
                 <PortfolioTaskTriage
                   state={state}
                   task={task}

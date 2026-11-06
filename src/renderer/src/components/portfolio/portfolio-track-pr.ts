@@ -23,6 +23,8 @@ export type PortfolioTrackPr = {
   status: PortfolioPrStatus
   number?: number
   url?: string
+  // The PR's latest commit, to tell a reviewer when the author pushed since their review.
+  headSha?: string
   // What reading the PR's comments needs.
   repo?: { path: string; id: string }
   prRepo?: PRInfo['prRepo']
@@ -88,6 +90,7 @@ export function portfolioWorktreePr(
       ? {
           number: pr.number,
           url: pr.url,
+          ...(pr.headSha ? { headSha: pr.headSha } : {}),
           repo: { path: repo.path, id: repo.id },
           prRepo: pr.prRepo
         }

@@ -70,6 +70,8 @@ export function PortfolioFeatureComposer({
   const tickets = {
     platforms: draft.platforms ?? [],
     refs: draft.ticketRefs ?? {},
+    roles: draft.ticketRoles ?? {},
+    prs: draft.ticketPrs ?? {},
     other: draft.sourceReference
   }
   async function save(): Promise<void> {

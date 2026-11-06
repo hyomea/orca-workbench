@@ -12,12 +12,14 @@ import { PortfolioTicketFields, ticketDraft, ticketsFromDraft } from './Portfoli
 export function PortfolioOutcomeScope({
   item,
   features,
+  team,
   busy,
   onSave,
   onClose
 }: {
   item: PortfolioWorkItem
   features: readonly PortfolioFeature[]
+  team: boolean
   busy: boolean
   onSave: (command: PortfolioCommand) => Promise<boolean>
   onClose: () => void
@@ -45,7 +47,7 @@ export function PortfolioOutcomeScope({
         }
       }}
     >
-      <PortfolioTicketFields value={tickets} disabled={busy} onChange={setTickets} />
+      <PortfolioTicketFields value={tickets} disabled={busy} team={team} onChange={setTickets} />
       <label className="flex items-center gap-2 text-sm">
         <Checkbox checked={parity} onCheckedChange={(checked) => setParity(checked === true)} />
         {translate('portfolio.parityOutcome', 'iOS and Android must behave the same')}

@@ -1,8 +1,9 @@
 import type { PortfolioState, PortfolioTask } from '../../../../shared/portfolio'
 import type { PortfolioWorkspace } from './PortfolioTaskDetail'
 
-// Tasks in one outcome usually continue on the same branch: prefer where its work was last
-// submitted, so a launch in the wrong workspace does not become the suggestion.
+// A track's stages usually continue on the same branch: prefer where its work was last
+// submitted, so a launch in the wrong workspace does not become the suggestion. Other platforms
+// of the outcome build on other branches, such as a teammate's PR the user reviews.
 export function portfolioDefaultWorkspace(
   state: PortfolioState,
   task: PortfolioTask,
@@ -10,7 +11,9 @@ export function portfolioDefaultWorkspace(
 ): string {
   const available = new Set(workspaces.map((workspace) => workspace.id))
   const related = state.tasks.filter(
-    (entry) => entry.id === task.id || (task.workItemId && entry.workItemId === task.workItemId)
+    (entry) =>
+      entry.id === task.id ||
+      (task.workItemId && entry.workItemId === task.workItemId && entry.platform === task.platform)
   )
   const latest = (tasks: PortfolioTask[]): string | undefined =>
     tasks

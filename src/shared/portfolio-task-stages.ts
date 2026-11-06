@@ -2,6 +2,11 @@ import { z } from 'zod'
 import type { PortfolioState, PortfolioTask } from './portfolio'
 import { PortfolioWorkPlatform } from './portfolio-features'
 import { PortfolioCommit } from './portfolio-review'
+import {
+  assertPortfolioTrackRole,
+  portfolioTrackRole,
+  portfolioTrackTicket
+} from './portfolio-ticket-roles'
 
 const Id = z.string().trim().min(1).max(4096)
 const Name = z.string().trim().min(1).max(200)
@@ -112,6 +117,7 @@ export function assertPortfolioTrackSlot(
   if (task.stage !== 'development' && !task.workItemId) {
     throw new Error('Code review and QA tasks belong to an outcome.')
   }
+  assertPortfolioTrackRole(portfolioTrackRole(state, task), task.stage)
   const existing = portfolioTrackTask(state, task, task.stage)
   if (existing && existing.id !== task.id) {
     throw new Error(
@@ -201,6 +207,10 @@ export function assertPortfolioStageReady(state: PortfolioState, task: Portfolio
   if (task.stage === 'development') {
     return
   }
+  if (portfolioTrackRole(state, task) === 'reviewer') {
+    assertPortfolioReviewerStageReady(state, task)
+    return
+  }
   const development = portfolioTrackTask(state, task, 'development')
   if (!development || (development.status !== 'review' && development.status !== 'accepted')) {
     throw new Error('Start this after development submits its work.')
@@ -214,6 +224,18 @@ export function assertPortfolioStageReady(state: PortfolioState, task: Portfolio
     throw new Error(
       'Development has no submitted commit. Ask the development agent to commit and submit.'
     )
+  }
+}
+
+// A reviewer's code review looks at the teammate's PR as checked out in its workspace, so it
+// waits for nothing here; QA still follows the accepted review.
+function assertPortfolioReviewerStageReady(state: PortfolioState, task: PortfolioTask): void {
+  if (!portfolioTrackTicket(state, task)?.pr) {
+    throw new Error('Add the teammate’s PR link to this platform’s ticket first.')
+  }
+  const review = portfolioTrackTask(state, task, 'codeReview')
+  if (task.stage === 'qa' && review && review.status !== 'accepted') {
+    throw new Error('Start QA after you accept the code review.')
   }
 }
 

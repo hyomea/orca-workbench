@@ -20,6 +20,7 @@ vi.mock('./portfolio-track-pr', async (original) => ({
     status: 'changesRequested',
     number: 12,
     url: 'https://github.com/o/r/pull/12',
+    headSha: 'def5678aaaa',
     repo: { path: '/repo', id: 'repo' }
   }),
   usePortfolioPrRefresh: () => {}
@@ -315,6 +316,63 @@ it('asks a team code review to triage the PR comments posted since it last submi
       prompt: expect.stringMatching(/triage new PR review comments for your Workbench task review/)
     })
   )
+})
+
+it('lets the user post a teammate PR review themselves and review the author’s new commits', async () => {
+  const review: PortfolioTask = {
+    ...task,
+    id: 'review',
+    workItemId: 'outcome',
+    platform: 'ios',
+    stage: 'codeReview',
+    status: 'review',
+    evidence: 'B-1: missing nil check',
+    history: [{ id: 'review:0', at: 1, status: 'review', note: 'Report', commit: 'abc1234' }]
+  }
+  const state = {
+    ...emptyPortfolio(),
+    projects: [
+      { id: 'p', name: 'Mobile', objective: 'Ship', repoIds: [], reviewMode: 'team' as const }
+    ],
+    workItems: [
+      {
+        id: 'outcome',
+        projectId: 'p',
+        kind: 'improvement' as const,
+        title: 'Check-ins',
+        description: '',
+        acceptanceCriteria: 'Works',
+        designReferences: '',
+        tickets: [
+          {
+            platform: 'ios' as const,
+            reference: 'ENG-1',
+            role: 'reviewer' as const,
+            pr: 'https://github.com/o/r/pull/12'
+          }
+        ],
+        parity: false,
+        baseVersion: 0,
+        status: 'active' as const,
+        history: []
+      }
+    ],
+    tasks: [review]
+  }
+  useAppStore.setState({ fetchPRComments: vi.fn(async () => []) })
+  const { onSave } = renderDetail({ state, task: review })
+  expect(screen.queryByRole('button', { name: 'Send back to development' })).toBeNull()
+  expect(screen.getByText(/Post the comments you agree with on the PR yourself/)).toBeTruthy()
+  const pr = screen.getByRole('region', { name: 'Pull request' })
+  expect(within(pr).getByText('New commits since your review')).toBeTruthy()
+  await act(async () => {
+    fireEvent.click(within(pr).getByRole('button', { name: 'Review the new commits' }))
+  })
+  expect(onSave).toHaveBeenCalledWith({
+    kind: 'task.requestTriage',
+    taskId: 'review',
+    note: expect.stringMatching(/review at abc1234; the PR is now at def5678aaa/)
+  })
 })
 
 function comment(id: number, createdAt: string, body: string) {

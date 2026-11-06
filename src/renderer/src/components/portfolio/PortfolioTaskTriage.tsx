@@ -6,7 +6,12 @@ import { useAppStore } from '@/store'
 import { translate } from '@/i18n/i18n'
 import type { PRComment } from '../../../../shared/github/comment-types'
 import type { PortfolioState, PortfolioTask } from '../../../../shared/portfolio'
-import { portfolioSubmittedAt, portfolioTrackTask } from '../../../../shared/portfolio-task-stages'
+import {
+  portfolioSubmittedAt,
+  portfolioSubmittedCommit,
+  portfolioTrackTask
+} from '../../../../shared/portfolio-task-stages'
+import { portfolioTrackRole } from '../../../../shared/portfolio-ticket-roles'
 import { PortfolioField } from './portfolio-controls'
 import {
   prStatusLabel,
@@ -99,7 +104,13 @@ function PrReview({
   busy: boolean
   onRequestTriage: (feedback: string) => Promise<boolean>
 }): React.JSX.Element {
-  const worktreeId = portfolioTrackTask(state, task, 'development')?.attempts.at(-1)?.worktreeId
+  // A reviewer's review runs on the teammate's PR; an author's PR is development's branch.
+  const reviewer = portfolioTrackRole(state, task) === 'reviewer'
+  const worktreeId = portfolioTrackTask(
+    state,
+    task,
+    reviewer ? 'codeReview' : 'development'
+  )?.attempts.at(-1)?.worktreeId
   const pr = usePortfolioPrLookup()(worktreeId ?? '')
   usePortfolioPrRefresh(worktreeId ? [worktreeId] : [])
   const refresh = useAppStore((s) => s.refreshGitHubForWorktree)
@@ -129,9 +140,15 @@ function PrReview({
       <p>
         {pr
           ? prStatusLabel(pr.status)
-          : translate('portfolio.prNoWorkspace', 'The development workspace is not available.')}
+          : reviewer
+            ? translate(
+                'portfolio.prReviewerWorkspace',
+                'Start a workspace on the teammate’s PR from Orca’s GitHub pull requests, then start the review in it.'
+              )
+            : translate('portfolio.prNoWorkspace', 'The development workspace is not available.')}
       </p>
-      {pr?.status === 'none' && (
+      {reviewer && <NewCommits task={task} pr={pr} busy={busy} onRequestTriage={onRequestTriage} />}
+      {!reviewer && pr?.status === 'none' && (
         <p className="text-xs text-muted-foreground">
           {translate(
             'portfolio.prOpenHint',
@@ -139,14 +156,18 @@ function PrReview({
           )}
         </p>
       )}
-      {task.status === 'review' && pr && pr.status !== 'readyToMerge' && pr.status !== 'merged' && (
-        <p className="text-xs text-muted-foreground">
-          {translate(
-            'portfolio.prNotApproved',
-            'The team has not approved the PR yet; accept this review once their feedback is settled.'
-          )}
-        </p>
-      )}
+      {!reviewer &&
+        task.status === 'review' &&
+        pr &&
+        pr.status !== 'readyToMerge' &&
+        pr.status !== 'merged' && (
+          <p className="text-xs text-muted-foreground">
+            {translate(
+              'portfolio.prNotApproved',
+              'The team has not approved the PR yet; accept this review once their feedback is settled.'
+            )}
+          </p>
+        )}
       {pr?.url && (
         <Button variant="outline" size="sm" onClick={() => window.api.shell.openUrl(pr.url!)}>
           {translate('portfolio.prOpenGithub', 'Open on GitHub')}
@@ -174,6 +195,35 @@ function PrReview({
         </div>
       )}
     </section>
+  )
+}
+
+// The author pushed after the user's last review: the next round reviews what changed.
+function NewCommits({
+  task,
+  pr,
+  busy,
+  onRequestTriage
+}: {
+  task: PortfolioTask
+  pr: PortfolioTrackPr | undefined
+  busy: boolean
+  onRequestTriage: (feedback: string) => Promise<boolean>
+}): React.JSX.Element | null {
+  const reviewed = portfolioSubmittedCommit(task)
+  if (task.stage !== 'codeReview' || !reviewed || !pr?.headSha || pr.headSha.startsWith(reviewed)) {
+    return null
+  }
+  const round = `The author pushed new commits since the review at ${reviewed.slice(0, 10)}; the PR is now at ${pr.headSha.slice(0, 10)}. Update this workspace to the PR's latest commit (fetch only; do not push), review what changed since then, and check whether your earlier findings were addressed.`
+  return (
+    <div className="space-y-2 border-t border-border pt-3">
+      <p className="font-medium">
+        {translate('portfolio.trackNewCommits', 'New commits since your review')}
+      </p>
+      <Button size="sm" disabled={busy} onClick={() => void onRequestTriage(round)}>
+        {translate('portfolio.reviewNewCommits', 'Review the new commits')}
+      </Button>
+    </div>
   )
 }
 

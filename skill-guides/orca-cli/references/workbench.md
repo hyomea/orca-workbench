@@ -16,7 +16,11 @@ stored as work items (`workItem.*` commands, `workItemId` on tasks). Each outcom
   shown as "Discovery"), or `engineering`. A discovery is worked out between the user and the
   steward, without code; see "Discovery".
 - `tickets`: one per platform involved, `{ "platform": "ios" | "android" | "backend",
-  "reference": "<key or link>" }`. The reference may be empty until the ticket exists.
+  "reference": "<key or link>" }`. The reference may be empty until the ticket exists. In a
+  team initiative a ticket also records the user's part on that platform, `role`: `author`
+  (the default: the user builds it), `reviewer` (a teammate builds it and the user reviews and
+  tests their PR), or `tracking` (someone else's work, followed only); with `reviewer` or
+  `tracking`, `pr` holds the teammate's PR link.
 - `parity`: true when iOS and Android must behave the same. A parity outcome needs a shared
   test plan with reviewed evidence on both platforms before it is accepted; others do not.
 - `featureId` (optional): the product feature it changes. A feature is the lasting record of
@@ -117,6 +121,12 @@ involves and their tickets, whether iOS and Android must behave the same, and wh
 changes a product feature. Read the tickets and the relevant code first, ask the user only
 questions that change the plan, then show the plan in the conversation before applying it.
 
+In a team initiative, set each platform ticket's `role` from Jira: compare the ticket's
+assignee with the user's own Atlassian account (`atlassianUserInfo`). Assigned to the user
+means `author`. Assigned to someone else, ask whether the user reviews it (`reviewer`, with the
+teammate's PR link once it exists) or only follows it (`tracking`). When Jira cannot be read,
+ask the user. Show the roles in the plan; the user can change them in the outcome's tickets.
+
 ### Discovery
 
 Some work starts as a question, not a ticket. The user and the steward work it out on an
@@ -151,8 +161,20 @@ An outcome on one platform is a track. Each track has one task per stage, set wi
 Create the three tasks for each platform the outcome involves, with the same `workItemId` and
 `platform` (`ios`, `android`, or `backend`; `shared` for work for no single platform). A
 backend ticket owned by another team needs no tasks; the outcome links its ticket. Code
-review and QA tasks always belong to an outcome. When the user sends findings back, they go
-to the track's development task, and code review and QA run again on the next submission.
+review and QA tasks always belong to an outcome.
+
+The ticket's `role` decides which tasks a platform gets:
+
+- `author`: all three stages, as above.
+- `reviewer`: no development task, since the teammate builds it. `codeReview` reviews the
+  teammate's PR in a workspace started on that PR (the user starts it from Orca's GitHub pull
+  requests, or ask them to); it needs the ticket's `pr`. Its findings are drafted PR comments
+  the user posts; nothing is sent back. When the author pushes again, the user asks for
+  another round from the task's page. `qa` then tests the PR for integration: end-to-end flows
+  against the real services, how it works with neighbouring features and the other platforms,
+  and regressions. The track is done when the PR merges.
+- `tracking`: no tasks; the row shows the ticket and PR. When the user sends findings back, they go
+  to the track's development task, and code review and QA run again on the next submission.
 
 An initiative reviews in one of two modes, set by the user with `project.reviewMode`:
 
@@ -210,7 +232,9 @@ the updated report with `task submit`.
 
 In a code review or QA task, do not edit product code. Review or test the branch at the commit
 development submitted, and report findings with stable IDs (B-1 for blocking, N-1 for
-non-blocking) so the user can send them back.
+non-blocking) so the user can send them back. On a teammate's PR the user reviews, there is no
+development task: review the PR as checked out in the workspace, and write each finding as a
+comment the user can post (file and line, what and why, whether it blocks approval).
 
 ## Submitting a task
 

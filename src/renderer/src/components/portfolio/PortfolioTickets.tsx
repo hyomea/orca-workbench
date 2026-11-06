@@ -1,6 +1,6 @@
 import { Badge } from '@/components/ui/badge'
 import type { PortfolioTicket } from '../../../../shared/portfolio-features'
-import { workPlatformName } from './portfolio-feature-labels'
+import { ticketRoleName, workPlatformName } from './portfolio-feature-labels'
 
 // The outcome's tickets, one per platform, so the user sees where each side of the work lives.
 export function PortfolioTickets({
@@ -20,6 +20,9 @@ export function PortfolioTickets({
               <span className="font-medium">{workPlatformName(ticket.platform)}</span>
             )}
             <span className="truncate">{ticket.reference || '—'}</span>
+            {ticket.role && ticket.role !== 'author' && (
+              <span className="text-muted-foreground">· {ticketRoleName(ticket.role)}</span>
+            )}
           </Badge>
         </li>
       ))}

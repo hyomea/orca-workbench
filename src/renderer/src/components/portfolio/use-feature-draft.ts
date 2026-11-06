@@ -9,6 +9,7 @@ import { z } from 'zod'
 import { useTaskCreationDraftRetention } from '@/components/use-task-creation-draft-retention'
 import { ticketDraft, type PortfolioTicketDraft } from './PortfolioTicketFields'
 import {
+  PortfolioTicketRole,
   PortfolioWorkItemInput,
   type PortfolioWorkItem,
   type PortfolioFeature
@@ -32,6 +33,8 @@ const Draft = z.object({
   sourceReference: z.string(),
   platforms: z.array(z.string()).optional(),
   ticketRefs: z.record(z.string(), z.string()).optional(),
+  ticketRoles: z.record(z.string(), PortfolioTicketRole).optional(),
+  ticketPrs: z.record(z.string(), z.string()).optional(),
   parity: z.boolean().optional(),
   featureId: z.string().optional(),
   contextUrl: z.string().optional(),
@@ -93,6 +96,8 @@ export function useFeatureDraft(
         sourceReference: item ? tickets.other : (specification?.sourceReference ?? ''),
         platforms: tickets.platforms,
         ticketRefs: tickets.refs,
+        ticketRoles: tickets.roles,
+        ticketPrs: tickets.prs,
         parity: item?.parity ?? false,
         featureId: item?.featureId ?? featureId ?? '',
         expected: item && PortfolioWorkItemInput.parse(item),
@@ -115,6 +120,8 @@ export function useFeatureDraft(
       | 'intakeEditedFields'
       | 'platforms'
       | 'ticketRefs'
+      | 'ticketRoles'
+      | 'ticketPrs'
       | 'parity'
     >,
     value: string
@@ -138,6 +145,8 @@ export function useFeatureDraft(
       ...current,
       platforms: value.platforms,
       ticketRefs: value.refs,
+      ticketRoles: value.roles,
+      ticketPrs: value.prs,
       sourceReference: value.other
     }))
   }

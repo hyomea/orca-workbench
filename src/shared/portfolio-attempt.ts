@@ -11,6 +11,7 @@ import {
   portfolioStageCommit,
   portfolioTrackTask
 } from './portfolio-task-stages'
+import { portfolioTrackRole, portfolioTrackTicket } from './portfolio-ticket-roles'
 
 export function preparePortfolioAttempt(
   state: PortfolioState,
@@ -105,6 +106,12 @@ function portfolioStagePrompt(state: PortfolioState, task: PortfolioTask): strin
       ...portfolioReturnedFindings(task).map((note) => `Address these findings first:\n${note}`)
     ]
   }
+  if (portfolioTrackRole(state, task) === 'reviewer') {
+    return [
+      ...portfolioReviewerPrompt(task, portfolioTrackTicket(state, task)?.pr ?? ''),
+      ...portfolioReturnedFindings(task).map((note) => `Review this new round first:\n${note}`)
+    ]
+  }
   const development = portfolioTrackTask(state, task, 'development')
   const commit = portfolioStageCommit(state, task)
   return [
@@ -115,6 +122,23 @@ function portfolioStagePrompt(state: PortfolioState, task: PortfolioTask): strin
     ...portfolioTeamReviewPrompt(state, task),
     ...portfolioReturnedFindings(task).map((note) => `Triage this new feedback first:\n${note}`)
   ]
+}
+
+// The user reviews and tests a teammate's PR; findings go to the user to post, not to development.
+function portfolioReviewerPrompt(task: PortfolioTask, pr: string): string[] {
+  const boundary =
+    'The teammate builds this platform; the user is their reviewer. Do not edit product code, push, or comment on, approve, or resolve anything on the PR; the user posts what they choose.'
+  return task.stage === 'codeReview'
+    ? [
+        `Stage: code review of a teammate's pull request, ${pr}, checked out in this workspace. Review its changes against its base branch, and read the PR's existing comments with \`gh\` (read only) so you do not repeat them.`,
+        boundary,
+        'Draft each finding as a PR comment the user can post: file and line, what and why, and whether it blocks approval. Submit at the commit you reviewed.'
+      ]
+    : [
+        `Stage: QA of a teammate's pull request, ${pr}, after the user's code review. Focus on integration: run the change end to end against the real services where you can, and check the flows it touches, how it works with neighbouring features and the other platforms, and regressions.`,
+        boundary,
+        'Run the existing integration tests that cover it. Propose missing integration tests in your report instead of leaving them in the workspace, since submitting needs it clean.'
+      ]
 }
 
 // In team mode the agent also triages the team's feedback; the user decides what goes back.

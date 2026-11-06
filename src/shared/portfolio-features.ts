@@ -15,12 +15,20 @@ export const PortfolioWorkItemKind = z.enum([
 ])
 export const PortfolioWorkPlatform = z.enum(['ios', 'android', 'backend', 'shared'])
 export type PortfolioWorkPlatform = z.infer<typeof PortfolioWorkPlatform>
+// The user's part in a platform's work in a team initiative: building it (author, the default),
+// reviewing and testing a teammate's PR (reviewer), or following someone else's work (tracking).
+export const PortfolioTicketRole = z.enum(['author', 'reviewer', 'tracking'])
+export type PortfolioTicketRole = z.infer<typeof PortfolioTicketRole>
 // One ticket per platform when an outcome spans iOS, Android, and backend.
 // A platform can be involved before its ticket exists, so only an unassigned reference must be set.
 export const PortfolioTicket = z
   .object({
     platform: PortfolioWorkPlatform.optional(),
-    reference: z.string().trim().max(2000)
+    reference: z.string().trim().max(2000),
+    // Absent means author.
+    role: PortfolioTicketRole.optional(),
+    // The teammate's pull request, for a platform the user reviews or tracks.
+    pr: z.string().trim().url().max(2000).optional()
   })
   .refine((ticket) => ticket.platform || ticket.reference, 'Name a platform or a reference.')
 export type PortfolioTicket = z.infer<typeof PortfolioTicket>
@@ -84,9 +92,13 @@ export type PortfolioWorkItemInput = z.infer<typeof PortfolioWorkItemInput>
 
 export function portfolioTicketsText(tickets: readonly PortfolioTicket[]): string {
   return tickets
-    .map((ticket) =>
-      ticket.platform ? `${ticket.platform}: ${ticket.reference}` : ticket.reference
-    )
+    .map((ticket) => {
+      const role = ticket.role && ticket.role !== 'author' ? ` (user is ${ticket.role})` : ''
+      const pr = ticket.pr ? ` PR ${ticket.pr}` : ''
+      return ticket.platform
+        ? `${ticket.platform}${role}: ${ticket.reference}${pr}`
+        : ticket.reference
+    })
     .join('\n')
 }
 

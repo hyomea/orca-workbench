@@ -23575,6 +23575,18 @@
     "useSubmittedFindings": "Start from the submitted report",
     "trackNoPlatform": "No platform",
     "trackNoOutcome": "Task without an outcome",
-    "openStewardNamed": "{{name}} · Coordinator"
+    "openStewardNamed": "{{name}} · Coordinator",
+    "prReviewerWorkspace": "Start a workspace on the teammate’s PR from Orca’s GitHub pull requests, then start the review in it.",
+    "reviewerDecision": "Post the comments you agree with on the PR yourself. Accept when this round is done; when the author pushes again, ask for another round below.",
+    "reviewNewCommits": "Review the new commits",
+    "roleAuthor": "You build it",
+    "roleReviewer": "You review it",
+    "roleTracking": "You track it",
+    "ticketPr": "{{platform}} teammate PR",
+    "ticketPrPlaceholder": "Teammate’s PR link",
+    "ticketRole": "{{platform}}: your part",
+    "trackExternalPr": "Tracked on its PR",
+    "trackNewCommits": "New commits since your review",
+    "trackTeammate": "Built by a teammate"
   }
 }

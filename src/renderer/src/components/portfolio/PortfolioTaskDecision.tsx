@@ -10,6 +10,7 @@ import type { PortfolioTaskReviewComments } from './portfolio-task-review-action
 // code, then is accepted or returned; code review and QA are accepted or send findings back.
 export function PortfolioTaskDecision({
   stage,
+  reviewer,
   evidence,
   acceptBlocker,
   busy,
@@ -23,6 +24,8 @@ export function PortfolioTaskDecision({
   onReturn
 }: {
   stage: PortfolioTaskStage
+  // The user reviews a teammate's PR: findings are theirs to post, with nothing to send back.
+  reviewer?: boolean
   evidence: string
   acceptBlocker?: string
   busy: boolean
@@ -90,32 +93,42 @@ export function PortfolioTaskDecision({
           </div>
         </div>
       )}
-      <PortfolioField
-        label={
-          development
-            ? translate('portfolio.decisionNote', 'Decision note')
-            : translate('portfolio.findingsToSend', 'Findings to send back')
-        }
-      >
-        <Textarea
-          value={note}
-          onChange={(event) => onNoteChange(event.target.value)}
-          placeholder={
+      {reviewer && (
+        <p className="text-xs text-muted-foreground">
+          {translate(
+            'portfolio.reviewerDecision',
+            'Post the comments you agree with on the PR yourself. Accept when this round is done; when the author pushes again, ask for another round below.'
+          )}
+        </p>
+      )}
+      {!reviewer && (
+        <PortfolioField
+          label={
             development
-              ? translate(
-                  'portfolio.decisionPlaceholder',
-                  'Optional when accepting; required when sending back.'
-                )
-              : translate(
-                  'portfolio.findingsPlaceholder',
-                  'The findings development should fix, with their IDs. Leave out the ones you accept as they are.'
-                )
+              ? translate('portfolio.decisionNote', 'Decision note')
+              : translate('portfolio.findingsToSend', 'Findings to send back')
           }
-          rows={development ? 3 : 6}
-          maxLength={20000}
-        />
-      </PortfolioField>
-      {!development && (
+        >
+          <Textarea
+            value={note}
+            onChange={(event) => onNoteChange(event.target.value)}
+            placeholder={
+              development
+                ? translate(
+                    'portfolio.decisionPlaceholder',
+                    'Optional when accepting; required when sending back.'
+                  )
+                : translate(
+                    'portfolio.findingsPlaceholder',
+                    'The findings development should fix, with their IDs. Leave out the ones you accept as they are.'
+                  )
+            }
+            rows={development ? 3 : 6}
+            maxLength={20000}
+          />
+        </PortfolioField>
+      )}
+      {!development && !reviewer && (
         <Button variant="ghost" size="sm" onClick={() => onNoteChange(evidence)}>
           {translate('portfolio.useSubmittedFindings', 'Start from the submitted report')}
         </Button>
@@ -128,11 +141,13 @@ export function PortfolioTaskDecision({
         >
           {translate('portfolio.accept', 'Accept result')}
         </Button>
-        <Button variant="outline" disabled={busy || !note.trim()} onClick={onReturn}>
-          {development
-            ? translate('portfolio.reopen', 'Return to planned')
-            : translate('portfolio.sendBack', 'Send back to development')}
-        </Button>
+        {!reviewer && (
+          <Button variant="outline" disabled={busy || !note.trim()} onClick={onReturn}>
+            {development
+              ? translate('portfolio.reopen', 'Return to planned')
+              : translate('portfolio.sendBack', 'Send back to development')}
+          </Button>
+        )}
       </div>
     </div>
   )

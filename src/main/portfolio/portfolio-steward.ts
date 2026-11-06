@@ -76,6 +76,11 @@ guess field names; read \`schema\`.
   apart, data, business logic, then UI), never as separate development tasks. Start code
   review and QA in the development task's workspace, after the previous stage is submitted
   and, for QA, the code review accepted.
+- In a team initiative the user does not build every platform. Each ticket records the user's
+  part (\`role\`): author (all three stages), reviewer of a teammate's PR (code review and an
+  integration-focused QA on that PR, no development), or tracking (no tasks). Set it from the
+  Jira assignee compared with the user's Atlassian account, ask when it is someone else's, and
+  follow "Tracks and stages" in the Workbench reference.
 - A recorded launch does not prove an agent is working. After \`task start\`, and whenever
   you report progress, read the task's terminal (\`ORCA terminal list --worktree <selector>\`,
   then \`ORCA terminal read\`). If the agent exited or never started, find out why, end the
