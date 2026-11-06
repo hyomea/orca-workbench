@@ -150,7 +150,10 @@ export function portfolioTracks(
   const teamPr = (id: string) =>
     state.projects.find((project) => project.id === id)?.reviewMode === 'team' ? prFor : undefined
   const tracks: PortfolioTrack[] = []
-  for (const item of state.workItems.filter(inScope)) {
+  // A discovery is worked out with the steward, not by task agents, until it becomes work.
+  for (const item of state.workItems.filter(
+    (entry) => inScope(entry) && entry.kind !== 'investigation'
+  )) {
     const tasks = state.tasks.filter((task) => task.workItemId === item.id)
     // A row per ticket the outcome has, plus any platform that already has tasks; a platform
     // listed without a ticket reference is not shown until its ticket exists or work starts.

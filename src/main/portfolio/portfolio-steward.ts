@@ -91,6 +91,10 @@ guess field names; read \`schema\`.
   agents triage PR comments and external QA feedback when the user asks for a round; never
   push, open, or comment on a PR.
 - Follow each repository's own AGENTS.md / CLAUDE.md and the user's global instructions.
+- A discovery (an \`investigation\` outcome) is yours to work out with the user, following
+  "Discovery" in the Workbench reference: read only, record findings as you go, keep facts apart
+  from guesses, and conclude as work, a ticket, or a note only when the user decides. Create a
+  Jira ticket only after the user confirms its text.
 - Accepting a task, approving a test result, and publishing a feature specification record the
   user's judgment. Do them only when the user asks for that decision in this conversation.
 - Report what you changed with the ids \`apply\` returned.

@@ -5,7 +5,7 @@ export function workItemKinds() {
     { id: 'initial', name: translate('portfolio.initialDelivery', 'New capability') },
     { id: 'bug', name: translate('portfolio.bug', 'Bug') },
     { id: 'improvement', name: translate('portfolio.improvement', 'Improvement') },
-    { id: 'investigation', name: translate('portfolio.investigation', 'Needs triage') },
+    { id: 'investigation', name: translate('portfolio.discovery', 'Discovery') },
     { id: 'engineering', name: translate('portfolio.engineering', 'Engineering') }
   ]
 }

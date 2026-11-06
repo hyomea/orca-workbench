@@ -88,7 +88,7 @@ export default function PortfolioPage(): React.JSX.Element {
         }}
         onSave={(command: PortfolioCommand) => mutate('portfolio.mutate', { command })}
         onLaunch={(taskId, worktreeId) => mutate('portfolio.launch', { taskId, worktreeId })}
-        onOpenSteward={() => openElsewhere(openPortfolioSteward)}
+        onOpenSteward={(prompt) => openElsewhere(() => openPortfolioSteward(prompt))}
         onOpenTasks={(projectId) =>
           openTaskPage({ taskSource: 'workbench', workbenchProjectId: projectId })
         }

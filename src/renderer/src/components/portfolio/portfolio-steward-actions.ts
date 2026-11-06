@@ -7,6 +7,8 @@ import { translate } from '@/i18n/i18n'
 import { launchAgentInNewTab } from '@/lib/launch-agent-in-new-tab'
 import { newAgentLaunchRequestId } from '@/lib/agent-launch-request-id'
 import { activateLocalFolderWorkspace } from './portfolio-folder-workspace'
+import { sendMessageToAgent, type AgentMessageTarget } from '@/lib/agent-message-send'
+import { parsePaneKey } from '../../../../shared/stable-pane-id'
 
 // A tab alone does not mean the steward is there: after a restart its workspace keeps a plain
 // shell, and an agent can exit. Only a chat tab or a pane with agent status counts.
@@ -26,12 +28,17 @@ export function stewardRunning(
 }
 
 // One steward workspace per profile; reopening returns to a running steward instead of starting another.
-export async function openPortfolioSteward(): Promise<void> {
+// A prompt (the user pressed a button that asks the steward something) goes to the running chat,
+// or starts a new one with it.
+export async function openPortfolioSteward(prompt?: string): Promise<void> {
   const { path } = z
     .object({ path: z.string().min(1) })
     .parse(await callRuntimeRpc({ kind: 'local' }, 'portfolio.prepareSteward', {}))
   const worktreeId = await activateLocalFolderWorkspace(path, 'folder')
   if (stewardRunning(useAppStore.getState(), worktreeId)) {
+    if (prompt) {
+      await sendToSteward(worktreeId, prompt)
+    }
     return
   }
   const result = launchAgentInNewTab({
@@ -39,11 +46,37 @@ export async function openPortfolioSteward(): Promise<void> {
     requestedSurface: 'chat',
     agent: 'claude',
     worktreeId,
+    ...(prompt ? { prompt } : {}),
     // The user's own Claude Code permissions, as outside Orca.
     sessionOptions: { permissionMode: 'own' },
     launchSource: 'task_page'
   })
   if (!result) {
     throw new Error(translate('portfolio.stewardLaunchFailed', 'Could not start the steward chat.'))
+  }
+}
+
+async function sendToSteward(worktreeId: string, prompt: string): Promise<void> {
+  const state = useAppStore.getState()
+  const tabs = state.unifiedTabsByWorktree[worktreeId] ?? []
+  const chat = tabs.find((tab) => tab.contentType === 'agent-session')
+  const tabIds = new Set(tabs.map((tab) => tab.id))
+  const pane = Object.values(state.agentStatusByPaneKey)
+    .map((entry) => parsePaneKey(entry.paneKey))
+    .find((key) => key && tabIds.has(key.tabId))
+  const target: AgentMessageTarget | null = chat
+    ? { kind: 'structured-session', sessionId: chat.entityId }
+    : pane
+      ? { kind: 'terminal', tabId: pane.tabId, leafId: pane.leafId }
+      : null
+  const result = target ? await sendMessageToAgent({ worktreeId, target, prompt }) : null
+  if (result?.status !== 'sent' && result?.status !== 'unconfirmed') {
+    throw new Error(
+      translate(
+        'portfolio.stewardSendFailed',
+        'The steward is open, but the message could not be sent. Paste it into its chat:\n\n{{prompt}}',
+        { prompt }
+      )
+    )
   }
 }

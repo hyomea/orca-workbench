@@ -39,6 +39,7 @@ function harness(view: 'outcomes' | 'features' = 'outcomes') {
         error=""
         onCreateTask={onCreateTask}
         onCreateRole={() => {}}
+        onDiscuss={() => {}}
         onSelectTask={() => {}}
         onSave={async (command) => {
           commands.push(command)
@@ -358,6 +359,7 @@ it('keeps the selected feature when switching project views and discloses full p
           onCreateTask={noop}
           onSelectTask={noop}
           onCreateRole={noop}
+          onDiscuss={() => {}}
         />
       }
     />
@@ -433,6 +435,7 @@ it('opens each outcome as its own page and returns to the list', async () => {
       error=""
       onCreateTask={() => {}}
       onCreateRole={() => {}}
+      onDiscuss={() => {}}
       onSelectTask={() => {}}
       onSave={async () => true}
     />

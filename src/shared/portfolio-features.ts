@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { PortfolioDiscoveryConclusion } from './portfolio-outcome-discovery'
 import { PortfolioDesignAttachments } from './portfolio-design'
 import { PortfolioFeatureParity } from './portfolio-feature-parity'
 
@@ -67,6 +68,9 @@ export const PortfolioWorkItem = PortfolioWorkItemInput.extend({
   designAttachments: PortfolioDesignAttachments,
   // Where external QA records its feedback (such as a Notion page), for team-mode QA to triage.
   qaFeedbackUrl: QaFeedbackUrl.optional(),
+  // A discovery outcome's findings so far, and how it concluded.
+  findings: Text.optional(),
+  conclusion: PortfolioDiscoveryConclusion.optional(),
   id: Id,
   baseVersion: z.number().int().nonnegative(),
   status: PortfolioWorkItemStatus,

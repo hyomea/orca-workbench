@@ -56,7 +56,8 @@ export function PortfolioBoard({
   onOpenWorkspace: (id: string) => void
   onReviewChanges: (worktreeId: string) => void
   onExportNotes: PortfolioNotesExport
-  onOpenSteward: () => void
+  // A prompt is the user's own question for the steward, sent from a button they pressed.
+  onOpenSteward: (prompt?: string) => void
   onOpenTasks: (projectId: string) => void
   onOpenPersonalNotes: () => void
   onChoosePersonalNotesFolder: () => void
@@ -124,7 +125,7 @@ export function PortfolioBoard({
               {translate('portfolio.refresh', 'Refresh')}
             </TooltipContent>
           </Tooltip>
-          <Button variant="outline" size="sm" disabled={busy} onClick={onOpenSteward}>
+          <Button variant="outline" size="sm" disabled={busy} onClick={() => onOpenSteward()}>
             <Bot aria-hidden="true" />
             {state.stewardName
               ? translate('portfolio.openStewardNamed', '{{name}} · Coordinator', {
@@ -203,6 +204,7 @@ export function PortfolioBoard({
                 }}
                 onSelectTask={setSelectedTaskId}
                 onCreateRole={() => setComposer('role')}
+                onDiscuss={onOpenSteward}
               />
             }
             featureContent={
@@ -221,6 +223,7 @@ export function PortfolioBoard({
                 }}
                 onSelectTask={setSelectedTaskId}
                 onCreateRole={() => setComposer('role')}
+                onDiscuss={onOpenSteward}
               />
             }
             notesContent={

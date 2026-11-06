@@ -205,6 +205,7 @@ function Preview({ initial = false }: { initial?: boolean }) {
           onCreateTask={() => {}}
           onSelectTask={() => {}}
           onCreateRole={() => {}}
+          onDiscuss={() => {}}
         />
       </PortfolioDesignContext>
     </div>

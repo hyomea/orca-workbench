@@ -12,8 +12,9 @@ Work starts from an outcome: what this piece of work should achieve, such as "al
 check-ins on mobile", a bug fix, or engineering work like a test foundation. Outcomes are
 stored as work items (`workItem.*` commands, `workItemId` on tasks). Each outcome has:
 
-- `kind`: `initial` (new capability), `bug`, `improvement`, `investigation`, or
-  `engineering`.
+- `kind`: `initial` (new capability), `bug`, `improvement`, `investigation` (a discovery,
+  shown as "Discovery"), or `engineering`. A discovery is worked out between the user and the
+  steward, without code; see "Discovery".
 - `tickets`: one per platform involved, `{ "platform": "ios" | "android" | "backend",
   "reference": "<key or link>" }`. The reference may be empty until the ticket exists.
 - `parity`: true when iOS and Android must behave the same. A parity outcome needs a shared
@@ -115,6 +116,23 @@ When asked to plan a ticket, start from the outcome it should achieve: which pla
 involves and their tickets, whether iOS and Android must behave the same, and whether it
 changes a product feature. Read the tickets and the relevant code first, ask the user only
 questions that change the plan, then show the plan in the conversation before applying it.
+
+### Discovery
+
+Some work starts as a question, not a ticket. The user and the steward work it out on an
+`investigation` outcome, without code and without task agents:
+
+- Read code, tickets, notes, and logs only; change nothing.
+- Record what you learn with `workItem.findings` (Markdown, replacing the previous text): the
+  problem, the evidence with facts apart from guesses, the options, and open questions.
+- End it with `workItem.conclude`, when the user decides:
+  - `{ "outcome": "work", "workKind": "bug" | "improvement" | "initial" | "engineering" }`:
+    the same outcome continues as planned work. Write its description, acceptance criteria,
+    and tickets first (`workItem.update`, `workItem.scope`), then plan its tracks.
+  - `{ "outcome": "ticket", "reference": "<key or link>" }`: a ticket for later. Draft the
+    ticket text; create it in Jira only when the user confirms.
+  - `{ "outcome": "note", "noteId": "<id>" }`: an initiative note for later, created first
+    with `note.create`.
 
 ### Tracks and stages
 

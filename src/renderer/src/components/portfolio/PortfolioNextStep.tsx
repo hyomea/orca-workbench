@@ -3,6 +3,7 @@ import { translate } from '@/i18n/i18n'
 import type { PortfolioState } from '../../../../shared/portfolio'
 import type { PortfolioFeature, PortfolioWorkItem } from '../../../../shared/portfolio-features'
 import { portfolioNextStep } from '../../../../shared/portfolio-next-step'
+import { portfolioDiscussPrompt } from './portfolio-discovery-prompt'
 
 export function PortfolioNextStep({
   state,
@@ -11,8 +12,7 @@ export function PortfolioNextStep({
   busy,
   onTab,
   onEdit,
-  onCreateTask,
-  onCreateRole
+  onDiscuss
 }: {
   state: PortfolioState
   feature: PortfolioFeature | undefined
@@ -20,10 +20,10 @@ export function PortfolioNextStep({
   busy: boolean
   onTab: (tab: string) => void
   onEdit: () => void
-  onCreateTask: (id: string) => void
-  onCreateRole: () => void
+  onDiscuss: (prompt: string) => void
 }): React.JSX.Element {
   const step = portfolioNextStep(state, feature, item)
+  const steward = state.stewardName ?? translate('portfolio.stewardFallback', 'the coordinator')
   const guidance = {
     requirements: {
       text: translate(
@@ -49,15 +49,14 @@ export function PortfolioNextStep({
       label: translate('portfolio.workReviewTab', 'Review'),
       action: () => onTab('review')
     },
-    investigate: {
+    discuss: {
       text: translate(
-        'portfolio.nextInvestigate',
-        'Assign a discovery task to clarify the problem, expected behavior, and open questions.'
+        'portfolio.nextDiscuss',
+        'Work this out with {{name}}: the problem, the evidence, and the options. It ends as work on this outcome, a Jira ticket, or a note for later.',
+        { name: steward }
       ),
-      label: state.roles.length
-        ? translate('portfolio.newTask', 'New task')
-        : translate('portfolio.newRole', 'New role'),
-      action: () => (state.roles.length ? onCreateTask(item.id) : onCreateRole())
+      label: translate('portfolio.discussWith', 'Discuss with {{name}}', { name: steward }),
+      action: () => onDiscuss(portfolioDiscussPrompt(state, item))
     },
     tasks: {
       text: translate(

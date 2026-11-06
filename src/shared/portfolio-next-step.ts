@@ -32,7 +32,8 @@ export function portfolioNextStep(
     return 'tasks'
   }
   if (item.kind === 'investigation') {
-    return tasks.length ? 'review' : 'investigate'
+    // Discovery happens in conversation with the steward; it ends with a conclusion, not tasks.
+    return 'discuss'
   }
   if (!item.acceptanceCriteria.trim()) {
     return canEditPortfolioContext(state, item.id) ? 'requirements' : 'reopen'

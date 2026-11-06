@@ -1,6 +1,7 @@
 import { canEditPortfolioContext } from '../../../../shared/portfolio-design'
 import { PortfolioDesignAttachments } from './PortfolioDesignAttachments'
 import { PortfolioNextStep } from './PortfolioNextStep'
+import { PortfolioDiscovery } from './PortfolioDiscovery'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
@@ -31,7 +32,8 @@ export function PortfolioWorkItemDetail({
   onEdit,
   onCreateTask,
   onSelectTask,
-  onCreateRole
+  onCreateRole,
+  onDiscuss
 }: {
   item: PortfolioWorkItem
   feature: PortfolioFeature | undefined
@@ -42,6 +44,7 @@ export function PortfolioWorkItemDetail({
   onCreateTask: (workItemId: string) => void
   onSelectTask: (id: string) => void
   onCreateRole: () => void
+  onDiscuss: (prompt: string) => void
 }): React.JSX.Element {
   const editable = canEditPortfolioContext(state, item.id)
   const [tab, setTab] = useState('context')
@@ -119,9 +122,9 @@ export function PortfolioWorkItemDetail({
         busy={busy}
         onTab={setTab}
         onEdit={onEdit}
-        onCreateTask={onCreateTask}
-        onCreateRole={onCreateRole}
+        onDiscuss={onDiscuss}
       />
+      <PortfolioDiscovery state={state} item={item} />
       <Tabs value={tab} onValueChange={setTab} className="space-y-4">
         <TabsList className="grid w-full grid-cols-2 group-data-[orientation=horizontal]/tabs:h-auto @md/project:w-fit @md/project:grid-cols-4">
           <TabsTrigger className="h-8" value="context">

@@ -23,7 +23,8 @@ export function PortfolioFeatures({
   onSave,
   onCreateTask,
   onSelectTask,
-  onCreateRole
+  onCreateRole,
+  onDiscuss
 }: {
   view?: 'outcomes' | 'features'
   state: PortfolioState
@@ -35,6 +36,7 @@ export function PortfolioFeatures({
   onCreateTask: (workItemId: string) => void
   onSelectTask: (id: string) => void
   onCreateRole: () => void
+  onDiscuss: (prompt: string) => void
 }): React.JSX.Element {
   const [featureId, setFeatureId] = useState('')
   const [itemId, setItemId] = useState('')
@@ -60,6 +62,7 @@ export function PortfolioFeatures({
       onCreateTask={onCreateTask}
       onSelectTask={onSelectTask}
       onCreateRole={onCreateRole}
+      onDiscuss={onDiscuss}
     />
   )
   return (
