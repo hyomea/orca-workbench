@@ -45,7 +45,8 @@ function formatStatus(state: PortfolioState): string {
     for (const item of state.workItems.filter((entry) => entry.projectId === project.id)) {
       const details = [
         item.kind,
-        item.status,
+        // Only sign-off is stored; the tasks below show how far the work has come.
+        item.status === 'accepted' ? 'signed off' : 'open',
         ...(item.parity ? ['same on iOS and Android'] : []),
         ...(item.featureId
           ? [`feature ${features.find((feature) => feature.id === item.featureId)?.name}`]

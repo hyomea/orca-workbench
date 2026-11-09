@@ -2,10 +2,12 @@ import { expect, it } from 'vitest'
 import {
   applyPortfolioCommand,
   emptyPortfolio,
+  parsePortfolioState,
   PortfolioCommand,
   preparePortfolioAttempt,
   type PortfolioState
 } from '../../../../shared/portfolio'
+import { portfolioOutcomePhase } from './portfolio-outcome-phase'
 import { portfolioTracks } from './portfolio-tracks'
 import type { PortfolioPrStatus } from './portfolio-track-pr'
 
@@ -251,4 +253,38 @@ it('follows a teammate’s PR the user reviews: review, QA, new commits, then me
   head = 'abc1234ffff'
   status = 'merged'
   expect(row('ios')).toMatchObject({ current: 'done', next: 'none' })
+})
+
+it('takes an outcome’s phase from its tasks, not from a status set by hand', () => {
+  const stored = fixture()
+  // Saved before sign-off was the only stored decision: the outcome was moved to review by hand.
+  const raw = JSON.parse(JSON.stringify(stored))
+  raw.workItems[0].status = 'review'
+  raw.workItems[0].tickets = [{ platform: 'android', reference: 'ENG-2' }]
+  raw.workItems[0].parity = false
+  const state = parsePortfolioState(raw)
+  expect(state.workItems[0].status).toBe('planned')
+  // Development and QA accepted; the code review waits for the user's decision.
+  for (const task of state.tasks) {
+    task.status = task.stage === 'codeReview' ? 'review' : 'accepted'
+  }
+  const item = state.workItems[0]
+  expect(portfolioOutcomePhase(state, item, tracks(state)).phase).toBe('codeReview')
+  state.tasks.find((task) => task.stage === 'codeReview')!.status = 'accepted'
+  expect(portfolioOutcomePhase(state, item, tracks(state)).phase).toBe('signOff')
+  apply(state, {
+    kind: 'workItem.transition',
+    workItemId: 'outcome',
+    status: 'accepted',
+    note: 'OK'
+  })
+  expect(portfolioOutcomePhase(state, item, tracks(state)).phase).toBe('signedOff')
+  expect(() =>
+    PortfolioCommand.parse({
+      kind: 'workItem.transition',
+      workItemId: 'outcome',
+      status: 'review',
+      note: 'Ready'
+    })
+  ).toThrow()
 })

@@ -39,6 +39,7 @@ function harness(view: 'outcomes' | 'features' = 'outcomes') {
         error=""
         onCreateTask={onCreateTask}
         onCreateRole={() => {}}
+        onOpenTasks={() => {}}
         onDiscuss={() => {}}
         onSelectTask={() => {}}
         onSave={async (command) => {
@@ -98,11 +99,10 @@ it('creates a feature and a parity outcome for it, then requires explicit review
   expect(screen.getByText('No published specification yet')).toBeTruthy()
   fireEvent.click(screen.getByRole('button', { name: /First delivery/ }))
   expect(screen.getByText('Show sold and remaining counts')).toBeTruthy()
-  await tab('Review')
-  enter('Evidence or review note', 'Both app builds checked')
-  await click('In review')
-  enter('Evidence or review note', 'Reviewed evidence')
-  expect(screen.getByRole('button', { name: 'Accepted' })).toHaveProperty('disabled', true)
+  await tab('Sign-off')
+  enter('Sign-off note', 'Both app builds checked')
+  // A parity outcome signs off only once both platforms have reviewed passing evidence.
+  expect(screen.getByRole('button', { name: 'Sign off' })).toHaveProperty('disabled', true)
   await click('Open parity & tests')
   await click('Create test plan')
   enter('AC covered by this scenario', 'Show sold and remaining counts')
@@ -110,7 +110,7 @@ it('creates a feature and a parity outcome for it, then requires explicit review
   enter('Test steps', 'Open report and refresh')
   enter('Expected behavior on both platforms', '5 sold, 15 remaining')
   enter('Plan change note', 'Cover both counters')
-  await tab('Tasks')
+  await tab('Shared context')
   await tab('Parity & tests')
   await click('Create test plan')
   expect(screen.getByLabelText('Test steps')).toHaveProperty('value', 'Open report and refresh')
@@ -133,11 +133,11 @@ it('creates a feature and a parity outcome for it, then requires explicit review
     enter('Evidence review note', 'Matches shared scenario')
     await click('Approve evidence')
   }
-  await tab('Review')
-  enter('Evidence or review note', 'Reviewed both platform results')
-  await click('Accepted')
+  await tab('Sign-off')
+  enter('Sign-off note', 'Reviewed both platform results')
+  await click('Sign off')
   expect(commands.some((command) => command.kind === 'feature.publish')).toBe(false)
-  enter('Evidence or review note', 'Use this complete specification')
+  enter('Sign-off note', 'Use this complete specification')
   await click('Publish as current specification')
   expect(commands.some((command) => command.kind === 'feature.publish')).toBe(false)
   await click('Confirm publication')
@@ -359,6 +359,7 @@ it('keeps the selected feature when switching project views and discloses full p
           onCreateTask={noop}
           onSelectTask={noop}
           onCreateRole={noop}
+          onOpenTasks={noop}
           onDiscuss={() => {}}
         />
       }
@@ -435,6 +436,7 @@ it('opens each outcome as its own page and returns to the list', async () => {
       error=""
       onCreateTask={() => {}}
       onCreateRole={() => {}}
+      onOpenTasks={() => {}}
       onDiscuss={() => {}}
       onSelectTask={() => {}}
       onSave={async () => true}

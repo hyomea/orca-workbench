@@ -1,6 +1,7 @@
 import { translate } from '@/i18n/i18n'
 import type { PortfolioTaskStage } from '../../../../shared/portfolio-task-stages'
 import type { PortfolioTaskAttention } from './portfolio-task-lanes'
+import type { PortfolioOutcomePhase } from './portfolio-outcome-phase'
 
 export function stageName(stage: PortfolioTaskStage): string {
   switch (stage) {
@@ -10,6 +11,27 @@ export function stageName(stage: PortfolioTaskStage): string {
       return translate('portfolio.stageCodeReview', 'Code review')
     case 'qa':
       return translate('portfolio.stageQa', 'QA')
+  }
+}
+
+export function outcomePhaseName(phase: PortfolioOutcomePhase): string {
+  switch (phase) {
+    case 'published':
+      return translate('portfolio.phasePublished', 'Published')
+    case 'signedOff':
+      return translate('portfolio.phaseSignedOff', 'Signed off')
+    case 'discovery':
+      return translate('portfolio.phaseDiscovery', 'Discovery')
+    case 'planning':
+      return translate('portfolio.phasePlanning', 'Planning')
+    case 'merge':
+      return translate('portfolio.phaseMerge', 'Waiting to merge')
+    case 'verification':
+      return translate('portfolio.phaseVerification', 'Parity tests')
+    case 'signOff':
+      return translate('portfolio.phaseSignOff', 'Ready for sign-off')
+    default:
+      return stageName(phase)
   }
 }
 

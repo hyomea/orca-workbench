@@ -355,7 +355,7 @@ it('lets the user post a teammate PR review themselves and review the author’s
         ],
         parity: false,
         baseVersion: 0,
-        status: 'active' as const,
+        status: 'planned' as const,
         history: []
       }
     ],

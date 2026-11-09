@@ -236,21 +236,15 @@ export function applyPortfolioFeatureCommand(
     throw new Error('Published work is immutable. Create a follow-up work item.')
   }
   if (item.status === command.status) {
-    throw new Error('Work item already has this status.')
-  }
-  if (
-    tasks.some(hasOpenExecution) &&
-    (command.status === 'accepted' || command.status === 'planned')
-  ) {
     throw new Error(
-      'Stop and close linked executions before accepting or reopening this work item.'
+      command.status === 'accepted' ? 'Outcome is already signed off.' : 'Outcome is already open.'
     )
   }
-  if (
-    command.status === 'accepted' &&
-    (item.status !== 'review' || tasks.some((task) => task.status !== 'accepted'))
-  ) {
-    throw new Error('Submit the outcome for review and accept all linked tasks first.')
+  if (tasks.some(hasOpenExecution)) {
+    throw new Error('Stop and close linked executions before signing off or reopening the outcome.')
+  }
+  if (command.status === 'accepted' && tasks.some((task) => task.status !== 'accepted')) {
+    throw new Error('Accept all linked tasks before signing off the outcome.')
   }
   if (command.status === 'accepted' && item.parity && !verificationProgress(state, item.id).ready) {
     throw new Error(

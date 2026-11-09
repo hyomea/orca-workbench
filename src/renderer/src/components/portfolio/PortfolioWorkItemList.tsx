@@ -1,17 +1,23 @@
 import { ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { translate } from '@/i18n/i18n'
+import type { PortfolioState } from '../../../../shared/portfolio'
 import type { PortfolioFeature, PortfolioWorkItem } from '../../../../shared/portfolio-features'
 import { PortfolioTickets } from './PortfolioTickets'
-import { workItemKinds, workItemStatuses } from './portfolio-feature-labels'
+import { workItemKinds } from './portfolio-feature-labels'
+import { PortfolioOutcomePhaseBadge } from './PortfolioOutcomeProgress'
+import type { PortfolioTrack } from './portfolio-tracks'
 
 const NO_FEATURES: readonly PortfolioFeature[] = []
 export function PortfolioWorkItemList({
+  state,
+  tracks,
   items,
   features = NO_FEATURES,
   onSelect
 }: {
+  state: PortfolioState
+  tracks: readonly PortfolioTrack[]
   items: PortfolioWorkItem[]
   features?: readonly PortfolioFeature[]
   onSelect: (id: string) => void
@@ -20,7 +26,6 @@ export function PortfolioWorkItemList({
     return null
   }
   const kinds = workItemKinds()
-  const statuses = workItemStatuses()
   return (
     <section className="@container/work-items space-y-3">
       <h4 className="flex items-center gap-2 text-sm font-medium">
@@ -36,7 +41,7 @@ export function PortfolioWorkItemList({
         >
           <span>{translate('portfolio.outcomeColumn', 'Outcome')}</span>
           <span>{translate('portfolio.workType', 'Work type')}</span>
-          <span>{translate('portfolio.workStatusColumn', 'Status')}</span>
+          <span>{translate('portfolio.workPhaseColumn', 'Phase')}</span>
         </div>
         <ul className="divide-y divide-border border-y border-border">
           {items.map((item) => (
@@ -72,9 +77,7 @@ export function PortfolioWorkItemList({
                   {kinds.find((kind) => kind.id === item.kind)?.name}
                 </span>
                 <span className="col-start-2 row-start-2 @2xl/work-items:col-auto @2xl/work-items:row-auto">
-                  <Badge variant="secondary">
-                    {statuses.find((status) => status.id === item.status)?.name}
-                  </Badge>
+                  <PortfolioOutcomePhaseBadge state={state} item={item} tracks={tracks} />
                 </span>
                 <ChevronRight
                   aria-hidden="true"

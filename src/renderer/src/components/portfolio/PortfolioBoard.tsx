@@ -204,6 +204,7 @@ export function PortfolioBoard({
                 }}
                 onSelectTask={setSelectedTaskId}
                 onCreateRole={() => setComposer('role')}
+                onOpenTasks={() => onOpenTasks(project.id)}
                 onDiscuss={onOpenSteward}
               />
             }
@@ -223,6 +224,7 @@ export function PortfolioBoard({
                 }}
                 onSelectTask={setSelectedTaskId}
                 onCreateRole={() => setComposer('role')}
+                onOpenTasks={() => onOpenTasks(project.id)}
                 onDiscuss={onOpenSteward}
               />
             }

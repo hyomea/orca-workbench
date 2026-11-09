@@ -32,6 +32,7 @@ export const PortfolioTicket = z
   })
   .refine((ticket) => ticket.platform || ticket.reference, 'Name a platform or a reference.')
 export type PortfolioTicket = z.infer<typeof PortfolioTicket>
+// Earlier versions also set active, blocked, and review by hand; history keeps those entries.
 export const PortfolioWorkItemStatus = z.enum([
   'planned',
   'active',
@@ -39,6 +40,11 @@ export const PortfolioWorkItemStatus = z.enum([
   'review',
   'accepted'
 ])
+// An outcome is open until the user signs it off; its tasks show how far the work has come.
+export const PortfolioWorkItemSignOff = z.enum(['planned', 'accepted'])
+const StoredWorkItemStatus = PortfolioWorkItemStatus.transform((status) =>
+  status === 'accepted' ? status : 'planned'
+)
 export const PortfolioFeatureInput = z.object({ projectId: Id, name: Name, description: Text })
 const PortfolioFeatureDetails = PortfolioFeatureInput.omit({ projectId: true })
 // A work item is an outcome: what this piece of work should achieve. A feature is optional; an
@@ -81,7 +87,7 @@ export const PortfolioWorkItem = PortfolioWorkItemInput.extend({
   conclusion: PortfolioDiscoveryConclusion.optional(),
   id: Id,
   baseVersion: z.number().int().nonnegative(),
-  status: PortfolioWorkItemStatus,
+  status: StoredWorkItemStatus,
   history: z.array(
     z.object({ id: Id, at: z.number(), status: PortfolioWorkItemStatus, note: Text.min(1) })
   )
@@ -137,9 +143,10 @@ export const PortfolioFeatureCommands = [
     expected: PortfolioWorkItemInput
   }),
   z.object({
+    // Signs the outcome off (accepted) or reopens it (planned).
     kind: z.literal('workItem.transition'),
     workItemId: Id,
-    status: PortfolioWorkItemStatus,
+    status: PortfolioWorkItemSignOff,
     note: Text.min(1)
   }),
   z.object({

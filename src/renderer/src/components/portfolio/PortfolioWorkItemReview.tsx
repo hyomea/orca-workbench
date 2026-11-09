@@ -34,9 +34,8 @@ export function PortfolioWorkItemReview({
     const attempt = task.attempts.at(-1)
     return attempt && attempt.state !== 'closed'
   })
-  const statuses = workItemStatuses().filter(
-    (entry) => entry.id !== item.status && (entry.id !== 'accepted' || item.status === 'review')
-  )
+  const signedOff = item.status === 'accepted'
+  const tasksOpen = tasks.some((task) => task.status !== 'accepted')
   async function save(command: PortfolioCommand): Promise<void> {
     if (await onSave(command)) {
       setNote('')
@@ -46,12 +45,12 @@ export function PortfolioWorkItemReview({
   return (
     <section className="space-y-3 border-t border-border pt-4">
       <h3 className="text-sm font-medium">
-        {translate('portfolio.workItemReview', 'Outcome review')}
+        {translate('portfolio.workItemReview', 'Outcome sign-off')}
       </h3>
       <p className="text-xs text-muted-foreground">
         {translate(
           'portfolio.workReviewHint',
-          'Acceptance requires accepted tasks and closed executions. An outcome that must behave the same on iOS and Android also needs reviewed evidence on both. Triage only accepts investigation findings. Acceptance does not release the app.'
+          'Sign-off requires accepted tasks and closed executions. An outcome that must behave the same on iOS and Android also needs reviewed evidence on both. Signing off does not release the app.'
         )}
       </p>
       {!verificationReady && item.parity && item.kind !== 'investigation' && (
@@ -62,11 +61,11 @@ export function PortfolioWorkItemReview({
           )}
         </p>
       )}
-      {tasks.some((task) => task.status !== 'accepted') && (
+      {!signedOff && tasksOpen && (
         <p className="text-sm">
           {translate(
             'portfolio.tasksNeedAcceptance',
-            'Review and accept all linked tasks before accepting this outcome.'
+            'Accept every stage on the Tasks page before signing off this outcome.'
           )}
         </p>
       )}
@@ -74,13 +73,13 @@ export function PortfolioWorkItemReview({
         <p className="text-sm">
           {translate(
             'portfolio.executionsNeedClosing',
-            'Stop and close all linked executions before acceptance.'
+            'Stop and close all linked executions before signing off or reopening.'
           )}
         </p>
       )}
       {!published && (
         <>
-          <PortfolioField label={translate('portfolio.reviewNote', 'Evidence or review note')}>
+          <PortfolioField label={translate('portfolio.signOffNote', 'Sign-off note')}>
             <Textarea
               value={note}
               onChange={(event) => setNote(event.target.value)}
@@ -90,35 +89,44 @@ export function PortfolioWorkItemReview({
             />
           </PortfolioField>
           <div className="flex flex-wrap gap-2">
-            {statuses.map((entry) => (
+            {signedOff ? (
               <Button
-                key={entry.id}
                 variant="outline"
+                size="sm"
+                disabled={busy || !note.trim() || openExecution}
+                onClick={() =>
+                  void save({
+                    kind: 'workItem.transition',
+                    workItemId: item.id,
+                    status: 'planned',
+                    note
+                  })
+                }
+              >
+                {translate('portfolio.reopenOutcome', 'Reopen')}
+              </Button>
+            ) : (
+              <Button
                 size="sm"
                 disabled={
                   busy ||
                   !note.trim() ||
-                  ((entry.id === 'accepted' || entry.id === 'planned') && !!openExecution) ||
-                  (entry.id === 'accepted' &&
-                    (tasks.some((task) => task.status !== 'accepted') ||
-                      (item.kind !== 'investigation' && !verificationReady)))
+                  openExecution ||
+                  tasksOpen ||
+                  (item.parity && item.kind !== 'investigation' && !verificationReady)
                 }
-                onClick={() => {
-                  const status = entry.id
-                  if (
-                    status === 'planned' ||
-                    status === 'active' ||
-                    status === 'blocked' ||
-                    status === 'review' ||
-                    status === 'accepted'
-                  ) {
-                    void save({ kind: 'workItem.transition', workItemId: item.id, status, note })
-                  }
-                }}
+                onClick={() =>
+                  void save({
+                    kind: 'workItem.transition',
+                    workItemId: item.id,
+                    status: 'accepted',
+                    note
+                  })
+                }
               >
-                {entry.name}
+                {translate('portfolio.signOff', 'Sign off')}
               </Button>
-            ))}
+            )}
           </div>
           {item.status === 'accepted' &&
             (item.kind === 'initial' || item.kind === 'improvement') && (

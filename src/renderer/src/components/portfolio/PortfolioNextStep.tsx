@@ -11,6 +11,7 @@ export function PortfolioNextStep({
   item,
   busy,
   onTab,
+  onOpenTasks,
   onEdit,
   onDiscuss
 }: {
@@ -19,6 +20,7 @@ export function PortfolioNextStep({
   item: PortfolioWorkItem
   busy: boolean
   onTab: (tab: string) => void
+  onOpenTasks: () => void
   onEdit: () => void
   onDiscuss: (prompt: string) => void
 }): React.JSX.Element {
@@ -36,18 +38,18 @@ export function PortfolioNextStep({
     reverify: {
       text: translate(
         'portfolio.nextReverify',
-        'This accepted work has no current passing evidence. Reopen it from Review and complete parity verification before publication.'
+        'This accepted work has no current passing evidence. Reopen it from Sign-off and complete parity verification before publication.'
       ),
-      label: translate('portfolio.workReviewTab', 'Review'),
+      label: translate('portfolio.workReviewTab', 'Sign-off'),
       action: () => onTab('review')
     },
     reopen: {
       text: translate(
         'portfolio.nextReopen',
-        'Return this outcome to Planned to add the missing acceptance criteria.'
+        'Acceptance criteria are missing. Add them once no task is running and the outcome has no test plan.'
       ),
-      label: translate('portfolio.workReviewTab', 'Review'),
-      action: () => onTab('review')
+      label: '',
+      action: () => {}
     },
     discuss: {
       text: translate(
@@ -61,10 +63,10 @@ export function PortfolioNextStep({
     tasks: {
       text: translate(
         'portfolio.nextTasks',
-        'Review linked tasks and resolve blockers. Accept the results and close executions before final verification.'
+        'Work is in progress. Start, review, and accept each stage on the Tasks page.'
       ),
-      label: translate('portfolio.openTasks', 'Open tasks'),
-      action: () => onTab('tasks')
+      label: translate('portfolio.openInTasks', 'Open in Tasks'),
+      action: onOpenTasks
     },
     plan: {
       text: translate(
@@ -93,17 +95,17 @@ export function PortfolioNextStep({
     review: {
       text: translate(
         'portfolio.nextReview',
-        'The prerequisites are complete. Review the outcome and record the acceptance decision.'
+        'The prerequisites are complete. Sign off the outcome and record the decision.'
       ),
-      label: translate('portfolio.workReviewTab', 'Review'),
+      label: translate('portfolio.workReviewTab', 'Sign-off'),
       action: () => onTab('review')
     },
     publish: {
       text: translate(
         'portfolio.nextPublish',
-        'Work accepted. Review and explicitly publish the new shared specification.'
+        'Work signed off. Explicitly publish the new shared specification.'
       ),
-      label: translate('portfolio.workReviewTab', 'Review'),
+      label: translate('portfolio.workReviewTab', 'Sign-off'),
       action: () => onTab('review')
     },
     followUp: {
@@ -125,7 +127,7 @@ export function PortfolioNextStep({
     complete: {
       text: translate(
         'portfolio.nextComplete',
-        'Work accepted. Findings and evidence remain available in this outcome.'
+        'Signed off. Findings and evidence remain available in this outcome.'
       ),
       label: '',
       action: () => {}

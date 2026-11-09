@@ -2,15 +2,19 @@ import { ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { translate } from '@/i18n/i18n'
 import { parityStatusName } from './portfolio-parity-labels'
+import type { PortfolioTask } from '../../../../shared/portfolio'
 import type { PortfolioFeature, PortfolioWorkItem } from '../../../../shared/portfolio-features'
 
 export function PortfolioFeatureList({
   features,
   workItems,
+  tasks,
   onSelect
 }: {
   features: PortfolioFeature[]
   workItems: PortfolioWorkItem[]
+  // A blocked task blocks its outcome.
+  tasks: readonly PortfolioTask[]
   onSelect: (id: string) => void
 }): React.JSX.Element | null {
   if (!features.length) {
@@ -30,7 +34,11 @@ export function PortfolioFeatureList({
         {features.map((feature) => {
           const items = workItems.filter((item) => item.featureId === feature.id)
           const accepted = items.filter((item) => item.status === 'accepted').length
-          const blocked = items.filter((item) => item.status === 'blocked').length
+          const blocked = items.filter(
+            (item) =>
+              item.status !== 'accepted' &&
+              tasks.some((task) => task.workItemId === item.id && task.status === 'blocked')
+          ).length
           const current = feature.versions.at(-1)
           return (
             <li key={feature.id}>

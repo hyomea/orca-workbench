@@ -126,7 +126,6 @@ it('preserves screenshots through publication, inheritance, removal, restart, an
       })
     }
     expect(next()).toBe('review')
-    command({ kind: 'workItem.transition', workItemId: 'w', status: 'review', note: 'Ready' })
     command({ kind: 'workItem.transition', workItemId: 'w', status: 'accepted', note: 'Accepted' })
     expect(next()).toBe('publish')
     command({ kind: 'feature.publish', workItemId: 'w', note: 'Baseline' })

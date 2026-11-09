@@ -9,6 +9,7 @@ import { PortfolioWorkItemDetail } from './PortfolioWorkItemDetail'
 import { PortfolioSpecification } from './PortfolioSpecification'
 import { PortfolioWorkItemList } from './PortfolioWorkItemList'
 import { PortfolioFeatureParity } from './PortfolioFeatureParity'
+import { usePortfolioTracks } from './use-portfolio-tracks'
 
 type Composer = 'feature' | 'feature.edit' | 'outcome' | 'outcome.edit'
 
@@ -24,6 +25,7 @@ export function PortfolioFeatures({
   onCreateTask,
   onSelectTask,
   onCreateRole,
+  onOpenTasks,
   onDiscuss
 }: {
   view?: 'outcomes' | 'features'
@@ -36,11 +38,13 @@ export function PortfolioFeatures({
   onCreateTask: (workItemId: string) => void
   onSelectTask: (id: string) => void
   onCreateRole: () => void
+  onOpenTasks: () => void
   onDiscuss: (prompt: string) => void
 }): React.JSX.Element {
   const [featureId, setFeatureId] = useState('')
   const [itemId, setItemId] = useState('')
   const [composer, setComposer] = useState<Composer | null>(null)
+  const tracks = usePortfolioTracks(state, projectId)
   const features = state.features.filter((feature) => feature.projectId === projectId)
   const feature = view === 'features' ? features.find((entry) => entry.id === featureId) : undefined
   const items = state.workItems.filter((item) =>
@@ -56,12 +60,14 @@ export function PortfolioFeatures({
       item={item}
       feature={itemFeature}
       state={state}
+      tracks={tracks}
       busy={busy}
       onSave={onSave}
       onEdit={() => setComposer('outcome.edit')}
       onCreateTask={onCreateTask}
       onSelectTask={onSelectTask}
       onCreateRole={onCreateRole}
+      onOpenTasks={onOpenTasks}
       onDiscuss={onDiscuss}
     />
   )
@@ -106,7 +112,13 @@ export function PortfolioFeatures({
               )}
             </div>
           )}
-          <PortfolioWorkItemList items={items} features={features} onSelect={setItemId} />
+          <PortfolioWorkItemList
+            state={state}
+            tracks={tracks}
+            items={items}
+            features={features}
+            onSelect={setItemId}
+          />
         </>
       ) : !feature ? (
         <>
@@ -130,6 +142,7 @@ export function PortfolioFeatures({
           <PortfolioFeatureList
             features={features}
             workItems={state.workItems}
+            tasks={state.tasks}
             onSelect={(id) => {
               setFeatureId(id)
               setItemId('')
@@ -223,7 +236,13 @@ export function PortfolioFeatures({
               </div>
             </details>
           )}
-          <PortfolioWorkItemList items={items} features={features} onSelect={setItemId} />
+          <PortfolioWorkItemList
+            state={state}
+            tracks={tracks}
+            items={items}
+            features={features}
+            onSelect={setItemId}
+          />
         </>
       )}
       {composer && (

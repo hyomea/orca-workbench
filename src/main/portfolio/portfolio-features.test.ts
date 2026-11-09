@@ -128,12 +128,6 @@ function accept(state: PortfolioState, id: string): void {
   apply(state, {
     kind: 'workItem.transition',
     workItemId: id,
-    status: 'review',
-    note: 'Manual verification evidence attached'
-  })
-  apply(state, {
-    kind: 'workItem.transition',
-    workItemId: id,
     status: 'accepted',
     note: 'Reviewed the evidence'
   })
@@ -253,12 +247,6 @@ it('validates project membership and requires reviewed linked tasks and closed e
   expect(() => task(state, 'initial', 'bad', 'other')).toThrow('this initiative')
   expect(() => task(state, 'missing')).toThrow('this initiative')
   task(state, 'initial')
-  apply(state, {
-    kind: 'workItem.transition',
-    workItemId: 'initial',
-    status: 'review',
-    note: 'Review'
-  })
   expect(() =>
     apply(state, {
       kind: 'workItem.transition',
@@ -266,7 +254,7 @@ it('validates project membership and requires reviewed linked tasks and closed e
       status: 'accepted',
       note: 'Accept'
     })
-  ).toThrow('accept all linked')
+  ).toThrow('Accept all linked')
   preparePortfolioAttempt(state, 'task', 'workspace', 'ios', 'operation', 1)
   state.tasks[0].attempts[0].state = 'launched'
   apply(state, {
@@ -480,12 +468,6 @@ it('accepts an outcome without a feature or a shared test plan when parity is no
     codeReview: 'reviewed'
   })
   apply(state, { kind: 'task.closeExecution', taskId: 'task', note: 'Finished' })
-  apply(state, {
-    kind: 'workItem.transition',
-    workItemId: 'foundation',
-    status: 'review',
-    note: 'Ready'
-  })
   apply(state, {
     kind: 'workItem.transition',
     workItemId: 'foundation',

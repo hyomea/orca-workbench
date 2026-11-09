@@ -149,11 +149,10 @@ export function applyPortfolioVerificationCommand(
     )
     result.fixTaskId = id
   }
-  item.status = 'active'
   item.history.push({
     id: `${item.id}:${item.history.length}`,
     at: now,
-    status: 'active',
+    status: item.status,
     note: development
       ? `Returned to development from ${result.platform} result ${result.id}`
       : `Fix task created from ${result.platform} result ${result.id}`

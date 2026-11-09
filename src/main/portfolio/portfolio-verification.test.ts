@@ -192,12 +192,6 @@ it('persists a failed-test → agent fix → retest → evidence review → acce
     expect(() => record(state, 'android')).toThrow('Stop and close')
     acceptTask(state, 'fix')
     apply(state, { kind: 'task.closeExecution', taskId: 'fix', note: 'Stopped the agent' })
-    apply(state, {
-      kind: 'workItem.transition',
-      workItemId: 'item',
-      status: 'review',
-      note: 'Ready for parity review'
-    })
     expect(() => accept(state)).toThrow('review passing evidence')
     review(state, record(state, 'ios'))
     const android = record(state, 'android')
@@ -458,12 +452,6 @@ it('rejects a proposal drafted against an older feature version', () => {
   confirm(state)
   review(state, record(state, 'ios'))
   review(state, record(state, 'android'))
-  apply(state, {
-    kind: 'workItem.transition',
-    workItemId: 'item',
-    status: 'review',
-    note: 'Reviewed'
-  })
   accept(state)
   apply(state, { kind: 'feature.publish', workItemId: 'item', note: 'Baseline 1' })
   const proposal = {

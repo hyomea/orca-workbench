@@ -1,16 +1,14 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { useAppStore } from '@/store'
-import { useNow } from '@/hooks/use-now'
 import { translate } from '@/i18n/i18n'
 import type { PortfolioCommand } from '../../../../shared/portfolio'
 import { portfolioRoleLabelById } from '../../../../shared/portfolio-roles'
 import { PortfolioSelect } from './portfolio-controls'
 import { PortfolioTaskDetail } from './PortfolioTaskDetail'
 import { portfolioTaskObservation } from './portfolio-task-lanes'
-import { portfolioTracks } from './portfolio-tracks'
 import { PortfolioTrackBoard } from './PortfolioTrackBoard'
-import { usePortfolioPrLookup, usePortfolioPrRefresh } from './portfolio-track-pr'
+import { usePortfolioTracks } from './use-portfolio-tracks'
 import { usePortfolioWorkbench } from './use-portfolio-workbench'
 import {
   openPortfolioTaskChanges,
@@ -33,19 +31,7 @@ export function PortfolioTaskQueue({
   const setActiveView = useAppStore((s) => s.setActiveView)
   const [projectId, setProjectId] = useState(initialProjectId ?? ALL_PROJECTS)
   const [selectedTaskId, setSelectedTaskId] = useState('')
-  // A launch that stays silent past its grace period moves to "Needs attention" without new data.
-  const now = useNow(30_000)
-  const prFor = usePortfolioPrLookup()
-  const tracks = state
-    ? portfolioTracks(
-        state,
-        projectId === ALL_PROJECTS ? undefined : projectId,
-        activity,
-        now,
-        prFor
-      )
-    : []
-  usePortfolioPrRefresh(tracks.flatMap((track) => (track.pr ? [track.pr.worktreeId] : [])))
+  const tracks = usePortfolioTracks(state, projectId === ALL_PROJECTS ? undefined : projectId)
   const reviewComments = usePortfolioTaskReviewComments(
     state?.tasks.find((task) => task.id === selectedTaskId)?.attempts.at(-1)?.worktreeId
   )
