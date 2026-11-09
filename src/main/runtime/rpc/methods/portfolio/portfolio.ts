@@ -4,14 +4,15 @@ import {
   removePortfolioDesign
 } from '../../../../portfolio/portfolio-design-store'
 import { randomUUID } from 'node:crypto'
-import { join } from 'node:path'
 import { getAppEnvironment } from '../../../../../shared/app-environment'
 import { folderWorkspaceRepoId } from '../../../../../shared/folder-workspaces/folder-workspace-worktree'
 import { applyPortfolioCommand } from '../../../../../shared/portfolio'
 import { applyPortfolioBatch } from '../../../../../shared/portfolio-batch'
 import {
   PortfolioAttachDesign,
-  PortfolioBatch,
+  PortfolioBatchParams,
+  PortfolioCreateWorkbench,
+  PortfolioWorkbenches,
   PortfolioExportNotes,
   PortfolioProposeNote,
   PortfolioReadDesign,
@@ -25,7 +26,12 @@ import {
   PortfolioSetPersonalNotesFolder
 } from '../../../../../shared/rpc-contract/portfolio-params'
 import { AgentLaunchReplay } from '../../../../../shared/rpc-contract/agent-launch-params'
-import { PortfolioStore } from '../../../../portfolio/portfolio-store'
+import type { PortfolioStore } from '../../../../portfolio/portfolio-store'
+import {
+  createWorkbench,
+  listWorkbenches,
+  workbenchStore
+} from '../../../../portfolio/workbench-spaces'
 import { exportPortfolioNotes } from '../../../../portfolio/portfolio-note-files'
 import {
   portfolioStewardCli,
@@ -47,44 +53,59 @@ import { defineMethod } from '../../core'
 import { AGENT_LAUNCH_METHODS } from '../agent-launch/agent-launch'
 import { PORTFOLIO_DISCOVERY_METHODS } from './portfolio-discovery'
 
-function store(): PortfolioStore {
-  return new PortfolioStore(
-    join(getAppEnvironment().getPath('userData'), 'workbench', 'portfolio.json')
-  )
+function userData(): string {
+  return getAppEnvironment().getPath('userData')
+}
+
+// Personal notes are shared by every workbench, so their methods take none.
+function store(params: { workbenchId?: string } = {}): PortfolioStore {
+  return workbenchStore(userData(), params.workbenchId)
 }
 
 export const PORTFOLIO_METHODS = [
   ...PORTFOLIO_DISCOVERY_METHODS,
   defineMethod({
+    name: 'portfolio.workbenches',
+    permission: 'workspace',
+    params: PortfolioWorkbenches,
+    handler: () => listWorkbenches(userData())
+  }),
+  defineMethod({
+    name: 'portfolio.createWorkbench',
+    permission: 'workspace',
+    params: PortfolioCreateWorkbench,
+    handler: (params) => createWorkbench(userData(), params.name)
+  }),
+  defineMethod({
     name: 'portfolio.attachDesign',
     permission: 'workspace',
     params: PortfolioAttachDesign,
-    handler: (params) => attachPortfolioDesign(store(), params)
+    handler: (params) => attachPortfolioDesign(store(params), params)
   }),
   defineMethod({
     name: 'portfolio.readDesign',
     permission: 'workspace',
     params: PortfolioReadDesign,
-    handler: (params) => readPortfolioDesign(store(), params.attachmentId)
+    handler: (params) => readPortfolioDesign(store(params), params.attachmentId)
   }),
   defineMethod({
     name: 'portfolio.removeDesign',
     permission: 'workspace',
     params: PortfolioRemoveDesign,
-    handler: (params) => removePortfolioDesign(store(), params)
+    handler: (params) => removePortfolioDesign(store(params), params)
   }),
   defineMethod({
     name: 'portfolio.read',
     permission: 'workspace',
     params: PortfolioRead,
-    handler: () => store().read()
+    handler: (params) => store(params).read()
   }),
   defineMethod({
     name: 'portfolio.mutate',
     permission: 'workspace',
     params: PortfolioMutate,
     handler: (params) => {
-      const data = store()
+      const data = store(params)
       return data.update(params.revision, (state) => {
         if ('taskId' in params.command && portfolioExecutionInFlight(data, params.command.taskId)) {
           throw new Error('Wait for the launch to settle before changing this task.')
@@ -97,14 +118,14 @@ export const PORTFOLIO_METHODS = [
     name: 'portfolio.prepareSteward',
     permission: 'workspace',
     params: PortfolioPrepareSteward,
-    handler: () =>
-      preparePortfolioSteward(store(), portfolioStewardCli(getAppEnvironment().isPackaged()))
+    handler: (params) =>
+      preparePortfolioSteward(store(params), portfolioStewardCli(getAppEnvironment().isPackaged()))
   }),
   defineMethod({
     name: 'portfolio.exportNotes',
     permission: 'workspace',
     params: PortfolioExportNotes,
-    handler: (params) => exportPortfolioNotes(store(), params.projectId, params.directory)
+    handler: (params) => exportPortfolioNotes(store(params), params.projectId, params.directory)
   }),
   defineMethod({
     name: 'portfolio.setPersonalNotesFolder',
@@ -144,7 +165,7 @@ export const PORTFOLIO_METHODS = [
     params: PortfolioProposeNote,
     handler: async (params) => {
       const id = randomUUID()
-      await store().update(null, (state) => {
+      await store(params).update(null, (state) => {
         applyPortfolioCommand(
           state,
           { kind: 'noteDraft.submit', draft: params.draft },
@@ -159,9 +180,9 @@ export const PORTFOLIO_METHODS = [
     // One revision for the whole batch: either every step applies or none does.
     name: 'portfolio.batch',
     permission: 'workspace',
-    params: PortfolioBatch,
+    params: PortfolioBatchParams,
     handler: async (params) => {
-      const data = store()
+      const data = store(params)
       let refs: Record<string, string> = {}
       const state = await data.update(params.revision ?? null, (next) => {
         refs = applyPortfolioBatch(next, params.steps, randomUUID, Date.now(), (command) => {
@@ -200,7 +221,7 @@ export const PORTFOLIO_METHODS = [
       if (!replay) {
         throw new Error('Replay-safe agent launch is unavailable.')
       }
-      const data = store()
+      const data = store(params)
       const personalNotes = await personalNotesPrompt(data, scope.repo ?? null)
       return launchPortfolioTask(
         data,

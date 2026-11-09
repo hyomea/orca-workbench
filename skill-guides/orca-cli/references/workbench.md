@@ -39,7 +39,13 @@ features no outcome touches unless the user asks for it.
 Change tickets, parity, or the feature link of an outcome in progress with `workItem.scope`;
 its `feature` is omitted to keep the link, `null` to remove it, or a feature id.
 
+Each workbench (listed under Workbench in Orca's sidebar, such as the user's organization)
+keeps its own initiatives, roles, and coordinator. Commands use the workbench whose coordinator
+runs in the current directory, or the only one; elsewhere pass `--workbench <id>` from
+`workbench list`. Task commands find the workbench that holds the task.
+
 ```text
+ORCA workbench list --json
 ORCA workbench status [--project <id>] --json
 ORCA workbench schema --json
 ORCA workbench apply --body-file <file|-> [--revision <n>] --json

@@ -1,13 +1,5 @@
 import React from 'react'
-import {
-  BookOpen,
-  CalendarClock,
-  EyeOff,
-  Files,
-  FolderKanban,
-  Search,
-  Smartphone
-} from 'lucide-react'
+import { BookOpen, CalendarClock, EyeOff, Files, Search, Smartphone } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '@/store'
 import { cn } from '@/lib/utils'
@@ -19,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { SetupGuideSidebarEntry } from './SetupGuideSidebarEntry'
 import { SidebarTaskNavButton } from './SidebarTaskNavButton'
+import { SidebarWorkbenchNav } from './SidebarWorkbenchNav'
 import { HideSidebarMenu } from './sidebar-nav-controls'
 import { useTranslate } from '@/i18n/use-translate'
 import { lazyWithRetry } from '@/lib/lazy-with-retry'
@@ -68,7 +61,6 @@ const SidebarNav = React.memo(function SidebarNav() {
   const openModal = useAppStore((s) => s.openModal)
   const updateSettings = useAppStore((s) => s.updateSettings)
   const activeView = useAppStore((s) => s.activeView)
-  const setActiveView = useAppStore((s) => s.setActiveView)
   const showAgentDashboardButton = useAppStore((s) => shouldShowAgentDashboardButton(s.settings))
   const showAutomationsButton = useAppStore((s) => shouldShowAutomationsButton(s.settings))
   const showMobileButton = useAppStore((s) => shouldShowMobileButton(s.settings))
@@ -128,20 +120,7 @@ const SidebarNav = React.memo(function SidebarNav() {
       </button>
       <SetupGuideSidebarEntry />
       <SidebarTaskNavButton />
-      <button
-        type="button"
-        onClick={() => setActiveView('portfolio')}
-        aria-current={activeView === 'portfolio' ? 'page' : undefined}
-        className={cn(
-          'flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] font-medium transition-colors',
-          activeView === 'portfolio'
-            ? 'bg-worktree-sidebar-accent text-worktree-sidebar-accent-foreground'
-            : 'text-worktree-sidebar-foreground/60 hover:bg-worktree-sidebar-foreground/8'
-        )}
-      >
-        <FolderKanban className="size-4 shrink-0" />
-        {t('portfolio.navigation', 'Workbench')}
-      </button>
+      <SidebarWorkbenchNav />
       {showArtifactsButton ? (
         <ContextMenu>
           <ContextMenuTrigger asChild>

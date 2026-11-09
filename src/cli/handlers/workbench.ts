@@ -10,11 +10,15 @@ import { RuntimeClientError } from '../runtime-client'
 import { portfolioRoleLabel } from '../../shared/portfolio-roles'
 import { PORTFOLIO_STAGE_NAMES } from '../../shared/portfolio-task-stages'
 import { WORKBENCH_TASK_HANDLERS } from './workbench-tasks'
-import { LOCAL_ONLY } from './workbench-client'
+import { LOCAL_ONLY, workbenchScope } from './workbench-client'
+import type { PortfolioWorkbenchSummary } from '../../shared/rpc-contract/portfolio-params'
 
 async function status(ctx: HandlerContext): Promise<void> {
   rejectRemoteSelectionFlags(ctx.flags, LOCAL_ONLY)
-  const response = await ctx.client.call<PortfolioState>('portfolio.read', {})
+  const response = await ctx.client.call<PortfolioState>(
+    'portfolio.read',
+    await workbenchScope(ctx)
+  )
   const projectId = getOptionalStringFlag(ctx.flags, 'project')
   const state = response.result
   if (projectId && !state.projects.some((project) => project.id === projectId)) {
@@ -38,7 +42,7 @@ async function status(ctx: HandlerContext): Promise<void> {
 }
 
 function formatStatus(state: PortfolioState): string {
-  const lines = [`Revision ${state.revision}`]
+  const lines = [`Workbench ${state.organization} · Revision ${state.revision}`]
   for (const project of state.projects) {
     lines.push('', `Initiative ${project.name} [${project.id}]`)
     const features = state.features.filter((feature) => feature.projectId === project.id)
@@ -122,7 +126,11 @@ async function apply(ctx: HandlerContext): Promise<void> {
   const revision = getOptionalStringFlag(ctx.flags, 'revision')
   const response = await ctx.client.call<{ revision: number; refs: Record<string, string> }>(
     'portfolio.batch',
-    { steps, ...(revision === undefined ? {} : { revision: Number(revision) }) }
+    {
+      ...(await workbenchScope(ctx)),
+      steps,
+      ...(revision === undefined ? {} : { revision: Number(revision) })
+    }
   )
   printResult(response, ctx.json, (result) =>
     [
@@ -143,6 +151,7 @@ async function propose(ctx: HandlerContext): Promise<void> {
   const noteId = getOptionalStringFlag(ctx.flags, 'note')
   const taskId = getOptionalStringFlag(ctx.flags, 'task')
   const response = await ctx.client.call<{ draftId: string }>('portfolio.proposeNote', {
+    ...(await workbenchScope(ctx)),
     draft: {
       projectId: getRequiredStringFlag(ctx.flags, 'project'),
       title: getRequiredStringFlag(ctx.flags, 'title'),
@@ -201,7 +210,16 @@ async function indexNotes(ctx: HandlerContext): Promise<void> {
   )
 }
 
+async function list(ctx: HandlerContext): Promise<void> {
+  rejectRemoteSelectionFlags(ctx.flags, LOCAL_ONLY)
+  const response = await ctx.client.call<PortfolioWorkbenchSummary[]>('portfolio.workbenches', {})
+  printResult(response, ctx.json, (entries) =>
+    entries.map((entry) => `${entry.name} [${entry.id}]`).join('\n')
+  )
+}
+
 export const WORKBENCH_HANDLERS: Record<string, CommandHandler> = {
+  'workbench list': list,
   'workbench status': status,
   'workbench schema': schema,
   'workbench apply': apply,

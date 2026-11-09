@@ -1,0 +1,75 @@
+import { useStore } from 'zustand'
+import { createStore } from 'zustand/vanilla'
+import { z } from 'zod'
+import { callRuntimeRpc } from '@/runtime/rpc/calls/runtime-rpc-call'
+import {
+  DEFAULT_WORKBENCH_ID,
+  type PortfolioWorkbenchSummary
+} from '../../../../shared/rpc-contract/portfolio-params'
+
+const ACTIVE_KEY = 'orca.workbench.active'
+
+const Summaries = z.array(z.object({ id: z.string(), name: z.string(), stewardPath: z.string() }))
+
+function storedActive(): string {
+  try {
+    return window.localStorage.getItem(ACTIVE_KEY) || DEFAULT_WORKBENCH_ID
+  } catch {
+    return DEFAULT_WORKBENCH_ID
+  }
+}
+
+// Which workbench the Workbench and Tasks pages show, and the list the sidebar offers.
+const selection = createStore<{ activeId: string; list: PortfolioWorkbenchSummary[] }>(() => ({
+  activeId: storedActive(),
+  list: []
+}))
+
+export function useActiveWorkbenchId(): string {
+  return useStore(selection, (s) => s.activeId)
+}
+
+export function useWorkbenchList(): PortfolioWorkbenchSummary[] {
+  return useStore(selection, (s) => s.list)
+}
+
+// Every Workbench call names the workbench it reads or changes.
+export function activeWorkbenchParams(): { workbenchId: string } {
+  return { workbenchId: selection.getState().activeId }
+}
+
+export function selectWorkbench(id: string): void {
+  selection.setState({ activeId: id })
+  try {
+    window.localStorage.setItem(ACTIVE_KEY, id)
+  } catch {
+    // Remembering the choice is a convenience; the page works without it.
+  }
+}
+
+export async function refreshWorkbenchList(): Promise<void> {
+  const list = Summaries.parse(await callRuntimeRpc({ kind: 'local' }, 'portfolio.workbenches', {}))
+  selection.setState({ list })
+  // A workbench removed on disk falls back to the first one.
+  if (!list.some((entry) => entry.id === selection.getState().activeId)) {
+    selectWorkbench(DEFAULT_WORKBENCH_ID)
+  }
+}
+
+export async function createWorkbench(name: string): Promise<void> {
+  const created = Summaries.element.parse(
+    await callRuntimeRpc({ kind: 'local' }, 'portfolio.createWorkbench', { name })
+  )
+  await refreshWorkbenchList()
+  selectWorkbench(created.id)
+}
+
+// The page renames a workbench through its data; keep the sidebar's name in step.
+export function noteWorkbenchName(id: string, name: string): void {
+  const { list } = selection.getState()
+  if (list.some((entry) => entry.id === id && entry.name !== name)) {
+    selection.setState({
+      list: list.map((entry) => (entry.id === id ? { ...entry, name } : entry))
+    })
+  }
+}

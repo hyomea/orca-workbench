@@ -40,7 +40,6 @@ import {
 } from '../orcad-peer-desktops-contract'
 import { OrcadTerminalCensusParamsSchema } from '../orcad-terminal-census'
 import { CrewSubscribeParams } from '../orchestration/orchestration-crew'
-import { PortfolioBatch } from '../portfolio-batch'
 import { PortfolioIntake } from '../portfolio-intake'
 import { RegisterDeviceKeyParamsSchema } from '../remote-runtime/pairing/device-key-registration-contract'
 import { PairingCreateOfferParamsSchema } from '../remote-runtime/pairing/pairing-create-offer-contract'
@@ -558,7 +557,9 @@ import {
 } from './plugins-params'
 import {
   PortfolioAttachDesign,
+  PortfolioBatchParams,
   PortfolioCancelDiscovery,
+  PortfolioCreateWorkbench,
   PortfolioDiscover,
   PortfolioExportNotes,
   PortfolioIndexPersonalNotes,
@@ -567,10 +568,10 @@ import {
   PortfolioPersonalNotes,
   PortfolioPrepareSteward,
   PortfolioProposeNote,
-  PortfolioRead,
   PortfolioReadDesign,
   PortfolioRemoveDesign,
-  PortfolioSetPersonalNotesFolder
+  PortfolioSetPersonalNotesFolder,
+  PortfolioWorkbenches
 } from './portfolio-params'
 import {
   PreflightAgentDetection,
@@ -1444,8 +1445,9 @@ export const RPC_PARAMS_BY_METHOD = {
   'plugins.uninstall': PluginUninstallParams,
   'plugins.update': PluginUpdateParams,
   'portfolio.attachDesign': PortfolioAttachDesign,
-  'portfolio.batch': PortfolioBatch,
+  'portfolio.batch': PortfolioBatchParams,
   'portfolio.cancelDiscovery': PortfolioCancelDiscovery,
+  'portfolio.createWorkbench': PortfolioCreateWorkbench,
   'portfolio.discover': PortfolioDiscover,
   'portfolio.exportNotes': PortfolioExportNotes,
   'portfolio.indexPersonalNotes': PortfolioIndexPersonalNotes,
@@ -1455,10 +1457,11 @@ export const RPC_PARAMS_BY_METHOD = {
   'portfolio.personalNotes': PortfolioPersonalNotes,
   'portfolio.prepareSteward': PortfolioPrepareSteward,
   'portfolio.proposeNote': PortfolioProposeNote,
-  'portfolio.read': PortfolioRead,
+  'portfolio.read': PortfolioPrepareSteward,
   'portfolio.readDesign': PortfolioReadDesign,
   'portfolio.removeDesign': PortfolioRemoveDesign,
   'portfolio.setPersonalNotesFolder': PortfolioSetPersonalNotesFolder,
+  'portfolio.workbenches': PortfolioWorkbenches,
   'preflight.check': PreflightCheck,
   'preflight.detectAgents': PreflightProjectAgentDetection,
   'preflight.detectRemoteAgents': PreflightDetectRemoteAgents,

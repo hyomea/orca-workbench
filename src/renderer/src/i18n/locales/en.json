@@ -24972,7 +24972,10 @@
     "phaseDiscovery": "Discovery",
     "phasePlanning": "Planning",
     "phaseVerification": "Parity tests",
-    "phaseSignOff": "Ready for sign-off"
+    "phaseSignOff": "Ready for sign-off",
+    "newWorkbench": "New workbench",
+    "workbenches": "Workbenches",
+    "workbenchName": "Workbench name"
   },
   "wslDistroHold": {
     "terminalStopped": "The WSL distro {{distro}} is stopped, so Orca didn't start this terminal. Start the distro, then try again.",

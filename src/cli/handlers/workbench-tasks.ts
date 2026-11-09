@@ -7,7 +7,7 @@ import { rejectRemoteSelectionFlags } from '../remote-selection-flag-rejection'
 import { PortfolioCommit, type PortfolioState, type PortfolioTask } from '../../shared/portfolio'
 import { RuntimeClientError } from '../runtime-client'
 import type { GitStatusResult } from '../../shared/git/status/git-status-types'
-import { LOCAL_ONLY, read } from './workbench-client'
+import { LOCAL_ONLY, readTaskWorkbench, type WorkbenchScope } from './workbench-client'
 
 // Matches the stored limit for a task transition note.
 const MAX_PORTFOLIO_EVIDENCE_CHARACTERS = 20_000
@@ -21,8 +21,9 @@ async function startTask(ctx: HandlerContext): Promise<void> {
       worktree: await getRequiredWorktreeSelector(ctx.flags, 'worktree', ctx.cwd, ctx.client)
     })
   ).result
-  const state = await read(ctx)
+  const { scope, state } = await readTaskWorkbench(ctx, (task) => task.id === taskId)
   const response = await ctx.client.call<PortfolioState>('portfolio.launch', {
+    ...scope,
     revision: state.revision,
     taskId,
     worktreeId: worktree.id
@@ -34,19 +35,23 @@ async function startTask(ctx: HandlerContext): Promise<void> {
 }
 
 // Without an id, the task is the one running in the caller's workspace; agents rarely keep the id.
-async function currentTask(ctx: HandlerContext, state: PortfolioState): Promise<PortfolioTask> {
+async function currentTask(
+  ctx: HandlerContext
+): Promise<{ scope: WorkbenchScope; state: PortfolioState; task: PortfolioTask }> {
   const taskId = getOptionalStringFlag(ctx.flags, 'task')
   if (taskId) {
+    const { scope, state } = await readTaskWorkbench(ctx, (entry) => entry.id === taskId)
     const task = state.tasks.find((entry) => entry.id === taskId)
     if (!task) {
       throw new RuntimeClientError('invalid_argument', `No Workbench task has id ${taskId}.`)
     }
-    return task
+    return { scope, state, task }
   }
   const { worktreeId } = await resolveCurrentWorktreeSelection(ctx.cwd, ctx.client)
-  const running = state.tasks.filter(
-    (task) => task.status === 'running' && task.attempts.at(-1)?.worktreeId === worktreeId
-  )
+  const runsHere = (task: PortfolioTask) =>
+    task.status === 'running' && task.attempts.at(-1)?.worktreeId === worktreeId
+  const { scope, state } = await readTaskWorkbench(ctx, runsHere)
+  const running = state.tasks.filter(runsHere)
   if (running.length !== 1) {
     throw new RuntimeClientError(
       'invalid_argument',
@@ -55,7 +60,7 @@ async function currentTask(ctx: HandlerContext, state: PortfolioState): Promise<
         : `Several running Workbench tasks use this workspace (${running.map((task) => task.id).join(', ')}). Pass the task id.`
     )
   }
-  return running[0]
+  return { scope, state, task: running[0] }
 }
 
 // The user reviews a fixed version: everything must be committed, and that commit is recorded.
@@ -91,8 +96,7 @@ async function submitTask(ctx: HandlerContext): Promise<void> {
     tooLargeCode: 'evidence_too_large',
     label: 'Evidence'
   })
-  const state = await read(ctx)
-  const task = await currentTask(ctx, state)
+  const { scope, state, task } = await currentTask(ctx)
   const taskId = task.id
   // Only work in progress is submitted; a planned or decided task is the user's to move.
   if (task.status !== 'running') {
@@ -103,6 +107,7 @@ async function submitTask(ctx: HandlerContext): Promise<void> {
   }
   const commit = await committedHead(ctx, task)
   const response = await ctx.client.call<PortfolioState>('portfolio.mutate', {
+    ...scope,
     revision: state.revision,
     command: { kind: 'task.transition', taskId, status: 'review', note: evidence, commit }
   })
@@ -118,8 +123,7 @@ async function markStep(ctx: HandlerContext): Promise<void> {
   rejectRemoteSelectionFlags(ctx.flags, LOCAL_ONLY)
   const stepId = getRequiredStringFlag(ctx.flags, 'step')
   const undo = ctx.flags.get('undo') === true
-  const state = await read(ctx)
-  const task = await currentTask(ctx, state)
+  const { scope, state, task } = await currentTask(ctx)
   if (task.status !== 'running') {
     throw new RuntimeClientError(
       'invalid_argument',
@@ -128,6 +132,7 @@ async function markStep(ctx: HandlerContext): Promise<void> {
   }
   const commit = undo ? undefined : await committedHead(ctx, task)
   const response = await ctx.client.call<PortfolioState>('portfolio.mutate', {
+    ...scope,
     revision: state.revision,
     command: {
       kind: 'task.step',

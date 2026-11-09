@@ -6,6 +6,8 @@ import { WORKBENCH_COMMAND_SPECS } from '../specs/workbench'
 
 afterEach(() => vi.restoreAllMocks())
 
+const WORKBENCHES = [{ id: 'default', name: 'Ludus', stewardPath: '/data/workbench/steward' }]
+
 it('resolves a worktree selector before starting a task', async () => {
   vi.spyOn(console, 'log').mockImplementation(() => {})
   const id = 'repo::/work/ENG-5952'
@@ -13,9 +15,11 @@ it('resolves a worktree selector before starting a task', async () => {
     const result =
       method === 'worktree.show'
         ? { worktree: { id } }
-        : method === 'portfolio.read'
-          ? { revision: 7 }
-          : { tasks: [{ id: 't1', attempts: [{ state: 'launched' }] }] }
+        : method === 'portfolio.workbenches'
+          ? WORKBENCHES
+          : method === 'portfolio.read'
+            ? { revision: 7, tasks: [{ id: 't1', attempts: [] }] }
+            : { tasks: [{ id: 't1', attempts: [{ state: 'launched' }] }] }
     return { id: 'r', ok: true, result, params }
   })
   const ctx = {
@@ -30,6 +34,7 @@ it('resolves a worktree selector before starting a task', async () => {
   await WORKBENCH_HANDLERS['workbench task start'](ctx)
   expect(call).toHaveBeenCalledWith('worktree.show', { worktree: 'path:/work/ENG-5952' })
   expect(call).toHaveBeenLastCalledWith('portfolio.launch', {
+    workbenchId: 'default',
     revision: 7,
     taskId: 't1',
     worktreeId: id
@@ -50,11 +55,13 @@ function submitContext(status: string, entries: unknown[] = []) {
     id: 'r',
     ok: true,
     result:
-      method === 'portfolio.read'
-        ? { revision: 3, tasks: [{ id: 't1', status, attempts: [{ worktreeId: 'w1' }] }] }
-        : method === 'git.status'
-          ? { entries, conflictOperation: 'unknown', head: HEAD }
-          : {}
+      method === 'portfolio.workbenches'
+        ? WORKBENCHES
+        : method === 'portfolio.read'
+          ? { revision: 3, tasks: [{ id: 't1', status, attempts: [{ worktreeId: 'w1' }] }] }
+          : method === 'git.status'
+            ? { entries, conflictOperation: 'unknown', head: HEAD }
+            : {}
   }))
   const ctx = {
     flags: new Map<string, string | boolean>([
@@ -72,6 +79,7 @@ it('submits a running task for review with its evidence', async () => {
   const { call, ctx } = submitContext('running')
   await WORKBENCH_HANDLERS['workbench task submit'](ctx)
   expect(call).toHaveBeenLastCalledWith('portfolio.mutate', {
+    workbenchId: 'default',
     revision: 3,
     command: {
       kind: 'task.transition',
@@ -112,11 +120,13 @@ it('submits the running task of the workspace it is run from when no id is given
     result:
       method === 'worktree.list'
         ? { worktrees: [{ id: 'repo::/work/ENG-5952', path: '/work/ENG-5952' }] }
-        : method === 'portfolio.read'
-          ? { revision: 3, tasks }
-          : method === 'git.status'
-            ? { entries: [], conflictOperation: 'unknown', head: HEAD }
-            : {}
+        : method === 'portfolio.workbenches'
+          ? WORKBENCHES
+          : method === 'portfolio.read'
+            ? { revision: 3, tasks }
+            : method === 'git.status'
+              ? { entries: [], conflictOperation: 'unknown', head: HEAD }
+              : {}
   }))
   const ctx = {
     flags: new Map<string, string | boolean>([['body', 'Evidence']]),
@@ -126,6 +136,7 @@ it('submits the running task of the workspace it is run from when no id is given
   } as unknown as HandlerContext
   await WORKBENCH_HANDLERS['workbench task submit'](ctx)
   expect(call).toHaveBeenLastCalledWith('portfolio.mutate', {
+    workbenchId: 'default',
     revision: 3,
     command: {
       kind: 'task.transition',
@@ -146,12 +157,14 @@ it('marks a step done at the committed head, and reopens it without a commit', a
   ctx.flags.set('step', 'S2')
   await WORKBENCH_HANDLERS['workbench task step'](ctx)
   expect(call).toHaveBeenLastCalledWith('portfolio.mutate', {
+    workbenchId: 'default',
     revision: 3,
     command: { kind: 'task.step', taskId: 't1', stepId: 'S2', done: true, commit: HEAD }
   })
   ctx.flags.set('undo', true)
   await WORKBENCH_HANDLERS['workbench task step'](ctx)
   expect(call).toHaveBeenLastCalledWith('portfolio.mutate', {
+    workbenchId: 'default',
     revision: 3,
     command: { kind: 'task.step', taskId: 't1', stepId: 'S2', done: false }
   })
@@ -164,4 +177,48 @@ it('refuses to mark a step done before it is committed', async () => {
     'Commit the work on the task branch, then run this again.'
   )
   expect(call).not.toHaveBeenCalledWith('portfolio.mutate', expect.anything())
+})
+
+it('finds the workbench that holds the task when several exist', async () => {
+  vi.spyOn(console, 'log').mockImplementation(() => {})
+  const call = vi.fn(async (method: string, params: { workbenchId?: string }) => ({
+    id: 'r',
+    ok: true,
+    result:
+      method === 'portfolio.workbenches'
+        ? [
+            ...WORKBENCHES,
+            { id: 'home', name: 'Home', stewardPath: '/data/workbench/spaces/home/steward' }
+          ]
+        : method === 'portfolio.read'
+          ? {
+              revision: params.workbenchId === 'home' ? 9 : 3,
+              tasks:
+                params.workbenchId === 'home'
+                  ? [{ id: 't9', status: 'running', attempts: [{ worktreeId: 'w9' }] }]
+                  : []
+            }
+          : method === 'git.status'
+            ? { entries: [], conflictOperation: 'unknown', head: HEAD }
+            : {}
+  }))
+  const ctx = {
+    flags: new Map<string, string | boolean>([
+      ['task', 't9'],
+      ['body', 'Evidence']
+    ]),
+    client: { call, isRemote: false },
+    cwd: '/tmp',
+    json: true
+  } as unknown as HandlerContext
+  await WORKBENCH_HANDLERS['workbench task submit'](ctx)
+  expect(call).toHaveBeenLastCalledWith(
+    'portfolio.mutate',
+    expect.objectContaining({ workbenchId: 'home', revision: 9 })
+  )
+  // Commands that are not about one task need the workbench named, unless run by its coordinator.
+  await expect(WORKBENCH_HANDLERS['workbench status'](ctx)).rejects.toThrow('pass --workbench <id>')
+  ctx.cwd = '/data/workbench/spaces/home/steward'
+  await WORKBENCH_HANDLERS['workbench status'](ctx)
+  expect(call).toHaveBeenLastCalledWith('portfolio.read', { workbenchId: 'home' })
 })

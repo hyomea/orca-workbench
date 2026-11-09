@@ -5,7 +5,11 @@ import { PortfolioState, emptyPortfolio, parsePortfolioState } from '../../share
 import { writePluginFileAtomically } from '../plugins/installation/plugin-atomic-file-write'
 
 export class PortfolioStore {
-  constructor(readonly file: string) {}
+  // root holds what every workbench shares, such as the personal notes folder.
+  constructor(
+    readonly file: string,
+    readonly root = dirname(file)
+  ) {}
 
   async read(): Promise<PortfolioState> {
     try {

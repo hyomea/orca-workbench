@@ -1,5 +1,5 @@
 import { readdir, readFile, stat } from 'node:fs/promises'
-import { basename, dirname, isAbsolute, join, relative, sep } from 'node:path'
+import { basename, isAbsolute, join, relative, sep } from 'node:path'
 import { parse as parseYaml } from 'yaml'
 import { z } from 'zod'
 import { writePluginFileAtomically } from '../plugins/installation/plugin-atomic-file-write'
@@ -36,9 +36,10 @@ const FrontMatter = z.object({
 
 const Config = z.object({ folder: z.string().min(1) })
 
-// A machine-local path, so it lives beside the Workbench store rather than in its shared data.
+// A machine-local path, so it lives beside the Workbench stores rather than in their data. Every
+// workbench shares the user's one notes folder.
 function configFile(store: PortfolioStore): string {
-  return join(dirname(store.file), 'personal-notes.json')
+  return join(store.root, 'personal-notes.json')
 }
 
 export async function readPersonalNotesFolder(store: PortfolioStore): Promise<string | null> {

@@ -12,6 +12,7 @@ import {
   folderWorkspaceToWorktree
 } from '../../../../shared/folder-workspaces/folder-workspace-worktree'
 import type { PortfolioWorkspace } from './PortfolioTaskDetail'
+import { noteWorkbenchName, useActiveWorkbenchId } from './workbench-selection'
 
 export type PortfolioWorkbench = {
   state: PortfolioState | null
@@ -36,18 +37,31 @@ export function usePortfolioWorkbench(): PortfolioWorkbench {
   const worktrees = useAppStore(selectWorktreesByRepo)
   const folders = useAppStore(selectFolderWorkspaces)
   const groups = useAppStore((s) => s.projectGroups)
-  const accept = useCallback((value: unknown) => {
-    const next = parsePortfolioState(value)
-    setState((current) => (!current || next.revision >= current.revision ? next : current))
-  }, [])
+  const workbenchId = useActiveWorkbenchId()
+  // Another workbench's data never mixes in: the state shown belongs to the selected one.
+  const [shown, setShown] = useState(workbenchId)
+  if (shown !== workbenchId) {
+    setShown(workbenchId)
+    setState(null)
+    setError('')
+    setLoadError('')
+  }
+  const accept = useCallback(
+    (value: unknown) => {
+      const next = parsePortfolioState(value)
+      noteWorkbenchName(workbenchId, next.organization)
+      setState((current) => (!current || next.revision >= current.revision ? next : current))
+    },
+    [workbenchId]
+  )
   const refresh = useCallback(async () => {
     try {
-      accept(await callRuntimeRpc({ kind: 'local' }, 'portfolio.read', {}))
+      accept(await callRuntimeRpc({ kind: 'local' }, 'portfolio.read', { workbenchId }))
       setLoadError('')
     } catch (failure) {
       setLoadError(failure instanceof Error ? failure.message : String(failure))
     }
-  }, [accept])
+  }, [accept, workbenchId])
   useEffect(() => {
     let stopped = false
     let timer: ReturnType<typeof setTimeout>
@@ -74,7 +88,11 @@ export function usePortfolioWorkbench(): PortfolioWorkbench {
     setError('')
     try {
       accept(
-        await callRuntimeRpc({ kind: 'local' }, method, { revision: state.revision, ...params })
+        await callRuntimeRpc({ kind: 'local' }, method, {
+          workbenchId,
+          revision: state.revision,
+          ...params
+        })
       )
       return true
     } catch (failure) {

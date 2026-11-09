@@ -11,6 +11,7 @@ import { usePortfolioWorkbench } from './use-portfolio-workbench'
 import { openPortfolioTaskChanges } from './portfolio-task-review-actions'
 import { portfolioSetupActions } from './portfolio-setup-actions'
 import { openPortfolioSteward } from './portfolio-steward-actions'
+import { activeWorkbenchParams } from './workbench-selection'
 import { choosePersonalNotesFolder, openPersonalNotes } from './portfolio-personal-notes-actions'
 
 export default function PortfolioPage(): React.JSX.Element {
@@ -67,7 +68,10 @@ export default function PortfolioPage(): React.JSX.Element {
               base64: z.string()
             })
             .parse(
-              await callRuntimeRpc({ kind: 'local' }, 'portfolio.readDesign', { attachmentId })
+              await callRuntimeRpc({ kind: 'local' }, 'portfolio.readDesign', {
+                ...activeWorkbenchParams(),
+                attachmentId
+              })
             )
           return `data:${image.mimeType};base64,${image.base64}`
         }
@@ -107,6 +111,7 @@ export default function PortfolioPage(): React.JSX.Element {
           }
           const result = z.object({ written: z.number() }).parse(
             await callRuntimeRpc({ kind: 'local' }, 'portfolio.exportNotes', {
+              ...activeWorkbenchParams(),
               projectId,
               directory
             })

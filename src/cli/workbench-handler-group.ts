@@ -3,6 +3,7 @@ import type { HandlerGroup } from './handler-group-manifest'
 export const WORKBENCH_HANDLER_GROUP: HandlerGroup = {
   name: 'workbench',
   keys: [
+    'workbench list',
     'workbench status',
     'workbench schema',
     'workbench apply',
