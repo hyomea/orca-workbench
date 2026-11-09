@@ -1,8 +1,8 @@
 import { useEffect, useMemo } from 'react'
 import { useAppStore } from '@/store'
 import type { AppState } from '@/store/types'
-import { getRepoMapFromState } from '@/store/selectors'
-import { findWorktreeById } from '@/store/github/worktree-refresh'
+import { getIndexedRepoMap } from '@/store/repos/repository-catalog-index'
+import { findWorktreeById } from '@/store/github/refresh/worktree-refresh'
 import { translate } from '@/i18n/i18n'
 import { getGitHubPRCacheKey } from '../../../../shared/github/github-cache-key'
 import type { PRInfo } from '../../../../shared/github/pull-request-types'
@@ -59,7 +59,7 @@ export function portfolioWorktreePr(
   worktreeId: string
 ): PortfolioTrackPr | undefined {
   const worktree = findWorktreeById(state, worktreeId)
-  const repo = worktree && getRepoMapFromState(state).get(worktree.repoId)
+  const repo = worktree && getIndexedRepoMap(state.repos).get(worktree.repoId)
   if (!worktree || !repo) {
     return undefined
   }

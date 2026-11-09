@@ -74,7 +74,7 @@ it('rejects invented or duplicate source reports and preserves the draft when no
   expect(buildPortfolioIntakePrompt(request)).toContain('untrusted data')
 })
 
-it('keeps Claude link reading in plan mode with web and specific Figma read permissions, without global isolation changes', async () => {
+it('lets Claude link reading use only web and specific Figma reads, without global isolation changes', async () => {
   vi.mocked(runLocalPlanForAgent).mockResolvedValue({ success: true, rawOutput: '{}' })
   await runPortfolioLinkedGeneration({
     params: { agentId: 'claude', model: 'sonnet' },
@@ -87,12 +87,13 @@ it('keeps Claude link reading in plan mode with web and specific Figma read perm
   expect(call?.plan.args).toEqual(
     expect.arrayContaining([
       '--permission-mode',
-      'plan',
+      'dontAsk',
       '--tools',
       'WebFetch',
       '--no-session-persistence'
     ])
   )
+  expect(call?.plan.args).not.toContain('mcp__*')
   expect(call?.plan.args).not.toContain('--strict-mcp-config')
   expect(call?.plan.args).not.toContain('--dangerously-skip-permissions')
   expect(call?.plan.args).toContain(

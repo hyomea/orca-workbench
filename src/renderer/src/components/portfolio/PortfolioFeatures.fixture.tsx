@@ -1,7 +1,7 @@
 import { PortfolioDesignContext } from './portfolio-design-actions'
 import { PortfolioComposer } from './PortfolioComposer'
 import { useState } from 'react'
-import { createBrowserUuid } from '@/lib/browser-uuid'
+import { createNonSecureContextUuid as createBrowserUuid } from '../../../../shared/non-secure-context-uuid'
 import { defineFixture } from '../../component-fixtures/component-fixture'
 import { applyPortfolioCommand, emptyPortfolio } from '../../../../shared/portfolio'
 import { verificationTaskSnapshot } from '../../../../shared/portfolio-verification'

@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { useAppStore } from '@/store'
-import { callRuntimeRpc } from '@/runtime/runtime-rpc-client'
+import { callRuntimeRpc } from '@/runtime/rpc/calls/runtime-rpc-call'
 import { activateLocalFolderWorkspace } from './portfolio-folder-workspace'
 
 const Indexed = z.object({ folder: z.string(), indexPath: z.string(), git: z.boolean() })

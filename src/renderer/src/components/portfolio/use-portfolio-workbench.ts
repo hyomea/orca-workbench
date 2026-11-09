@@ -1,13 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useAppStore } from '@/store'
-import { selectFolderWorkspaces, selectWorktreesByRepo } from '@/store/workspace-record-selectors'
-import { callRuntimeRpc } from '@/runtime/runtime-rpc-client'
+import {
+  selectFolderWorkspaces,
+  selectWorktreesByRepo
+} from '@/store/workspaces/catalog/workspace-record-fields'
+import { callRuntimeRpc } from '@/runtime/rpc/calls/runtime-rpc-call'
 import { translate } from '@/i18n/i18n'
 import { parsePortfolioState, type PortfolioState } from '../../../../shared/portfolio'
 import {
   folderWorkspaceRepoId,
   folderWorkspaceToWorktree
-} from '../../../../shared/folder-workspace-worktree'
+} from '../../../../shared/folder-workspaces/folder-workspace-worktree'
 import type { PortfolioWorkspace } from './PortfolioTaskDetail'
 
 export type PortfolioWorkbench = {

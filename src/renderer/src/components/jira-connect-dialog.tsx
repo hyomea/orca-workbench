@@ -3,7 +3,7 @@ import { useAppStore } from '@/store'
 import {
   getProviderRuntimeContextKey,
   isEnvironmentRuntimeContextKey
-} from '@/lib/provider-runtime-context'
+} from '@/runtime/hosts/observations/provider-runtime-context'
 import { JiraTokenConnectDialog, type JiraConnectDialogProps } from './jira-token-connect-dialog'
 import { JiraOAuthConnectDialog } from './jira-oauth-connect-dialog'
 

@@ -6,7 +6,7 @@ import {
   type PortfolioNoteFile
 } from './portfolio-note-files'
 import { randomUUID } from 'node:crypto'
-import type { AgentLaunchResult } from '../../shared/agent-launch-intent'
+import type { AgentLaunchResult } from '../../shared/agent-launch/contracts/agent-launch-intent'
 import {
   portfolioTask,
   preparePortfolioAttempt,

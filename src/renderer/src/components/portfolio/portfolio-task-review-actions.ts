@@ -1,13 +1,13 @@
 import { useAppStore } from '@/store'
 import type { AppState } from '@/store/types'
-import { selectWorktreeDiffCommentsOrEmpty } from '@/store/worktree-diff-comments-selector'
-import { selectWorktreesByRepo } from '@/store/workspace-record-selectors'
+import { selectWorktreeDiffCommentsOrEmpty } from '@/store/slices/diff-comments/worktree-diff-comments-selector'
+import { selectWorktreesByRepo } from '@/store/workspaces/catalog/workspace-record-fields'
 import { translate } from '@/i18n/i18n'
-import { sendMessageToAgent } from '@/lib/agent-message-send'
-import { activeAgentNotesSendFailureMessage } from '@/lib/active-agent-note-send-result'
+import { sendMessageToAgent } from '@/lib/agent-session/messaging/agent-message-send'
+import { activeAgentNotesSendFailureMessage } from '@/lib/agent-session/messaging/terminal/active-agent-note-send-result'
 import type { PortfolioTask } from '../../../../shared/portfolio'
 import { portfolioOpenExecution } from '../../../../shared/portfolio-task-stages'
-import { parsePaneKey } from '../../../../shared/stable-pane-id'
+import { parsePaneKey } from '../../../../shared/workspace-layout/stable-pane-id'
 
 // The combined diff snapshots git state when it opens, so wait for the workspace's first status read.
 const GIT_STATE_WAIT_MS = 8000

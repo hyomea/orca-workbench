@@ -1,8 +1,8 @@
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { getCommitMessageAgentSpec } from '../../shared/commit-message-agent-spec'
-import { isTuiAgentEnabled } from '../../shared/tui-agent-selection'
+import { getCommitMessageAgentSpec } from '../../shared/source-control/ai/generation/commit-message-agent-spec'
+import { isTuiAgentEnabled } from '../../shared/agent-launch/catalog/tui-agent-selection'
 import type { GlobalSettings } from '../../shared/global-settings-types'
 import {
   prepareLocalCommitMessageAgentEnv,

@@ -1,9 +1,9 @@
 import type { StateCreator } from 'zustand'
 import { appliedWorktreeCatalogVersionPatch } from './worktree-catalog-version-state'
 import type { AppState } from '../../../types'
-import type { WorktreeSlice } from '../../worktree-helpers'
+import type { WorktreeSlice } from '../worktree-slice-contract'
 import type { Worktree } from '../../../../../../shared/worktree/types'
-import { routeListingBranchSwitchesThroughGitIdentity } from '../../worktree-listing-branch-switch'
+import { routeListingBranchSwitchesThroughGitIdentity } from './worktree-listing-branch-switch'
 import {
   areDetectedWorktreeResultsEqual,
   areWorktreesEqual,
@@ -212,7 +212,9 @@ export function mergeFetchedWorktrees(
       args.setup,
       matchOptions
     )
-    if (!args.refresh.result.authoritative && worktrees.length === 0 && currentForHost.length > 0) {
+    // Stored rows from a stopped WSL distro lack branch state the scanned rows already have.
+    const keepCurrent = worktrees.length === 0 || !!args.refresh.result.wslDistroStopped
+    if (!args.refresh.result.authoritative && keepCurrent && currentForHost.length > 0) {
       return areDetectedWorktreeResultsEqual(s.detectedWorktreesByRepo[args.repoId], mergedDetected)
         ? s
         : {

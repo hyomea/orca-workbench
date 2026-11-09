@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { JiraOAuthConfigure, JIRA_OAUTH_CALLBACK } from '../../shared/jira/jira-oauth'
 import { getTokenPath, readToken, saveToken, getSiteTokenProtection } from './site-credential-store'
-import { withFileTransactionLock } from '../file-transaction-lock'
+import { withFileTransactionLock } from '../filesystem/file-transaction-lock'
 import { exchangeJiraOAuthToken } from './oauth-http'
 
 const APP_KEY = 'oauth-app:workbench'

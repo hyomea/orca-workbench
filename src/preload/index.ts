@@ -22,6 +22,7 @@ import { worktreesApi } from './api/worktrees-bridge'
 import { workspaceCleanupApi } from './api/workspace-cleanup-bridge'
 import { workspaceSpaceApi } from './api/workspace-space-bridge'
 import { workspacePortsApi } from './api/workspace-ports-bridge'
+import { linkPreviewApi } from './api/link-preview-bridge'
 import { ptyApi } from './api/pty-bridge'
 import { feedbackApi } from './api/feedback-bridge'
 import { crashReportsApi } from './api/crash-reports-bridge'
@@ -53,7 +54,9 @@ import { computerUsePermissionsApi } from './api/computer-use-permissions-bridge
 import { shellApi } from './api/shell-bridge'
 import { skillsApi } from './api/skills-bridge'
 import { petApi } from './api/pet-bridge'
-import { browserApi } from './api/browser-bridge'
+import { appIconApi } from './api/app-icon-bridge'
+import { browserPasswordsApi } from './api/browser-passwords-bridge'
+import { browserApi } from './api/browser/browser-bridge'
 import { emulatorApi } from './api/emulator-bridge'
 import { hooksApi } from './api/hooks-bridge'
 import { ephemeralVmApi } from './api/ephemeral-vm-bridge'
@@ -121,6 +124,7 @@ const api = {
   workspaceCleanup: workspaceCleanupApi,
   workspaceSpace: workspaceSpaceApi,
   workspacePorts: workspacePortsApi,
+  linkPreview: linkPreviewApi,
   pty: ptyApi,
   feedback: feedbackApi,
   crashReports: crashReportsApi,
@@ -156,7 +160,9 @@ const api = {
   shell: shellApi,
   skills: skillsApi,
   pet: petApi,
+  appIcon: appIconApi,
   browser: browserApi,
+  browserPasswords: browserPasswordsApi,
   emulator: emulatorApi,
   hooks: hooksApi,
   ephemeralVm: ephemeralVmApi,

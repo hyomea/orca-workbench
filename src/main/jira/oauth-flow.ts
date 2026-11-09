@@ -17,7 +17,7 @@ import { getSiteFile, saveToken, writeSiteFile, getTokenPath } from './site-cred
 import { getSiteId, normalizeJiraSiteUrl } from './site-identity'
 import { jiraGatewayBaseUrl } from './gateway-base-url'
 import { clearAttachmentImagesForSite } from './attachments/image-cache'
-import { withFileTransactionLock } from '../file-transaction-lock'
+import { withFileTransactionLock } from '../filesystem/file-transaction-lock'
 
 type Flow = {
   owner: string

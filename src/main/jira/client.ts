@@ -1,6 +1,6 @@
 import { jiraOAuthAuthorization } from './oauth-credentials'
-import { taskProviderFailure } from '../../shared/task-provider-failure'
-import { CredentialDecryptionError } from '../integration-credential-file'
+import { taskProviderFailure } from '../../shared/work-items/task-provider-failure'
+import { CredentialDecryptionError } from '../credentials/integration-credential-file'
 import type {
   JiraAuthType,
   JiraConnectArgs,

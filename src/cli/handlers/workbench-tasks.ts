@@ -6,7 +6,7 @@ import { getRequiredWorktreeSelector, resolveCurrentWorktreeSelection } from '..
 import { rejectRemoteSelectionFlags } from '../remote-selection-flag-rejection'
 import { PortfolioCommit, type PortfolioState, type PortfolioTask } from '../../shared/portfolio'
 import { RuntimeClientError } from '../runtime-client'
-import type { GitStatusResult } from '../../shared/git-status-types'
+import type { GitStatusResult } from '../../shared/git/status/git-status-types'
 import { LOCAL_ONLY, read } from './workbench-client'
 
 // Matches the stored limit for a task transition note.

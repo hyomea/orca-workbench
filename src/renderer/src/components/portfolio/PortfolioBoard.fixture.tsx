@@ -1,4 +1,4 @@
-import { createBrowserUuid } from '@/lib/browser-uuid'
+import { createNonSecureContextUuid as createBrowserUuid } from '../../../../shared/non-secure-context-uuid'
 import { defineFixture } from '../../component-fixtures/component-fixture'
 import { PortfolioBoard } from './PortfolioBoard'
 import { emptyPortfolio, type PortfolioState } from '../../../../shared/portfolio'

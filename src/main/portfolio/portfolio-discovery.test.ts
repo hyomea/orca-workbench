@@ -4,7 +4,7 @@ import { beforeEach, expect, it, vi } from 'vitest'
 import { runGenerationRequest } from '../text-generation/agent-generation-request'
 import { discoverPortfolioObjective, cancelPortfolioDiscovery } from './portfolio-discovery'
 import type { PortfolioDiscover } from '../../shared/portfolio-discovery'
-import { PORTFOLIO_DISCOVERY_METHODS } from '../runtime/rpc/methods/portfolio-discovery'
+import { PORTFOLIO_DISCOVERY_METHODS } from '../runtime/rpc/methods/portfolio/portfolio-discovery'
 import type { OrcaRuntimeService } from '../runtime/orca-runtime'
 
 vi.mock('../text-generation/agent-generation-request', () => ({ runGenerationRequest: vi.fn() }))

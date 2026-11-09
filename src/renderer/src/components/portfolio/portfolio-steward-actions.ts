@@ -1,14 +1,15 @@
 import { z } from 'zod'
 import { useAppStore } from '@/store'
 import type { AppState } from '@/store/types'
-import { parseAgentStatusPaneIdentity } from '../../../../shared/agent-status-worktree-attribution'
-import { callRuntimeRpc } from '@/runtime/runtime-rpc-client'
+import { parseAgentStatusPaneIdentity } from '../../../../shared/agent-status/identity/agent-status-worktree-attribution'
+import { callRuntimeRpc } from '@/runtime/rpc/calls/runtime-rpc-call'
 import { translate } from '@/i18n/i18n'
-import { launchAgentInNewTab } from '@/lib/launch-agent-in-new-tab'
-import { newAgentLaunchRequestId } from '@/lib/agent-launch-request-id'
+import { launchAgentInNewTab } from '@/lib/agent-session/launch/new-tab/launch-agent-in-new-tab'
+import { newAgentLaunchRequestId } from '@/lib/agent-session/launch/routing/agent-launch-request-id'
 import { activateLocalFolderWorkspace } from './portfolio-folder-workspace'
-import { sendMessageToAgent, type AgentMessageTarget } from '@/lib/agent-message-send'
-import { parsePaneKey } from '../../../../shared/stable-pane-id'
+import { sendMessageToAgent } from '@/lib/agent-session/messaging/agent-message-send'
+import type { AgentMessageTarget } from '@/lib/agent-session/messaging/agent-message-target'
+import { parsePaneKey } from '../../../../shared/workspace-layout/stable-pane-id'
 
 // A tab alone does not mean the steward is there: after a restart its workspace keeps a plain
 // shell, and an agent can exit. Only a chat tab or a pane with agent status counts.

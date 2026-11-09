@@ -1,0 +1,222 @@
+import {
+  attachPortfolioDesign,
+  readPortfolioDesign,
+  removePortfolioDesign
+} from '../../../../portfolio/portfolio-design-store'
+import { randomUUID } from 'node:crypto'
+import { join } from 'node:path'
+import { getAppEnvironment } from '../../../../../shared/app-environment'
+import { folderWorkspaceRepoId } from '../../../../../shared/folder-workspaces/folder-workspace-worktree'
+import { applyPortfolioCommand } from '../../../../../shared/portfolio'
+import { applyPortfolioBatch } from '../../../../../shared/portfolio-batch'
+import {
+  PortfolioAttachDesign,
+  PortfolioBatch,
+  PortfolioExportNotes,
+  PortfolioProposeNote,
+  PortfolioReadDesign,
+  PortfolioRemoveDesign,
+  PortfolioLaunch,
+  PortfolioMutate,
+  PortfolioPrepareSteward,
+  PortfolioRead,
+  PortfolioIndexPersonalNotes,
+  PortfolioPersonalNotes,
+  PortfolioSetPersonalNotesFolder
+} from '../../../../../shared/rpc-contract/portfolio-params'
+import { AgentLaunchReplay } from '../../../../../shared/rpc-contract/agent-launch-params'
+import { PortfolioStore } from '../../../../portfolio/portfolio-store'
+import { exportPortfolioNotes } from '../../../../portfolio/portfolio-note-files'
+import {
+  portfolioStewardCli,
+  preparePortfolioSteward
+} from '../../../../portfolio/portfolio-steward'
+import {
+  indexPersonalNotes,
+  personalNoteAppliesTo,
+  personalNotesPrompt,
+  readPersonalNotesFolder,
+  scanPersonalNotes,
+  setPersonalNotesFolder
+} from '../../../../portfolio/personal-notes'
+import {
+  launchPortfolioTask,
+  portfolioExecutionInFlight
+} from '../../../../portfolio/portfolio-execution'
+import { defineMethod } from '../../core'
+import { AGENT_LAUNCH_METHODS } from '../agent-launch/agent-launch'
+import { PORTFOLIO_DISCOVERY_METHODS } from './portfolio-discovery'
+
+function store(): PortfolioStore {
+  return new PortfolioStore(
+    join(getAppEnvironment().getPath('userData'), 'workbench', 'portfolio.json')
+  )
+}
+
+export const PORTFOLIO_METHODS = [
+  ...PORTFOLIO_DISCOVERY_METHODS,
+  defineMethod({
+    name: 'portfolio.attachDesign',
+    permission: 'workspace',
+    params: PortfolioAttachDesign,
+    handler: (params) => attachPortfolioDesign(store(), params)
+  }),
+  defineMethod({
+    name: 'portfolio.readDesign',
+    permission: 'workspace',
+    params: PortfolioReadDesign,
+    handler: (params) => readPortfolioDesign(store(), params.attachmentId)
+  }),
+  defineMethod({
+    name: 'portfolio.removeDesign',
+    permission: 'workspace',
+    params: PortfolioRemoveDesign,
+    handler: (params) => removePortfolioDesign(store(), params)
+  }),
+  defineMethod({
+    name: 'portfolio.read',
+    permission: 'workspace',
+    params: PortfolioRead,
+    handler: () => store().read()
+  }),
+  defineMethod({
+    name: 'portfolio.mutate',
+    permission: 'workspace',
+    params: PortfolioMutate,
+    handler: (params) => {
+      const data = store()
+      return data.update(params.revision, (state) => {
+        if ('taskId' in params.command && portfolioExecutionInFlight(data, params.command.taskId)) {
+          throw new Error('Wait for the launch to settle before changing this task.')
+        }
+        applyPortfolioCommand(state, params.command, randomUUID(), Date.now())
+      })
+    }
+  }),
+  defineMethod({
+    name: 'portfolio.prepareSteward',
+    permission: 'workspace',
+    params: PortfolioPrepareSteward,
+    handler: () =>
+      preparePortfolioSteward(store(), portfolioStewardCli(getAppEnvironment().isPackaged()))
+  }),
+  defineMethod({
+    name: 'portfolio.exportNotes',
+    permission: 'workspace',
+    params: PortfolioExportNotes,
+    handler: (params) => exportPortfolioNotes(store(), params.projectId, params.directory)
+  }),
+  defineMethod({
+    name: 'portfolio.setPersonalNotesFolder',
+    permission: 'workspace',
+    params: PortfolioSetPersonalNotesFolder,
+    handler: (params) => setPersonalNotesFolder(store(), params.folder)
+  }),
+  defineMethod({
+    name: 'portfolio.indexPersonalNotes',
+    permission: 'workspace',
+    params: PortfolioIndexPersonalNotes,
+    handler: () => indexPersonalNotes(store())
+  }),
+  defineMethod({
+    // Agents read the list; notes the user closed to every agent are left out.
+    name: 'portfolio.personalNotes',
+    permission: 'workspace',
+    params: PortfolioPersonalNotes,
+    handler: async (params) => {
+      const folder = await readPersonalNotesFolder(store())
+      const notes = folder ? await scanPersonalNotes(folder) : []
+      const repo = params.repo
+      return {
+        folder,
+        notes: notes.filter(
+          (note) =>
+            note.agents !== 'none' &&
+            (!repo || personalNoteAppliesTo(note, { path: repo, displayName: repo }))
+        )
+      }
+    }
+  }),
+  defineMethod({
+    // Agents propose; only the user's review in the Projects page changes a note.
+    name: 'portfolio.proposeNote',
+    permission: 'workspace',
+    params: PortfolioProposeNote,
+    handler: async (params) => {
+      const id = randomUUID()
+      await store().update(null, (state) => {
+        applyPortfolioCommand(
+          state,
+          { kind: 'noteDraft.submit', draft: params.draft },
+          id,
+          Date.now()
+        )
+      })
+      return { draftId: id }
+    }
+  }),
+  defineMethod({
+    // One revision for the whole batch: either every step applies or none does.
+    name: 'portfolio.batch',
+    permission: 'workspace',
+    params: PortfolioBatch,
+    handler: async (params) => {
+      const data = store()
+      let refs: Record<string, string> = {}
+      const state = await data.update(params.revision ?? null, (next) => {
+        refs = applyPortfolioBatch(next, params.steps, randomUUID, Date.now(), (command) => {
+          if ('taskId' in command && portfolioExecutionInFlight(data, command.taskId)) {
+            throw new Error('Wait for the launch to settle before changing this task.')
+          }
+        })
+      })
+      return { revision: state.revision, refs }
+    }
+  }),
+  defineMethod({
+    name: 'portfolio.launch',
+    permission: 'workspace',
+    requires: ['accounts'],
+    params: PortfolioLaunch,
+    handler: async (params, context) => {
+      const scope = await context.runtime.showTerminalWorkspaceLaunchScope(
+        `id:${params.worktreeId}`
+      )
+      const owner = scope.repo ?? scope.folderWorkspace
+      const repoId =
+        scope.repo?.id ??
+        (scope.folderWorkspace ? folderWorkspaceRepoId(scope.folderWorkspace.projectGroupId) : null)
+      if (
+        !owner ||
+        !repoId ||
+        scope.connectionId ||
+        (owner.executionHostId && owner.executionHostId !== 'local')
+      ) {
+        throw new Error(
+          'Project task execution currently requires a workspace hosted on this computer.'
+        )
+      }
+      const replay = AGENT_LAUNCH_METHODS.find((method) => method.name === 'agent.launchReplay')
+      if (!replay) {
+        throw new Error('Replay-safe agent launch is unavailable.')
+      }
+      const data = store()
+      const personalNotes = await personalNotesPrompt(data, scope.repo ?? null)
+      return launchPortfolioTask(
+        data,
+        { ...params, worktreeId: scope.id, repoId, personalNotes },
+        (attempt) =>
+          replay.handler(
+            AgentLaunchReplay.parse({
+              agent: attempt.agent,
+              operationId: attempt.operationId,
+              target: { kind: 'existing', worktree: `id:${attempt.worktreeId}` },
+              prompt: { text: attempt.prompt, delivery: 'submit' },
+              presentation: 'background'
+            }),
+            context
+          )
+      )
+    }
+  })
+]

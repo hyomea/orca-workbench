@@ -1,13 +1,13 @@
 import { expect, it, vi } from 'vitest'
 import type { JiraIssue, JiraSite } from '../../../../shared/jira/jira-types'
-import { callRuntimeRpc } from '@/runtime/runtime-rpc-client'
+import { callRuntimeRpc } from '@/runtime/rpc/calls/runtime-rpc-call'
 import {
   portfolioDesignLink,
   portfolioJiraCandidates,
   portfolioJiraPreview,
   readPortfolioJiraTicket
 } from './portfolio-context-sources'
-vi.mock('@/runtime/runtime-rpc-client', () => ({ callRuntimeRpc: vi.fn() }))
+vi.mock('@/runtime/rpc/calls/runtime-rpc-call', () => ({ callRuntimeRpc: vi.fn() }))
 const site: JiraSite = {
   id: 'site',
   siteUrl: 'https://team.atlassian.net',

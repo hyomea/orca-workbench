@@ -20,7 +20,7 @@ import {
 } from '@/components/ui/select'
 import { translate } from '@/i18n/i18n'
 import { useAppStore } from '@/store'
-import { beginJiraMutation } from '@/store/slices/jira-read-coordination'
+import { beginJiraMutation } from '@/store/slices/jira/jira-read-coordination'
 import { JIRA_OAUTH_CALLBACK } from '../../../shared/jira/jira-oauth'
 import { useJiraOAuth } from './use-jira-oauth'
 import type { JiraConnectDialogProps } from './jira-token-connect-dialog'

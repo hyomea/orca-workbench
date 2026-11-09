@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { createBrowserUuid } from '@/lib/browser-uuid'
+import { createNonSecureContextUuid as createBrowserUuid } from '../../../../shared/non-secure-context-uuid'
 import { PortfolioIntake, type PortfolioIntakeSource } from '../../../../shared/portfolio-intake'
 import { readPortfolioIntake, cancelPortfolioIntake } from './portfolio-intake-actions'
 import type { useFeatureDraft } from './use-feature-draft'

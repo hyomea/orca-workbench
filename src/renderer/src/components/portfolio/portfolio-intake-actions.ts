@@ -1,4 +1,4 @@
-import { callRuntimeRpc } from '@/runtime/runtime-rpc-client'
+import { callRuntimeRpc } from '@/runtime/rpc/calls/runtime-rpc-call'
 import { PortfolioIntakeResult, type PortfolioIntake } from '../../../../shared/portfolio-intake'
 
 export async function readPortfolioIntake(

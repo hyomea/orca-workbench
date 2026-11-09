@@ -76,6 +76,7 @@ export function createBrowserApi(): NonNullable<Partial<PreloadApi>['browser']> 
       }),
     onGrabModeToggle: () => noopUnsubscribe,
     onGrabActionShortcut: () => noopUnsubscribe,
+    onGuestEscape: () => noopUnsubscribe,
     sessionListProfiles: () => Promise.resolve([]),
     onSessionProfilesChanged: () => noopUnsubscribe,
     // Web clients render remote workspaces through the server; no local SSH routing exists.
@@ -92,6 +93,7 @@ export function createBrowserApi(): NonNullable<Partial<PreloadApi>['browser']> 
           'Cookie import is unavailable in the web client.'
         )
       }),
+    sessionImportCookiesForClientHost: () => Promise.resolve(null),
     sessionResolvePartition: () => Promise.resolve(null),
     sessionDetectBrowsers: () => Promise.resolve([]),
     sessionDetectBrowsersForClientHost: () => Promise.resolve(null),

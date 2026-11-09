@@ -25,7 +25,7 @@ import {
   portfolioTrackTask
 } from '../../../../shared/portfolio-task-stages'
 import { portfolioTrackRole } from '../../../../shared/portfolio-ticket-roles'
-import type { AgentStatusEntry } from '../../../../shared/agent-status-types'
+import type { AgentStatusEntry } from '../../../../shared/agent-status/contracts/agent-status-types'
 import { PortfolioField, PortfolioSelect } from './portfolio-controls'
 import { PortfolioTaskDecision } from './PortfolioTaskDecision'
 import { portfolioTaskLane } from './portfolio-task-lanes'

@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import { PortfolioStore } from './portfolio-store'
 import { applyPortfolioCommand, PortfolioCommand, portfolioProgress } from '../../shared/portfolio'
 import { launchPortfolioTask, portfolioExecutionInFlight } from './portfolio-execution'
-import type { AgentLaunchResult } from '../../shared/agent-launch-intent'
+import type { AgentLaunchResult } from '../../shared/agent-launch/contracts/agent-launch-intent'
 
 const directories: string[] = []
 afterEach(async () => {

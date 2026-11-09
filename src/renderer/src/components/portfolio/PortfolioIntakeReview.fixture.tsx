@@ -46,7 +46,10 @@ function Review() {
           field: () => {},
           setTickets: () => {},
           setParity: () => {},
-          discard: () => {},
+          discard: Object.assign(() => {}, {
+            capture: () => undefined as never,
+            complete: () => {}
+          }),
           preview: () => {},
           reference: () => {},
           rememberSources: () => {},

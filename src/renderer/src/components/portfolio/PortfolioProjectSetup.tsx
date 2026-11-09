@@ -1,6 +1,6 @@
 import { usePortfolioProjectDraft } from './use-portfolio-project-draft'
 import { PortfolioProjectSetupFooter } from './PortfolioProjectSetupFooter'
-import { createBrowserUuid } from '@/lib/browser-uuid'
+import { createNonSecureContextUuid as createBrowserUuid } from '../../../../shared/non-secure-context-uuid'
 import { useEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'

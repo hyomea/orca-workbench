@@ -5,14 +5,16 @@ import { emptyPortfolio, type PortfolioTask } from '../../../../shared/portfolio
 import { PortfolioTaskDetail } from './PortfolioTaskDetail'
 import type * as PortfolioTrackPrModule from './portfolio-track-pr'
 import { useAppStore } from '@/store'
+import type * as I18n from '@/i18n/i18n'
 
-vi.mock('@/i18n/i18n', () => ({
+vi.mock('@/i18n/i18n', async (original) => ({
+  ...(await original<typeof I18n>()),
   getIntlLocale: () => 'en',
   translate: (_key: string, fallback: string, values?: Record<string, unknown>) =>
     fallback.replace(/\{\{(\w+)\}\}/g, (_, name: string) => String(values?.[name] ?? ''))
 }))
 const sendMessageToAgent = vi.hoisted(() => vi.fn(async () => ({ status: 'sent' })))
-vi.mock('@/lib/agent-message-send', () => ({ sendMessageToAgent }))
+vi.mock('@/lib/agent-session/messaging/agent-message-send', () => ({ sendMessageToAgent }))
 vi.mock('./portfolio-track-pr', async (original) => ({
   ...(await original<typeof PortfolioTrackPrModule>()),
   usePortfolioPrLookup: () => (worktreeId: string) => ({

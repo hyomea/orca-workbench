@@ -2,7 +2,7 @@
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, expect, it, vi } from 'vitest'
 import { readPortfolioIntake, cancelPortfolioIntake } from './portfolio-intake-actions'
-import { createBrowserUuid } from '@/lib/browser-uuid'
+import { createNonSecureContextUuid as createBrowserUuid } from '../../../../shared/non-secure-context-uuid'
 import type * as Sources from './portfolio-context-sources'
 import { PortfolioFeatureComposer } from './PortfolioFeatureComposer'
 import { readPortfolioJiraSites, readPortfolioJiraTicket } from './portfolio-context-sources'

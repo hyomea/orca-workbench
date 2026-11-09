@@ -1,8 +1,8 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { mkdir, readFile, writeFile, rm } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
-import { sanitizeAgentSessionAttachmentName } from '../../shared/agent-session-attachments'
-import { assertRasterImagePreviewWithinLimits } from '../../shared/raster-image-preview-limits'
+import { sanitizeAgentSessionAttachmentName } from '../../shared/agent-session/agent-session-attachments'
+import { assertRasterImagePreviewWithinLimits } from '../../shared/file-preview/raster-image-preview-limits'
 import {
   canEditPortfolioContext,
   MAX_PORTFOLIO_IMAGE_BYTES,

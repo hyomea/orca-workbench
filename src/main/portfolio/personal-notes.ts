@@ -67,7 +67,7 @@ export async function setPersonalNotesFolder(
 export function parsePersonalNote(text: string, folder: string, path: string): PersonalNote {
   const relativePath = relative(folder, path).split(sep).join('/')
   const segments = relativePath.split('/')
-  const normalized = text.replace(/^﻿/, '').replaceAll('\r\n', '\n')
+  const normalized = text.replace(/^\uFEFF/, '').replaceAll('\r\n', '\n')
   const match = /^---\n([\s\S]*?)\n---(?:\n|$)/.exec(normalized)
   let fields: z.infer<typeof FrontMatter> = {}
   let problem: string | undefined

@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest'
 import type { PortfolioTask } from '../../../../shared/portfolio'
-import type { AgentStatusEntry } from '../../../../shared/agent-status-types'
+import type { AgentStatusEntry } from '../../../../shared/agent-status/contracts/agent-status-types'
 import { portfolioTaskLane, portfolioTaskObservation } from './portfolio-task-lanes'
 
 const launchedAt = 1_000_000

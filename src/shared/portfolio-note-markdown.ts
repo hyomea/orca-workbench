@@ -18,7 +18,7 @@ export function portfolioNoteMarkdown(
 }
 
 export function parsePortfolioNoteMarkdown(text: string, fileName: string): ParsedPortfolioNote {
-  const normalized = text.replace(/^﻿/, '').replaceAll('\r\n', '\n')
+  const normalized = text.replace(/^\uFEFF/, '').replaceAll('\r\n', '\n')
   const match = /^---\n([\s\S]*?)\n---(?:\n|$)/.exec(normalized)
   const fields = new Map<string, string>()
   for (const line of match?.[1].split('\n') ?? []) {

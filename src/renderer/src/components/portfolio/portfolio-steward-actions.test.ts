@@ -2,8 +2,8 @@ import { expect, it, vi } from 'vitest'
 import type { AppState } from '@/store/types'
 
 vi.mock('@/store', () => ({ useAppStore: { getState: vi.fn() } }))
-vi.mock('@/runtime/runtime-rpc-client', () => ({ callRuntimeRpc: vi.fn() }))
-vi.mock('@/lib/launch-agent-in-new-tab', () => ({ launchAgentInNewTab: vi.fn() }))
+vi.mock('@/runtime/rpc/calls/runtime-rpc-call', () => ({ callRuntimeRpc: vi.fn() }))
+vi.mock('@/lib/agent-session/launch/new-tab/launch-agent-in-new-tab', () => ({ launchAgentInNewTab: vi.fn() }))
 vi.mock('./portfolio-folder-workspace', () => ({ activateLocalFolderWorkspace: vi.fn() }))
 
 const { stewardRunning } = await import('./portfolio-steward-actions')

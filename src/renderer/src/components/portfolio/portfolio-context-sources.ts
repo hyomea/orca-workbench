@@ -1,6 +1,6 @@
 import { z } from 'zod'
-import { callRuntimeRpc } from '@/runtime/runtime-rpc-client'
-import { parseJiraConnectionStatus } from '@/runtime/runtime-jira-connection-status'
+import { callRuntimeRpc } from '@/runtime/rpc/calls/runtime-rpc-call'
+import { parseJiraConnectionStatus } from '@/runtime/jira/runtime-jira-connection-status'
 import {
   getMatchingJiraSites,
   isResolvedJiraIssueMatch,

@@ -10,7 +10,7 @@ import {
   type PortfolioState
 } from '../../../../shared/portfolio'
 import { portfolioRoleLabelById } from '../../../../shared/portfolio-roles'
-import type { AgentStatusEntry } from '../../../../shared/agent-status-types'
+import type { AgentStatusEntry } from '../../../../shared/agent-status/contracts/agent-status-types'
 import { PortfolioComposer, type PortfolioComposerKind } from './PortfolioComposer'
 import { PortfolioTaskDetail, type PortfolioWorkspace } from './PortfolioTaskDetail'
 import { PortfolioWelcome } from './PortfolioWelcome'

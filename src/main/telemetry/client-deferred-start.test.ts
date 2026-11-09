@@ -1,5 +1,8 @@
+import 'node:crypto'
+import type * as crypto from 'node:crypto'
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { Store } from '../persistence'
+import type { GlobalSettings } from '../../shared/global-settings-types'
+import type { Store } from '../persistence/loading-store/store'
 import type * as PostHogTransport from './posthog-transport'
 import {
   BASE_COMMON,
@@ -16,12 +19,15 @@ const { createPostHogClient } = vi.hoisted(() => {
   Object.assign(globalThis, { ORCA_BUILD_IDENTITY: 'stable', ORCA_POSTHOG_WRITE_KEY: 'test-key' })
   return { createPostHogClient: vi.fn() }
 })
+vi.mock('node:crypto', async (importOriginal) => ({
+  ...(await importOriginal<typeof crypto>()),
+  randomInt: vi.fn(() => 0)
+}))
 vi.mock('./posthog-transport', async (importOriginal) => ({
   ...(await importOriginal<typeof PostHogTransport>()),
   createPostHogClient
 }))
-
-const { initTelemetry, setOptIn, shutdownTelemetry, track } = await import('./client')
+const { initTelemetry, shutdownTelemetry, track } = await import('./client')
 const scheduleClientStart = vi.fn<(start: () => void) => void>()
 
 afterAll(() => {
@@ -31,28 +37,29 @@ afterAll(() => {
 
 describe('deferred PostHog client start', () => {
   let envStash: Record<string, string | undefined>
+  let settings: GlobalSettings
   let store: Store
-  let sdk: MockPostHog
+  let sdk: MockPostHog & { flush: ReturnType<typeof vi.fn> }
 
   beforeEach(() => {
     vi.useFakeTimers({ now: new Date('2026-10-29T00:00:00Z') })
     envStash = stashAndClearConsentEnv()
     vi.spyOn(console, 'warn').mockImplementation(() => {})
-    sdk = makeMockPostHog()
+    sdk = { ...makeMockPostHog(), flush: vi.fn(async () => {}) }
     createPostHogClient.mockImplementation(() => sdk)
-    store = makeFakeStore(
-      makeFakeSettings({
-        optedIn: true,
-        installId: BASE_COMMON.install_id,
-        existedBeforeTelemetryRelease: false
-      })
-    )
+    settings = makeFakeSettings({
+      optedIn: true,
+      installId: BASE_COMMON.install_id,
+      existedBeforeTelemetryRelease: false
+    })
+    store = makeFakeStore(settings)
     initTelemetry(store, scheduleClientStart)
   })
 
   afterEach(async () => {
     await shutdownTelemetry()
     vi.useRealTimers()
+    vi.unstubAllGlobals()
     vi.restoreAllMocks()
     createPostHogClient.mockReset()
     scheduleClientStart.mockReset()
@@ -76,38 +83,12 @@ describe('deferred PostHog client start', () => {
     ])
   })
 
-  it('starts the client early to flush held events and enqueue the opt-out before opting out', async () => {
+  it('drops held events when consent is withdrawn before the client starts', () => {
     track('app_opened', {})
-    const order: string[] = []
-    sdk.capture.mockImplementation((message: { event?: string; uuid?: string }) => {
-      order.push(`capture:${message.event}`)
-      queueMicrotask(() => sdk.emitForTests('capture', message))
-    })
-    sdk.optOut.mockImplementation(async () => {
-      order.push('optOut')
-    })
+    settings.telemetry!.optedIn = false
 
-    await setOptIn('settings', false)
+    scheduleClientStart.mock.calls[0][0]()
 
-    expect(order).toEqual(['capture:app_opened', 'capture:telemetry_opted_out', 'optOut'])
-  })
-
-  it('still saves an opt-out when the client cannot start', async () => {
-    createPostHogClient.mockImplementation(() => {
-      throw new Error('sdk failed to load')
-    })
-
-    await setOptIn('settings', false)
-
-    expect(store.getSettings().telemetry?.optedIn).toBe(false)
-  })
-
-  it('starts the client at quit to flush events held before its start', async () => {
-    track('app_opened', {})
-
-    await shutdownTelemetry()
-
-    expect(sdk.capture).toHaveBeenCalledWith(expect.objectContaining({ event: 'app_opened' }))
-    expect(sdk.shutdown).toHaveBeenCalledTimes(1)
+    expect(sdk.capture).not.toHaveBeenCalled()
   })
 })

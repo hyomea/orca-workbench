@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { z } from 'zod'
-import { callRuntimeRpc } from '@/runtime/runtime-rpc-client'
-import { createBrowserUuid } from '@/lib/browser-uuid'
+import { callRuntimeRpc } from '@/runtime/rpc/calls/runtime-rpc-call'
+import { createNonSecureContextUuid as createBrowserUuid } from '../../../shared/non-secure-context-uuid'
 import {
   JiraOAuthConfiguration,
   JiraOAuthProgress,

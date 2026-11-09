@@ -1,5 +1,5 @@
 import type { PortfolioTask } from '../../../../shared/portfolio'
-import type { AgentStatusEntry } from '../../../../shared/agent-status-types'
+import type { AgentStatusEntry } from '../../../../shared/agent-status/contracts/agent-status-types'
 
 export type PortfolioTaskLane = 'decide' | 'attention' | 'running' | 'ready' | 'accepted'
 
