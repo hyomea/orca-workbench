@@ -24,8 +24,15 @@ function cellStatus(track: PortfolioTrack, stage: PortfolioTaskStage, cell: Port
     track.current === 'done' || track.current === 'external' || track.current === 'merge'
       ? PORTFOLIO_STAGES.length
       : PORTFOLIO_STAGES.indexOf(track.current)
+  // A later stage is only planned: its agent has not been started, so say what starts it.
   if (position > current) {
-    return { text: translate('portfolio.trackWaiting', 'Waiting'), tone: 'muted' as const }
+    return {
+      text:
+        stage === 'qa'
+          ? translate('portfolio.trackAfterReview', 'Starts when code review is accepted')
+          : translate('portfolio.trackAfterDevelopment', 'Starts when development submits'),
+      tone: 'muted' as const
+    }
   }
   if (position < current) {
     return cell.task.status === 'accepted'
@@ -81,10 +88,16 @@ function TrackCell({
       onClick={() => onSelectTask(cell.task.id)}
       className={cn(
         'w-full space-y-1 rounded-md border border-border bg-card p-2 text-left text-xs shadow-xs outline-none hover:border-muted-foreground/35 hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring',
-        isCurrent && 'border-foreground/40'
+        isCurrent && 'border-foreground/40',
+        status.tone === 'muted' && 'border-dashed border-border/60 bg-transparent shadow-none'
       )}
     >
-      <span className="block truncate font-medium">
+      <span
+        className={cn(
+          'block truncate',
+          status.tone === 'muted' ? 'text-muted-foreground' : 'font-medium'
+        )}
+      >
         {portfolioRoleLabelById(state, cell.task.roleId)}
       </span>
       <span

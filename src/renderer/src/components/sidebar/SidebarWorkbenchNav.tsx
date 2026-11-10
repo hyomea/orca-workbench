@@ -6,11 +6,11 @@ import { useTranslate } from '@/i18n/use-translate'
 import { isImeOwnedKeyboardEvent } from '@/lib/ime-composition-keyboard-event'
 import {
   createWorkbench,
-  refreshWorkbenchList,
   selectWorkbench,
   useActiveWorkbenchId,
   useWorkbenchList
 } from '@/components/portfolio/workbench-selection'
+import { followWorkbenchAgents } from '@/components/portfolio/workbench-agent-names'
 
 // Workbench, with each workbench (such as the user's organization) one level below it.
 export function SidebarWorkbenchNav(): React.JSX.Element {
@@ -23,11 +23,8 @@ export function SidebarWorkbenchNav(): React.JSX.Element {
   const [name, setName] = React.useState('')
   const [error, setError] = React.useState('')
   const onPage = activeView === 'portfolio'
-  React.useEffect(() => {
-    refreshWorkbenchList().catch(() => {
-      // The list stays empty; the Workbench page reports its own load errors.
-    })
-  }, [])
+  // Also keeps this list current, and names the agent sessions Workbench started.
+  React.useEffect(() => followWorkbenchAgents(), [])
   const open = (id: string): void => {
     selectWorkbench(id)
     setActiveView('portfolio')

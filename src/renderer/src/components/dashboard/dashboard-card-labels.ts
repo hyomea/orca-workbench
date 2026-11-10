@@ -6,6 +6,7 @@ import { resolveAgentRowPaneLiveTitle } from './agent-row-pane-live-title'
 import type { DashboardAgentRow } from './useDashboardData'
 import type { AppState } from '@/store/types'
 import { structuredChatTabById } from '@/lib/structured-chat-tab-index'
+import { workbenchAgentName } from '@/components/portfolio/workbench-agent-names'
 import {
   projectedStructuredChatTabName,
   type StructuredChatTabNames
@@ -51,6 +52,10 @@ export function rowConversationName(
     return undefined
   }
   const chat = structuredChatTabById(tabs, row.tab.worktreeId, row.tab.id)
+  const workbenchName = workbenchAgentName(row.paneKey, row.entry.terminalHandle)
+  if (workbenchName && !row.tab.customTitle?.trim() && !chat?.customLabel?.trim()) {
+    return workbenchName
+  }
   if (chat) {
     return projectedStructuredChatTabName(chat, names)
   }

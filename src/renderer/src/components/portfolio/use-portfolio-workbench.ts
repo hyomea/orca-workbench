@@ -13,6 +13,7 @@ import {
 } from '../../../../shared/folder-workspaces/folder-workspace-worktree'
 import type { PortfolioWorkspace } from './PortfolioTaskDetail'
 import { noteWorkbenchName, useActiveWorkbenchId } from './workbench-selection'
+import { noteWorkbenchAgents } from './workbench-agent-names'
 
 export type PortfolioWorkbench = {
   state: PortfolioState | null
@@ -50,6 +51,7 @@ export function usePortfolioWorkbench(): PortfolioWorkbench {
     (value: unknown) => {
       const next = parsePortfolioState(value)
       noteWorkbenchName(workbenchId, next.organization)
+      noteWorkbenchAgents(workbenchId, next)
       setState((current) => (!current || next.revision >= current.revision ? next : current))
     },
     [workbenchId]

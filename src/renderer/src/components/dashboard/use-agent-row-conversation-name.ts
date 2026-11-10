@@ -4,6 +4,7 @@ import { parsePaneKey } from '../../../../shared/workspace-layout/stable-pane-id
 import { structuredChatDisplayName } from '../../../../shared/structured-chat-row-name'
 import { resolveAgentRowPaneLiveTitle } from './agent-row-pane-live-title'
 import { structuredChatTabById } from '@/lib/structured-chat-tab-index'
+import { useWorkbenchAgentName } from '@/components/portfolio/workbench-agent-names'
 import { useStructuredChatTabConversationName } from '@/runtime/native-chat/naming/structured-conversation-name'
 import type { AppState } from '@/store/types'
 import type { DashboardAgentRow } from './useDashboardData'
@@ -60,9 +61,21 @@ export function useAgentRowConversationName(agent: DashboardAgentRow): string | 
           ownLeafId
         )
   )
+  const workbenchName = useWorkbenchAgentName(
+    cannotOwnTabName ? undefined : agent.paneKey,
+    cannotOwnTabName ? undefined : agent.entry.terminalHandle
+  )
   // Why: synthetic and same-tab child rows do not own the parent tab's name.
   if (cannotOwnTabName) {
     return null
+  }
+  // A Workbench session is named for its agent and stage; a name the user gave the tab still wins.
+  if (
+    workbenchName &&
+    !(liveTab ?? agent.tab).customTitle?.trim() &&
+    !structuredTab?.customLabel?.trim()
+  ) {
+    return workbenchName
   }
   const structuredName =
     structuredTab &&

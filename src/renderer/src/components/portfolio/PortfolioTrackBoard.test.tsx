@@ -121,7 +121,7 @@ it('shows each outcome platform as a row of stages and opens a stage’s task', 
   expect(
     within(
       within(android).getByRole('button', { name: 'Code review: Android codeReview' })
-    ).getByText('Waiting')
+    ).getByText('Starts when development submits')
   ).toBeTruthy()
   expect(within(android).getByText('Not planned')).toBeTruthy()
   expect(within(backend).getByText('Tracked on ENG-7872')).toBeTruthy()

@@ -33,6 +33,10 @@ export function useWorkbenchList(): PortfolioWorkbenchSummary[] {
   return useStore(selection, (s) => s.list)
 }
 
+export function workbenchList(): PortfolioWorkbenchSummary[] {
+  return selection.getState().list
+}
+
 // Every Workbench call names the workbench it reads or changes.
 export function activeWorkbenchParams(): { workbenchId: string } {
   return { workbenchId: selection.getState().activeId }
