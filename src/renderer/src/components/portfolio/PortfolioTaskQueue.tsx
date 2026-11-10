@@ -7,7 +7,7 @@ import { portfolioRoleLabelById } from '../../../../shared/portfolio-roles'
 import { PortfolioSelect } from './portfolio-controls'
 import { PortfolioTaskDetail } from './PortfolioTaskDetail'
 import { portfolioTaskObservation } from './portfolio-task-lanes'
-import { PortfolioTrackBoard } from './PortfolioTrackBoard'
+import { PortfolioTrackView } from './PortfolioTrackView'
 import { usePortfolioTracks } from './use-portfolio-tracks'
 import { usePortfolioWorkbench } from './use-portfolio-workbench'
 import {
@@ -81,7 +81,7 @@ export function PortfolioTaskQueue({
           {error || loadError}
         </p>
       )}
-      <PortfolioTrackBoard
+      <PortfolioTrackView
         state={state}
         tracks={tracks}
         showProject={projectId === ALL_PROJECTS}

@@ -10,6 +10,7 @@ import {
 } from '../../../../shared/portfolio'
 import { portfolioTracks } from './portfolio-tracks'
 import { PortfolioTrackBoard } from './PortfolioTrackBoard'
+import { PortfolioTrackView } from './PortfolioTrackView'
 
 vi.mock('@/i18n/i18n', () => ({
   translate: (_key: string, fallback: string, values?: Record<string, unknown>) =>
@@ -101,10 +102,12 @@ it('shows each outcome platform as a row of stages and opens a stage’s task', 
       state={state}
       tracks={portfolioTracks(state, undefined, {}, 10)}
       showProject={false}
+      pinned={new Set()}
+      foldNotStarted={false}
+      onTogglePin={() => {}}
       onSelectTask={onSelectTask}
     />
   )
-  expect(screen.getByText('Needs you: 1')).toBeTruthy()
   // One group per outcome; a platform without a ticket number has no row yet.
   const group = screen.getByRole('rowgroup', { name: 'Test foundation' })
   const [android, backend, ...others] = within(group)
@@ -160,6 +163,9 @@ it('keeps a team track with an open PR under code review instead of done', () =>
         number: 276
       }))}
       showProject={false}
+      pinned={new Set()}
+      foldNotStarted
+      onTogglePin={() => {}}
       onSelectTask={() => {}}
     />
   )
@@ -170,5 +176,36 @@ it('keeps a team track with an open PR under code review instead of done', () =>
   expect(within(review).getByText('#276 · Waiting on review or CI')).toBeTruthy()
   expect(review.className).toContain('border-foreground/40')
   expect(within(android).queryByText('Done')).toBeNull()
-  expect(screen.getByText('PRs in review: 1')).toBeTruthy()
+})
+
+it('lists tickets by stage, filters by who acts next, and pins a ticket to the top', () => {
+  window.localStorage.clear()
+  const state = fixture()
+  const onSelectTask = vi.fn()
+  render(
+    <PortfolioTrackView
+      state={state}
+      tracks={portfolioTracks(state, undefined, {}, 10)}
+      showProject={false}
+      onSelectTask={onSelectTask}
+    />
+  )
+  // Nobody started the Android work, so it folds away; another team's ticket stays in view.
+  const notStarted = screen.getByRole('button', { name: /^Not started/ })
+  expect(notStarted.getAttribute('aria-expanded')).toBe('false')
+  expect(screen.queryByText('ENG-5952')).toBeNull()
+  expect(screen.getByText('ENG-7872')).toBeTruthy()
+  // A filter shows its matching tickets wherever they stand.
+  const needsYou = screen.getByRole('button', { name: 'Needs you: 1' })
+  fireEvent.click(needsYou)
+  expect(needsYou.getAttribute('aria-pressed')).toBe('true')
+  expect(screen.queryByText('ENG-7872')).toBeNull()
+  fireEvent.click(screen.getByText('ENG-5952'))
+  expect(onSelectTask).toHaveBeenCalledWith('development')
+  fireEvent.click(needsYou)
+  fireEvent.click(screen.getByRole('button', { name: /^Not started/ }))
+  fireEvent.click(screen.getByRole('button', { name: 'Pin ENG-5952 to the top' }))
+  expect(screen.getByRole('button', { name: /^Pinned/ })).toBeTruthy()
+  expect(screen.queryByRole('button', { name: /^Not started/ })).toBeNull()
+  expect(screen.getByRole('button', { name: 'Unpin ENG-5952' })).toBeTruthy()
 })
