@@ -24607,6 +24607,8 @@
     "prNone": "Ready to open a PR",
     "prNumber": "Pull request #{{number}}",
     "prOpenGithub": "Open on GitHub",
+    "prAfterLocalReview": "Open the PR after the local code review: push the branch once this review is submitted.",
+    "prBeforeLocalReview": "This PR was opened before the local code review finished. Finish the review and send its findings to development before the team reviews.",
     "prOpenHint": "Push the branch and open a PR so the team can review it; Workbench follows it from there.",
     "prReadyToMerge": "Approved; ready to merge",
     "prRefresh": "Refresh PR status",

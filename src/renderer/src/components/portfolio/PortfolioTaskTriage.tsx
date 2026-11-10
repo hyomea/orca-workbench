@@ -115,6 +115,9 @@ function PrReview({
   usePortfolioPrRefresh(worktreeId ? [worktreeId] : [])
   const refresh = useAppStore((s) => s.refreshGitHubForWorktree)
   const fresh = useNewPrComments(pr, portfolioSubmittedAt(task) ?? 0)
+  // The user's own branch goes to the team only after the local code review has submitted.
+  const reviewed = task.status === 'review' || task.status === 'accepted'
+  const opened = pr !== undefined && pr.status !== 'none' && pr.status !== 'checking'
   return (
     <section
       aria-label={translate('portfolio.prSection', 'Pull request')}
@@ -150,9 +153,22 @@ function PrReview({
       {reviewer && <NewCommits task={task} pr={pr} busy={busy} onRequestTriage={onRequestTriage} />}
       {!reviewer && pr?.status === 'none' && (
         <p className="text-xs text-muted-foreground">
+          {reviewed
+            ? translate(
+                'portfolio.prOpenHint',
+                'Push the branch and open a PR so the team can review it; Workbench follows it from there.'
+              )
+            : translate(
+                'portfolio.prAfterLocalReview',
+                'Open the PR after the local code review: push the branch once this review is submitted.'
+              )}
+        </p>
+      )}
+      {!reviewer && !reviewed && opened && (
+        <p className="text-xs text-destructive">
           {translate(
-            'portfolio.prOpenHint',
-            'Push the branch and open a PR so the team can review it; Workbench follows it from there.'
+            'portfolio.prBeforeLocalReview',
+            'This PR was opened before the local code review finished. Finish the review and send its findings to development before the team reviews.'
           )}
         </p>
       )}

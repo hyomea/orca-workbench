@@ -192,7 +192,9 @@ An initiative reviews in one of two modes, set by the user with `project.reviewM
   needed with the reason, or needs discussion), and drafted replies for the user to post. The
   user asks for each new round from the task's page (`task.requestTriage`), decides what goes
   back to development, and the track is done when its PR merges. The user pushes and opens
-  the PR; agents never push, open, comment on, or resolve anything there.
+  the PR; agents never push, open, comment on, or resolve anything there. On a track the user
+  builds (`author`), the PR opens only after the local code review has submitted, so the team
+  reviews a branch the reviewer agent has already checked.
 
 ### Planning development steps
 
