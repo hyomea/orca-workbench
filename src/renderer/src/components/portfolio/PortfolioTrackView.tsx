@@ -9,7 +9,7 @@ import type { PortfolioTrack } from './portfolio-tracks'
 import { PortfolioTrackBoard } from './PortfolioTrackBoard'
 import { PortfolioTrackFilters } from './PortfolioTrackFilters'
 import { PortfolioTrackList } from './PortfolioTrackList'
-import { usePinnedTracks } from './use-pinned-tracks'
+import { usePinned } from './use-pinned'
 
 type Mode = 'list' | 'board'
 const MODE_KEY = 'orca.workbench.tasksView'
@@ -38,7 +38,7 @@ export function PortfolioTrackView({
   const [mode, setMode] = useState<Mode>(storedMode)
   const [filter, setFilter] = useState<PortfolioTrackFilter | null>(null)
   const [platform, setPlatform] = useState<PortfolioWorkPlatform | null>(null)
-  const { pinned, toggle } = usePinnedTracks()
+  const { pinned, toggle } = usePinned('tracks')
   const shown = filterPortfolioTracks(tracks, filter, platform)
   const props = {
     state,

@@ -1,25 +1,25 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Bot, Building2, FolderKanban, Pencil, Plus, RefreshCw } from 'lucide-react'
+import { Bot } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { translate } from '@/i18n/i18n'
-import {
-  portfolioProgress,
-  type PortfolioCommand,
-  type PortfolioState
-} from '../../../../shared/portfolio'
+import type { PortfolioCommand, PortfolioState } from '../../../../shared/portfolio'
 import { portfolioRoleLabelById } from '../../../../shared/portfolio-roles'
 import type { AgentStatusEntry } from '../../../../shared/agent-status/contracts/agent-status-types'
 import { PortfolioComposer, type PortfolioComposerKind } from './PortfolioComposer'
 import { PortfolioTaskDetail, type PortfolioWorkspace } from './PortfolioTaskDetail'
 import { PortfolioWelcome } from './PortfolioWelcome'
-import { PortfolioNavigation } from './PortfolioNavigation'
+import { useRememberedInitiative } from './use-remembered-initiative'
 import { PortfolioFeatures } from './PortfolioFeatures'
 import { PortfolioNotes, type PortfolioNotesExport } from './PortfolioNotes'
 import { PortfolioProjectBoard } from './PortfolioProjectBoard'
 import { PortfolioProjectSetup } from './PortfolioProjectSetup'
-import { PortfolioPersonalNotesMenu } from './PortfolioPersonalNotesMenu'
+import { PortfolioWorkbenchMenu } from './PortfolioWorkbenchMenu'
+import {
+  PortfolioAgents,
+  PortfolioInitiativeContext,
+  PortfolioPanel
+} from './PortfolioInitiativePanels'
 import { portfolioTaskObservation } from './portfolio-task-lanes'
 import { usePortfolioTaskReviewComments } from './portfolio-task-review-actions'
 import type { PortfolioSetupActions } from './portfolio-project-setup-types'
@@ -65,11 +65,13 @@ export function PortfolioBoard({
   draftScope: string
 }): React.JSX.Element {
   useTranslation()
-  const [selectedProjectId, setSelectedProjectId] = useState('')
+  const [selectedProjectId, selectProject] = useRememberedInitiative()
   const [selectedTaskId, setSelectedTaskId] = useState('')
   const [taskWorkItemId, setTaskWorkItemId] = useState('')
   const [composer, setComposer] = useState<PortfolioComposerKind | null>(null)
   const [editingRoleId, setEditingRoleId] = useState('')
+  const [outcomeId, setOutcomeId] = useState('')
+  const [panel, setPanel] = useState<'context' | 'agents' | 'features' | null>(null)
   const editingRole =
     composer === 'role.edit' ? state.roles.find((role) => role.id === editingRoleId) : undefined
   const project =
@@ -79,156 +81,93 @@ export function PortfolioBoard({
   const projectWorkspaces = workspaces.filter((workspace) =>
     project?.repoIds.includes(workspace.repoId)
   )
-  const progress = portfolioProgress(state.tasks)
   const observation = selectedTask ? portfolioTaskObservation(selectedTask, activity) : undefined
   const reviewComments = usePortfolioTaskReviewComments(selectedTask?.attempts.at(-1)?.worktreeId)
+  // The workbench's coordinator and menu sit on the initiative's title line.
+  const actions = (
+    <>
+      <Button variant="outline" size="sm" disabled={busy} onClick={() => onOpenSteward()}>
+        <Bot aria-hidden="true" />
+        {state.stewardName
+          ? translate('portfolio.openStewardNamed', '{{name}} · Coordinator', {
+              name: state.stewardName
+            })
+          : translate('portfolio.openSteward', 'Steward')}
+      </Button>
+      <PortfolioWorkbenchMenu
+        disabled={busy}
+        onRefresh={onRefresh}
+        onRename={() => setComposer('organization')}
+        onOpenNotes={onOpenPersonalNotes}
+        onChooseNotesFolder={onChoosePersonalNotesFolder}
+      />
+    </>
+  )
 
   return (
     <div
       data-slot="portfolio-page"
       className="@container/portfolio h-full min-h-0 overflow-y-auto bg-background text-foreground scrollbar-sleek"
     >
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-4">
-        <div className="min-w-0 flex-1 space-y-1">
-          <div className="flex items-center gap-2">
-            <FolderKanban className="size-4 text-muted-foreground" aria-hidden="true" />
-            <h1 className="text-base font-semibold">
-              {translate('portfolio.navigation', 'Workbench')}
-            </h1>
-          </div>
-          <Button
-            variant="ghost"
-            size="xs"
-            className="-ml-1.5 max-w-full justify-start"
-            aria-label={translate('portfolio.renameOrganization', 'Rename organization')}
-            onClick={() => setComposer('organization')}
-          >
-            <Building2 className="shrink-0" aria-hidden="true" />
-            <span className="min-w-0 truncate text-left">{state.organization}</span>
-            <Pencil className="shrink-0" aria-hidden="true" />
-          </Button>
-        </div>
-        <div className="flex items-center gap-2">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                aria-label={translate('portfolio.refresh', 'Refresh')}
-                disabled={busy}
-                onClick={onRefresh}
-              >
-                <RefreshCw aria-hidden="true" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="top" sideOffset={4}>
-              {translate('portfolio.refresh', 'Refresh')}
-            </TooltipContent>
-          </Tooltip>
-          <Button variant="outline" size="sm" disabled={busy} onClick={() => onOpenSteward()}>
-            <Bot aria-hidden="true" />
-            {state.stewardName
-              ? translate('portfolio.openStewardNamed', '{{name}} · Coordinator', {
-                  name: state.stewardName
-                })
-              : translate('portfolio.openSteward', 'Steward')}
-          </Button>
-          <PortfolioPersonalNotesMenu
-            disabled={busy}
-            onOpen={onOpenPersonalNotes}
-            onChooseFolder={onChoosePersonalNotesFolder}
-          />
-          {state.projects.length > 0 && (
-            <Button variant="outline" size="sm" onClick={() => setComposer('project')}>
-              <Plus aria-hidden="true" />
-              {translate('portfolio.newProject', 'New initiative')}
-            </Button>
-          )}
-        </div>
-        {progress.total > 0 && (
-          <p className="w-full text-xs text-muted-foreground">
-            {translate(
-              'portfolio.overview',
-              '{{accepted}} of {{total}} tasks accepted · {{percent}}% complete',
-              progress
-            )}
-          </p>
-        )}
-      </header>
+      {!project && <header className="flex justify-end gap-2 px-5 pt-4">{actions}</header>}
       {error && (
         <p role="alert" className="border-b border-border px-5 py-3 text-sm text-destructive">
           {error}
         </p>
       )}
       {project ? (
-        <div className="@3xl/portfolio:grid @3xl/portfolio:grid-cols-[14rem_minmax(0,1fr)]">
-          <PortfolioNavigation
-            state={state}
-            selectedProjectId={project.id}
-            onSelectProject={setSelectedProjectId}
-            onCreateRole={() => setComposer('role')}
-            onEditRole={(roleId) => {
-              setEditingRoleId(roleId)
-              setComposer('role.edit')
-            }}
-          />
+        <div>
           <PortfolioProjectBoard
             key={project.id}
             project={project}
-            tasks={tasks}
-            roles={state.roles}
-            repos={repos}
-            onEditProject={() => setComposer('project.edit')}
-            onCreateTask={() => {
-              setTaskWorkItemId('')
-              setComposer('task')
+            projects={state.projects}
+            actions={actions}
+            onSelectProject={(id) => {
+              selectProject(id)
+              setOutcomeId('')
             }}
-            onCreateRole={() => setComposer('role')}
-            onOpenTasks={() => onOpenTasks(project.id)}
+            onCreateProject={() => setComposer('project')}
+            roleCount={state.roles.length}
+            onEditProject={() => setComposer('project.edit')}
+            onOpenContext={() => setPanel('context')}
+            onOpenAgents={() => setPanel('agents')}
+            onOpenFeatures={() => setPanel('features')}
             onReviewModeChange={(mode) =>
               void onSave({ kind: 'project.reviewMode', projectId: project.id, mode })
             }
-            outcomeContent={
-              <PortfolioFeatures
-                view="outcomes"
-                key={`outcomes:${project.id}`}
-                state={state}
-                projectId={project.id}
-                draftScope={draftScope}
-                busy={busy}
-                error={error}
-                onSave={onSave}
-                onCreateTask={(id) => {
-                  setTaskWorkItemId(id)
-                  setComposer('task')
-                }}
-                onSelectTask={setSelectedTaskId}
-                onCreateRole={() => setComposer('role')}
-                onOpenTasks={() => onOpenTasks(project.id)}
-                onDiscuss={onOpenSteward}
-              />
-            }
-            featureContent={
-              <PortfolioFeatures
-                view="features"
-                key={`features:${project.id}`}
-                state={state}
-                projectId={project.id}
-                draftScope={draftScope}
-                busy={busy}
-                error={error}
-                onSave={onSave}
-                onCreateTask={(id) => {
-                  setTaskWorkItemId(id)
-                  setComposer('task')
-                }}
-                onSelectTask={setSelectedTaskId}
-                onCreateRole={() => setComposer('role')}
-                onOpenTasks={() => onOpenTasks(project.id)}
-                onDiscuss={onOpenSteward}
-              />
-            }
-            notesContent={
+          >
+            <PortfolioFeatures
+              view="outcomes"
+              key={`outcomes:${project.id}`}
+              state={state}
+              projectId={project.id}
+              draftScope={draftScope}
+              busy={busy}
+              error={error}
+              onSave={onSave}
+              onCreateTask={(id) => {
+                setTaskWorkItemId(id)
+                setComposer('task')
+              }}
+              onSelectTask={setSelectedTaskId}
+              onCreateRole={() => setComposer('role')}
+              onOpenTasks={() => onOpenTasks(project.id)}
+              onDiscuss={onOpenSteward}
+              itemId={outcomeId}
+              onItemChange={setOutcomeId}
+            />
+          </PortfolioProjectBoard>
+          <PortfolioPanel
+            open={panel === 'context'}
+            title={translate('portfolio.contextAndNotes', 'Context & notes')}
+            description={translate(
+              'portfolio.contextPanelHint',
+              'What every agent on this initiative is told, and the notes they read.'
+            )}
+            onClose={() => setPanel(null)}
+          >
+            <div className="space-y-5">
+              <PortfolioInitiativeContext project={project} repos={repos} />
               <PortfolioNotes
                 key={project.id}
                 state={state}
@@ -237,8 +176,62 @@ export function PortfolioBoard({
                 onSave={onSave}
                 onExport={onExportNotes}
               />
-            }
-          />
+            </div>
+          </PortfolioPanel>
+          <PortfolioPanel
+            open={panel === 'agents'}
+            title={translate('portfolio.agents', 'Agents')}
+            description={translate(
+              'portfolio.agentsPanelHint',
+              'The roles tasks are assigned to, each with its agent and responsibility.'
+            )}
+            onClose={() => setPanel(null)}
+          >
+            <PortfolioAgents
+              roles={state.roles}
+              onCreateRole={() => {
+                setPanel(null)
+                setComposer('role')
+              }}
+              onEditRole={(roleId) => {
+                setPanel(null)
+                setEditingRoleId(roleId)
+                setComposer('role.edit')
+              }}
+            />
+          </PortfolioPanel>
+          <PortfolioPanel
+            open={panel === 'features'}
+            title={translate('portfolio.featureCatalog', 'Feature catalog')}
+            description={translate(
+              'portfolio.featuresHint',
+              'The product capabilities this initiative maintains, each with its current specification. Outcomes that change a feature publish their specification here.'
+            )}
+            onClose={() => setPanel(null)}
+          >
+            <PortfolioFeatures
+              view="features"
+              key={`features:${project.id}`}
+              state={state}
+              projectId={project.id}
+              draftScope={draftScope}
+              busy={busy}
+              error={error}
+              onSave={onSave}
+              onCreateTask={(id) => {
+                setTaskWorkItemId(id)
+                setComposer('task')
+              }}
+              onSelectTask={setSelectedTaskId}
+              onCreateRole={() => setComposer('role')}
+              onOpenTasks={() => onOpenTasks(project.id)}
+              onDiscuss={onOpenSteward}
+              onOpenOutcome={(id) => {
+                setPanel(null)
+                setOutcomeId(id)
+              }}
+            />
+          </PortfolioPanel>
         </div>
       ) : (
         <PortfolioWelcome

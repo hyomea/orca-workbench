@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { useState } from 'react'
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, expect, it, vi } from 'vitest'
 import userEvent from '@testing-library/user-event'
 import { createNonSecureContextUuid as createBrowserUuid } from '../../../../shared/non-secure-context-uuid'
@@ -110,7 +110,7 @@ it('creates a feature and a parity outcome for it, then requires explicit review
   enter('Test steps', 'Open report and refresh')
   enter('Expected behavior on both platforms', '5 sold, 15 remaining')
   enter('Plan change note', 'Cover both counters')
-  await tab('Shared context')
+  await tab('Definition')
   await tab('Parity & tests')
   await click('Create test plan')
   expect(screen.getByLabelText('Test steps')).toHaveProperty('value', 'Open report and refresh')
@@ -327,7 +327,7 @@ it('applies an editable role template without assigning or launching a task', as
   )
 })
 
-it('keeps the selected feature when switching project views and discloses full project context on demand', async () => {
+it('opens an initiative’s context, agents, and feature catalog from its header, and an outcome from the catalog', async () => {
   const state = initialState()
   state.features.push({
     id: 'feature',
@@ -337,45 +337,43 @@ it('keeps the selected feature when switching project views and discloses full p
     versions: []
   })
   const noop = () => {}
+  const opened: string[] = []
+  const onOpenOutcome = vi.fn()
   render(
     <PortfolioProjectBoard
       project={state.projects[0]}
-      tasks={[]}
-      roles={[]}
-      repos={[]}
-      onCreateTask={noop}
+      projects={state.projects}
+      roleCount={2}
       onEditProject={noop}
-      onCreateRole={noop}
-      onOpenTasks={noop}
-      featureContent={
-        <PortfolioFeatures
-          view="features"
-          state={state}
-          projectId="project"
-          draftScope="switch-test"
-          busy={false}
-          error=""
-          onSave={async () => true}
-          onCreateTask={noop}
-          onSelectTask={noop}
-          onCreateRole={noop}
-          onOpenTasks={noop}
-          onDiscuss={() => {}}
-        />
-      }
-    />
+      onOpenContext={() => opened.push('context')}
+      onOpenAgents={() => opened.push('agents')}
+      onOpenFeatures={() => opened.push('features')}
+    >
+      <PortfolioFeatures
+        view="features"
+        state={state}
+        projectId="project"
+        draftScope="catalog-test"
+        busy={false}
+        error=""
+        onSave={async () => true}
+        onCreateTask={noop}
+        onSelectTask={noop}
+        onCreateRole={noop}
+        onOpenTasks={noop}
+        onDiscuss={noop}
+        onOpenOutcome={onOpenOutcome}
+      />
+    </PortfolioProjectBoard>
   )
-  await click('Features')
+  // Setup lives behind buttons; the page itself carries no tabs.
+  expect(screen.queryByRole('group', { name: 'Initiative views' })).toBeNull()
+  await click('Context & notes')
+  await click('Agents · {{count}}')
+  await click('Feature catalog')
+  expect(opened).toEqual(['context', 'agents', 'features'])
   fireEvent.click(screen.getByRole('button', { name: /Report counts/ }))
   expect(screen.getByRole('heading', { name: 'Report counts' })).toBeTruthy()
-  await click('Tasks')
-  expect(screen.queryByRole('heading', { name: 'Report counts' })).toBeNull()
-  await click('Features')
-  expect(screen.getByRole('heading', { name: 'Report counts' })).toBeTruthy()
-  const context = screen.getByText('Initiative context · {{count}} sources').closest('details')
-  expect(context?.open).toBe(false)
-  fireEvent.click(screen.getByText('Initiative context · {{count}} sources'))
-  expect(context?.open).toBe(true)
 })
 
 it('creates an outcome with no feature for platform-specific engineering work', async () => {
@@ -449,6 +447,58 @@ it('opens each outcome as its own page and returns to the list', async () => {
   fireEvent.click(screen.getByRole('button', { name: /Multi check-in/ }))
   expect(screen.getByRole('heading', { name: 'Multi check-in' })).toBeTruthy()
   expect(screen.queryByRole('heading', { name: 'Test foundation' })).toBeNull()
+})
+
+it('groups outcomes by where their definition stands and pins one to the top', () => {
+  window.localStorage.clear()
+  const state = initialState()
+  for (const [title, criteria] of [
+    ['Test foundation', 'Tests run in CI'],
+    ['Multi check-in', '']
+  ]) {
+    applyPortfolioCommand(
+      state,
+      {
+        kind: 'workItem.create',
+        workItem: {
+          projectId: 'project',
+          kind: 'engineering',
+          title,
+          description: '',
+          acceptanceCriteria: criteria,
+          designReferences: '',
+          tickets: [],
+          parity: false
+        }
+      },
+      title,
+      1
+    )
+  }
+  render(
+    <PortfolioFeatures
+      state={state}
+      projectId="project"
+      draftScope="pins"
+      busy={false}
+      error=""
+      onCreateTask={() => {}}
+      onCreateRole={() => {}}
+      onOpenTasks={() => {}}
+      onDiscuss={() => {}}
+      onSelectTask={() => {}}
+      onSave={async () => true}
+    />
+  )
+  // Without acceptance criteria an outcome is still being shaped.
+  const group = (name: string) => screen.getByRole('list', { name })
+  expect(within(group('Shaping')).getByText('Multi check-in')).toBeTruthy()
+  expect(within(group('Ready to plan')).getByText('Test foundation')).toBeTruthy()
+  fireEvent.click(
+    within(group('Ready to plan')).getByRole('button', { name: 'Pin {{name}} to the top' })
+  )
+  expect(within(group('Pinned')).getByText('Test foundation')).toBeTruthy()
+  expect(screen.queryByRole('list', { name: 'Ready to plan' })).toBeNull()
 })
 
 it('records a feature’s parity row with evidence for each platform', async () => {

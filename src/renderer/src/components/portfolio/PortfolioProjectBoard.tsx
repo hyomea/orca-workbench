@@ -1,51 +1,115 @@
-import { useState, type ReactNode } from 'react'
-import { ListChecks, Plus, SquareArrowOutUpRight } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
+import type { ReactNode } from 'react'
+import { BookOpenText, Bot, Check, ChevronDown, Layers, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Progress } from '@/components/ui/progress'
-import { translate } from '@/i18n/i18n'
 import {
-  portfolioProgress,
-  type PortfolioState,
-  type PortfolioTask
-} from '../../../../shared/portfolio'
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu'
+import { translate } from '@/i18n/i18n'
+import type { PortfolioState } from '../../../../shared/portfolio'
 import type { PortfolioReviewMode } from '../../../../shared/portfolio-task-stages'
 
+// An initiative's outcomes, with its context, agents, and feature catalog a click away. The
+// sidebar already names the workbench, so the initiative's title leads the page and switches it.
 export function PortfolioProjectBoard({
   project,
-  tasks,
-  roles,
-  repos,
-  onCreateTask,
+  projects,
+  actions,
+  onSelectProject,
+  onCreateProject,
+  roleCount,
   onEditProject,
-  onCreateRole,
-  onOpenTasks,
+  onOpenContext,
+  onOpenAgents,
+  onOpenFeatures,
   onReviewModeChange,
-  outcomeContent,
-  featureContent,
-  notesContent
+  children
 }: {
   project: PortfolioState['projects'][number]
-  tasks: readonly PortfolioTask[]
-  roles: PortfolioState['roles']
-  repos: readonly { id: string; name: string }[]
-  onCreateTask: () => void
+  projects: PortfolioState['projects']
+  // The workbench's own actions (its coordinator and menu), on the same line as the title.
+  actions?: ReactNode
+  onSelectProject?: (id: string) => void
+  onCreateProject?: () => void
+  roleCount: number
   onEditProject: () => void
-  onCreateRole: () => void
-  onOpenTasks: () => void
+  onOpenContext: () => void
+  onOpenAgents: () => void
+  onOpenFeatures: () => void
   onReviewModeChange?: (mode: PortfolioReviewMode) => void
-  outcomeContent?: ReactNode
-  featureContent?: ReactNode
-  notesContent?: ReactNode
+  children: ReactNode
 }): React.JSX.Element {
-  const [view, setView] = useState(outcomeContent ? 'outcomes' : 'tasks')
-  const progress = portfolioProgress(tasks)
-
   return (
     <main className="@container/project min-h-0 min-w-0 p-5 @3xl/portfolio:p-6">
       <header className="mb-5 space-y-3 border-b border-border pb-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="min-w-0 break-words text-lg font-semibold">{project.name}</h2>
+          <div className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-3 gap-y-1">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className="-ml-2 h-auto max-w-full px-2 py-1 text-lg font-semibold"
+                  aria-label={translate('portfolio.switchInitiative', 'Switch initiative')}
+                >
+                  <h2 className="min-w-0 truncate">{project.name}</h2>
+                  <ChevronDown className="text-muted-foreground" aria-hidden="true" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                {projects.map((entry) => (
+                  <DropdownMenuItem key={entry.id} onSelect={() => onSelectProject?.(entry.id)}>
+                    <Check
+                      aria-hidden="true"
+                      className={entry.id === project.id ? undefined : 'invisible'}
+                    />
+                    {entry.name}
+                  </DropdownMenuItem>
+                ))}
+                {onCreateProject && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onSelect={onCreateProject}>
+                      <Plus aria-hidden="true" />
+                      {translate('portfolio.newProject', 'New initiative')}
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <p className="text-xs text-muted-foreground">
+              {translate(
+                'portfolio.purpose',
+                'Define outcomes and sign them off. Run and review the work in Tasks.'
+              )}
+            </p>
+          </div>
+          {actions && <div className="flex items-center gap-2">{actions}</div>}
+        </div>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div
+            role="group"
+            aria-label={translate('portfolio.initiativeReference', 'Initiative setup')}
+            className="flex flex-wrap gap-2"
+          >
+            <Button variant="outline" size="sm" onClick={onOpenContext}>
+              <BookOpenText aria-hidden="true" />
+              {translate('portfolio.contextAndNotes', 'Context & notes')}
+            </Button>
+            <Button variant="outline" size="sm" onClick={onOpenAgents}>
+              <Bot aria-hidden="true" />
+              {translate('portfolio.agentsCount', 'Agents · {{count}}', {
+                count: roleCount,
+                defaultValue_one: 'Agents · {{count}}'
+              })}
+            </Button>
+            <Button variant="outline" size="sm" onClick={onOpenFeatures}>
+              <Layers aria-hidden="true" />
+              {translate('portfolio.featureCatalog', 'Feature catalog')}
+            </Button>
+          </div>
           <div className="flex flex-wrap items-center gap-2">
             {onReviewModeChange && (
               <ReviewModeSwitch
@@ -56,147 +120,10 @@ export function PortfolioProjectBoard({
             <Button variant="ghost" size="sm" onClick={onEditProject}>
               {translate('portfolio.editProject', 'Edit initiative')}
             </Button>
-            {view === 'tasks' && tasks.length > 0 && roles.length > 0 && (
-              <Button size="sm" onClick={onCreateTask}>
-                <Plus aria-hidden="true" />
-                {translate('portfolio.newTask', 'New task')}
-              </Button>
-            )}
           </div>
         </div>
-        <details className="group">
-          <summary className="w-fit cursor-pointer text-xs text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-            {translate(
-              'portfolio.projectContextSummary',
-              'Initiative context · {{count}} sources',
-              {
-                count: project.repoIds.length
-              }
-            )}
-          </summary>
-          <div className="mt-3 space-y-3">
-            <p className="max-w-2xl whitespace-pre-wrap break-words text-sm leading-relaxed text-muted-foreground">
-              {project.objective}
-            </p>
-            <div className="flex flex-wrap gap-1.5">
-              {project.repoIds.map((id) => (
-                <Badge
-                  key={id}
-                  variant="outline"
-                  className="max-w-full whitespace-normal break-all"
-                >
-                  {repos.find((repo) => repo.id === id)?.name ??
-                    translate('portfolio.unavailableRepository', 'Unavailable repository')}
-                </Badge>
-              ))}
-            </div>
-          </div>
-        </details>
       </header>
-      {(outcomeContent || featureContent || notesContent) && (
-        <div
-          className="mb-5 flex gap-2"
-          role="group"
-          aria-label={translate('portfolio.projectViews', 'Initiative views')}
-        >
-          {[
-            ...(outcomeContent
-              ? [{ id: 'outcomes', name: translate('portfolio.outcomes', 'Outcomes') }]
-              : []),
-            ...(featureContent
-              ? [{ id: 'features', name: translate('portfolio.features', 'Features') }]
-              : []),
-            { id: 'tasks', name: translate('portfolio.tasks', 'Tasks') },
-            ...(notesContent ? [{ id: 'notes', name: translate('portfolio.notes', 'Notes') }] : [])
-          ].map((entry) => (
-            <Button
-              key={entry.id}
-              variant={view === entry.id ? 'secondary' : 'ghost'}
-              size="sm"
-              aria-pressed={view === entry.id}
-              onClick={() => setView(entry.id)}
-            >
-              {entry.name}
-            </Button>
-          ))}
-        </div>
-      )}
-      {outcomeContent && <div hidden={view !== 'outcomes'}>{outcomeContent}</div>}
-      {featureContent && <div hidden={view !== 'features'}>{featureContent}</div>}
-      {view === 'notes' && notesContent}
-      {view === 'tasks' &&
-        (tasks.length > 0 ? (
-          <>
-            <div className="mb-6 space-y-2 border-y border-border py-4">
-              <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-                <span className="font-medium">
-                  {translate(
-                    'portfolio.acceptedSummary',
-                    '{{accepted}} of {{total}} tasks accepted',
-                    progress
-                  )}
-                </span>
-                <span className="tabular-nums text-muted-foreground">{progress.percent}%</span>
-              </div>
-              <Progress
-                value={progress.percent}
-                aria-label={translate('portfolio.projectProgress', 'Initiative completion')}
-                className="h-1"
-              />
-              <p className="text-xs text-muted-foreground">
-                {translate(
-                  'portfolio.acceptanceHint',
-                  'Progress advances when you review and accept a result.'
-                )}
-              </p>
-            </div>
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <p className="text-sm text-muted-foreground">
-                {translate(
-                  'portfolio.tasksInTasksPage',
-                  'Start, follow, and review this initiative’s {{count}} tasks in Tasks.',
-                  {
-                    count: tasks.length,
-                    defaultValue_one:
-                      'Start, follow, and review this initiative’s {{count}} task in Tasks.'
-                  }
-                )}
-              </p>
-              <Button variant="outline" size="sm" onClick={onOpenTasks}>
-                <SquareArrowOutUpRight aria-hidden="true" />
-                {translate('portfolio.openInTasks', 'Open in Tasks')}
-              </Button>
-            </div>
-          </>
-        ) : (
-          <section className="flex flex-col items-start gap-4 rounded-xl border border-dashed border-border p-6 @md/project:p-8">
-            <ListChecks className="size-7 text-muted-foreground" aria-hidden="true" />
-            <div className="max-w-md space-y-2">
-              <h3 className="text-base font-semibold">
-                {roles.length > 0
-                  ? translate('portfolio.firstTask', 'Turn your outcome into a task')
-                  : translate('portfolio.firstRole', 'Give your first agent a role')}
-              </h3>
-              <p className="text-sm leading-relaxed text-muted-foreground">
-                {roles.length > 0
-                  ? translate(
-                      'portfolio.firstTaskHint',
-                      'Describe the work, assign a role, and define what a successful result looks like.'
-                    )
-                  : translate(
-                      'portfolio.firstRoleHint',
-                      'Choose an agent and define its responsibility. Then you can assign tasks in this initiative.'
-                    )}
-              </p>
-            </div>
-            <Button onClick={roles.length > 0 ? onCreateTask : onCreateRole}>
-              <Plus aria-hidden="true" />
-              {roles.length > 0
-                ? translate('portfolio.newTask', 'New task')
-                : translate('portfolio.newRole', 'New role')}
-            </Button>
-          </section>
-        ))}
+      {children}
     </main>
   )
 }

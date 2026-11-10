@@ -2111,6 +2111,8 @@
     }
   },
   "portfolio": {
+    "agentsCount_one": "Agents · {{count}}",
+    "agentsCount_other": "Agents · {{count}}",
     "attachDesignLink": "Attach design link",
     "doneCount_one": "Done ({{count}})",
     "doneCount_other": "Done ({{count}})",
@@ -2121,6 +2123,7 @@
     "noWorkItems": "Add an initial delivery, bug, improvement, or issue that needs triage.",
     "notStartedCount_one": "Not started ({{count}})",
     "notStartedCount_other": "Not started ({{count}})",
+    "personalNotes": "Notes",
     "prNewComments_one": "New PR comments since the last review: {{count}}",
     "prNewComments_other": "New PR comments since the last review: {{count}}",
     "referenceOnlyHint": "Paste requirements and reference links here. Links are not imported or analyzed automatically. An improvement should describe the complete proposed specification before publication.",
@@ -2134,8 +2137,8 @@
     "summaryPrs_other": "PRs in review: {{count}}",
     "summaryYou_one": "Needs you: {{count}}",
     "summaryYou_other": "Needs you: {{count}}",
-    "tasksInTasksPage_one": "Start, follow, and review this initiative’s {{count}} task in Tasks.",
-    "tasksInTasksPage_other": "Start, follow, and review this initiative’s {{count}} tasks in Tasks.",
+    "tasksPlanned_one": "{{count}} task planned",
+    "tasksPlanned_other": "{{count}} tasks planned",
     "useTicketContent": "Use ticket content",
     "workbenchSourceSummary": "This computer",
     "workbenchSourceTitle": "Workbench tasks, stored on this computer"

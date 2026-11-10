@@ -20,7 +20,7 @@ import {
   type PortfolioTrackSectionKey
 } from './portfolio-track-view'
 import { portfolioTicketLabel, type PortfolioTrack } from './portfolio-tracks'
-import { PortfolioTrackPin } from './PortfolioTrackPin'
+import { PortfolioPin } from './PortfolioPin'
 
 const GRID =
   'grid grid-cols-[6rem_minmax(12rem,1fr)_8rem_minmax(9rem,0.6fr)_minmax(9rem,0.6fr)_minmax(8rem,0.5fr)_1.5rem] items-center gap-3'
@@ -96,7 +96,7 @@ function TrackLine({
       }}
       className={cn(
         GRID,
-        'group/track min-h-11 border-t border-border/40 px-3 py-2 text-xs outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring',
+        'group/pin min-h-11 border-t border-border/40 px-3 py-2 text-xs outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring',
         cell && 'cursor-pointer hover:bg-accent'
       )}
     >
@@ -132,7 +132,7 @@ function TrackLine({
         )}
       </span>
       <span role="cell">
-        <PortfolioTrackPin
+        <PortfolioPin
           pinned={pinned}
           label={ticket || track.title}
           onToggle={() => onTogglePin(track.key)}

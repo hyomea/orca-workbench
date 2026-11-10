@@ -10,6 +10,7 @@ import { PortfolioSpecification } from './PortfolioSpecification'
 import { PortfolioWorkItemList } from './PortfolioWorkItemList'
 import { PortfolioFeatureParity } from './PortfolioFeatureParity'
 import { usePortfolioTracks } from './use-portfolio-tracks'
+import { usePinned } from './use-pinned'
 
 type Composer = 'feature' | 'feature.edit' | 'outcome' | 'outcome.edit'
 
@@ -26,7 +27,10 @@ export function PortfolioFeatures({
   onSelectTask,
   onCreateRole,
   onOpenTasks,
-  onDiscuss
+  onDiscuss,
+  itemId: shownItemId,
+  onItemChange,
+  onOpenOutcome
 }: {
   view?: 'outcomes' | 'features'
   state: PortfolioState
@@ -40,11 +44,19 @@ export function PortfolioFeatures({
   onCreateRole: () => void
   onOpenTasks: () => void
   onDiscuss: (prompt: string) => void
+  // The page can own which outcome is open, so the feature catalog can open one in it.
+  itemId?: string
+  onItemChange?: (id: string) => void
+  // In the feature catalog, opening an outcome shows it on the page instead of here.
+  onOpenOutcome?: (id: string) => void
 }): React.JSX.Element {
   const [featureId, setFeatureId] = useState('')
-  const [itemId, setItemId] = useState('')
+  const [ownItemId, setOwnItemId] = useState('')
+  const itemId = shownItemId ?? ownItemId
+  const setItemId = onItemChange ?? setOwnItemId
   const [composer, setComposer] = useState<Composer | null>(null)
   const tracks = usePortfolioTracks(state, projectId)
+  const pins = usePinned('outcomes')
   const features = state.features.filter((feature) => feature.projectId === projectId)
   const feature = view === 'features' ? features.find((entry) => entry.id === featureId) : undefined
   const items = state.workItems.filter((item) =>
@@ -117,6 +129,8 @@ export function PortfolioFeatures({
             tracks={tracks}
             items={items}
             features={features}
+            pinned={pins.pinned}
+            onTogglePin={pins.toggle}
             onSelect={setItemId}
           />
         </>
@@ -241,7 +255,7 @@ export function PortfolioFeatures({
             tracks={tracks}
             items={items}
             features={features}
-            onSelect={setItemId}
+            onSelect={onOpenOutcome ?? setItemId}
           />
         </>
       )}

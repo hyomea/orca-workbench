@@ -1,6 +1,7 @@
 import { canEditPortfolioContext } from '../../../../shared/portfolio-design'
 import { PortfolioDesignAttachments } from './PortfolioDesignAttachments'
 import { PortfolioNextStep } from './PortfolioNextStep'
+import { portfolioNextStep } from '../../../../shared/portfolio-next-step'
 import { PortfolioDiscovery } from './PortfolioDiscovery'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
@@ -112,16 +113,19 @@ export function PortfolioWorkItemDetail({
           onClose={() => setEditingScope(false)}
         />
       )}
-      <PortfolioNextStep
-        state={state}
-        feature={feature}
-        item={item}
-        busy={busy}
-        onTab={setTab}
-        onOpenTasks={onOpenTasks}
-        onEdit={onEdit}
-        onDiscuss={onDiscuss}
-      />
+      {/* While the work runs, the progress rows below already point to Tasks. */}
+      {portfolioNextStep(state, feature, item) !== 'tasks' && (
+        <PortfolioNextStep
+          state={state}
+          feature={feature}
+          item={item}
+          busy={busy}
+          onTab={setTab}
+          onOpenTasks={onOpenTasks}
+          onEdit={onEdit}
+          onDiscuss={onDiscuss}
+        />
+      )}
       <PortfolioDiscovery state={state} item={item} />
       <PortfolioOutcomeProgress
         state={state}
@@ -136,7 +140,7 @@ export function PortfolioWorkItemDetail({
       <Tabs value={tab} onValueChange={setTab} className="space-y-4">
         <TabsList className="grid w-full grid-cols-2 group-data-[orientation=horizontal]/tabs:h-auto @md/project:w-fit @md/project:grid-cols-3">
           <TabsTrigger className="h-8" value="context">
-            {translate('portfolio.sharedContext', 'Shared context')}
+            {translate('portfolio.definition', 'Definition')}
           </TabsTrigger>
           <TabsTrigger className="h-8" value="tests">
             {translate('portfolio.parityTests', 'Parity & tests')}

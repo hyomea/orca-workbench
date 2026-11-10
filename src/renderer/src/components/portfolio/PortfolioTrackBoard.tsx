@@ -8,7 +8,7 @@ import { ticketRoleName, workPlatformName } from './portfolio-feature-labels'
 import { stageName } from './portfolio-track-labels'
 import { portfolioTrackCellStatus } from './portfolio-track-status'
 import { portfolioBoardSections } from './portfolio-track-view'
-import { PortfolioTrackPin } from './PortfolioTrackPin'
+import { PortfolioPin } from './PortfolioPin'
 import { prStatusLabel, type PortfolioTrackPr } from './portfolio-track-pr'
 import {
   PORTFOLIO_STAGES,
@@ -193,7 +193,7 @@ function TrackRow({
       ? translate('portfolio.trackNoPlatform', 'No platform')
       : translate('portfolio.trackNoOutcome', 'Task without an outcome')
   return (
-    <div role="row" className={cn(GRID, 'group/track items-start gap-2 py-1 pl-3')}>
+    <div role="row" className={cn(GRID, 'group/pin items-start gap-2 py-1 pl-3')}>
       <div role="rowheader" className="flex min-w-0 items-start gap-1 pt-2 text-xs">
         <span className="min-w-0 flex-1">
           <span className="font-medium">{platform}</span>
@@ -206,7 +206,7 @@ function TrackRow({
             <span className="block text-muted-foreground">{ticketRoleName(track.role)}</span>
           )}
         </span>
-        <PortfolioTrackPin
+        <PortfolioPin
           pinned={pinned}
           label={track.ticket ? portfolioTicketLabel(track.ticket) : platform}
           onToggle={() => onTogglePin(track.key)}
