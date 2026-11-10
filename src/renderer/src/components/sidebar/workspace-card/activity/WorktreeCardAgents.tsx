@@ -402,6 +402,7 @@ const WorktreeCardAgentsBody = React.memo(function WorktreeCardAgentsBody({
               agents={summaryAgents}
               subjectLabel={subjectLabel}
               expanded={compactRootListExpanded}
+              unread={agents.some((agent) => unvisitedByPaneKey[agent.paneKey])}
               onToggle={() => {
                 dispatchSuppressScrollAdjustment()
                 toggleCompactRootList()

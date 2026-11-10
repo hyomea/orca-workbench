@@ -1,4 +1,5 @@
 import React, { useCallback, useRef } from 'react'
+import { AgentUnreadDot } from './agent-unread-dot'
 import { ChevronDown } from 'lucide-react'
 import { AgentStateDot } from '@/components/AgentStateDot'
 import type { DashboardAgentRow as DashboardAgentRowData } from '@/components/dashboard/useDashboardData'
@@ -25,6 +26,8 @@ type CompactAgentSummaryButtonProps = {
   agents: DashboardAgentRowData[]
   subjectLabel: string
   expanded: boolean
+  // Some agent in the group finished a turn nobody has looked at yet.
+  unread?: boolean
   onToggle: () => void
 }
 
@@ -76,6 +79,7 @@ export function CompactAgentSummaryButton({
   agents,
   subjectLabel,
   expanded,
+  unread = false,
   onToggle
 }: CompactAgentSummaryButtonProps): React.JSX.Element {
   const t = useTranslate()
@@ -175,6 +179,7 @@ export function CompactAgentSummaryButton({
           )}
         </>
       )}
+      {unread && <AgentUnreadDot />}
       <ChevronDown
         className={cn(
           'size-3 shrink-0 transition-transform duration-150',
