@@ -20,13 +20,12 @@ import type {
 } from '../../../../shared/portfolio'
 import {
   portfolioAcceptBlocker,
-  portfolioStageBlocker,
   portfolioSubmittedCommit,
   portfolioTrackTask
 } from '../../../../shared/portfolio-task-stages'
 import { portfolioTrackRole } from '../../../../shared/portfolio-ticket-roles'
 import type { AgentStatusEntry } from '../../../../shared/agent-status/contracts/agent-status-types'
-import { PortfolioField, PortfolioSelect } from './portfolio-controls'
+import { PortfolioField } from './portfolio-controls'
 import { PortfolioTaskDecision } from './PortfolioTaskDecision'
 import { portfolioTaskLane } from './portfolio-task-lanes'
 import {
@@ -34,11 +33,11 @@ import {
   returnPortfolioFindingsToDevelopment,
   type PortfolioTaskReviewComments
 } from './portfolio-task-review-actions'
-import { portfolioDefaultWorkspace } from './portfolio-task-workspace'
 import { stageName, taskNextStep } from './portfolio-track-labels'
 import { PortfolioTaskSteps } from './PortfolioTaskSteps'
 import { PortfolioTaskTriage } from './PortfolioTaskTriage'
 import { PortfolioEndExecution } from './PortfolioEndExecution'
+import { PortfolioTaskStart } from './PortfolioTaskStart'
 
 export type PortfolioWorkspace = { id: string; repoId: string; name: string }
 
@@ -84,9 +83,6 @@ export function PortfolioTaskDetail({
   onOpenWorkspace: (id: string) => void
   onReviewChanges?: (worktreeId: string) => void
 }): React.JSX.Element {
-  const [workspaceId, setWorkspaceId] = useState(() =>
-    portfolioDefaultWorkspace(state, task, workspaces)
-  )
   const [note, setNote] = useState('')
   const [relayNotice, setRelayNotice] = useState('')
   const submittedCommit =
@@ -101,7 +97,6 @@ export function PortfolioTaskDetail({
   const unresolved = attempt && (attempt.state === 'pending' || attempt.state === 'unknown')
   const { lane, attention } = portfolioTaskLane(task, activity, now)
   const canStart = task.status === 'todo' && (!attempt || attempt.state === 'closed')
-  const stageBlocker = canStart ? portfolioStageBlocker(state, task) : undefined
   const acceptBlocker = lane === 'decide' ? portfolioAcceptBlocker(state, task) : undefined
   const workspaceName = workspaces.find((entry) => entry.id === attempt?.worktreeId)?.name
   const reviewer = portfolioTrackRole(state, task) === 'reviewer'
@@ -206,34 +201,15 @@ export function PortfolioTaskDetail({
                   {activity.lastAssistantMessage || activity.toolName}
                 </p>
               )}
-              {canStart && (
-                <div className="space-y-2">
-                  <PortfolioSelect
-                    label={translate('portfolio.workspace', 'Execution workspace')}
-                    value={workspaceId}
-                    onChange={setWorkspaceId}
-                    options={workspaces}
-                    disabled={busy}
-                  />
-                  {!workspaces.length && (
-                    <p className="text-muted-foreground">
-                      {translate(
-                        'portfolio.noWorkspace',
-                        'Open a local workspace from a linked repository or folder first.'
-                      )}
-                    </p>
-                  )}
-                  {stageBlocker && <p className="text-muted-foreground">{stageBlocker}</p>}
-                  <Button
-                    disabled={busy || !workspaceId || Boolean(stageBlocker)}
-                    onClick={() => void onLaunch(task.id, workspaceId)}
-                  >
-                    {busy
-                      ? translate('portfolio.launching', 'Starting agent…')
-                      : translate('portfolio.startAgent', 'Start agent')}
-                  </Button>
-                </div>
-              )}
+              <PortfolioTaskStart
+                state={state}
+                task={task}
+                workspaces={workspaces}
+                busy={busy}
+                onLaunch={onLaunch}
+                onSave={onSave}
+                onNotice={setRelayNotice}
+              />
               {attempt && !canStart && lane !== 'accepted' && (
                 <div className="flex flex-wrap gap-2">
                   {unresolved && (

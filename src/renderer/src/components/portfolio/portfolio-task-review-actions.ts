@@ -116,6 +116,25 @@ export function requestPortfolioTriage(
   )
 }
 
+// The code review or QA session that sent findings back looks at development's next submission.
+export function runPortfolioTaskAgain(
+  save: () => Promise<boolean>,
+  task: PortfolioTask,
+  commit: string
+): Promise<string | false> {
+  return saveAndRelay(
+    save,
+    task,
+    [
+      `Development submitted again (commit ${commit}) for your Workbench task ${task.id}.`,
+      task.stage === 'qa'
+        ? 'Test this version: check that each finding you sent back is resolved, re-run the checks they affect, and look for regressions.'
+        : 'Review the commits since your last review: check that each finding you sent back is resolved, and look for new problems.',
+      'Then submit your updated report with `task submit`. Do not push, or open or comment on a PR.'
+    ].join('\n')
+  )
+}
+
 // The message is stored either way; when it cannot reach the pane, the notice says so, and a
 // closed session receives it in its next launch prompt.
 async function saveAndRelay(

@@ -247,15 +247,45 @@ it('returns findings to a live development session and resets later stages', () 
   apply(state, { kind: 'task.sendBack', taskId: 'codeReview', note: 'B-1: missing test' })
   const review = task(state, 'codeReview')
   expect(review).toMatchObject({ status: 'todo', evidence: '' })
-  expect(review.attempts.at(-1)?.state).toBe('closed')
+  // The reviewer's session stays open to check the next submission against its findings.
+  expect(review.attempts.at(-1)?.state).toBe('launched')
   const development = task(state, 'development')
   expect(development.status).toBe('running')
   expect(development.history.at(-1)).toMatchObject({
     returnedFrom: 'codeReview',
     note: 'Returned from code review: B-1: missing test'
   })
-  // The next review round starts a new execution after development submits again.
-  expect(() => launch(state, 'codeReview')).toThrow('after development submits')
+  const again = { kind: 'task.runAgain', taskId: 'codeReview' }
+  expect(() => apply(state, again)).toThrow('after development submits')
+  apply(state, {
+    kind: 'task.transition',
+    taskId: 'development',
+    status: 'review',
+    note: 'Fixed B-1',
+    commit: 'def5678'
+  })
+  expect(() => launch(state, 'codeReview')).toThrow('Stop and close the previous execution')
+  apply(state, again)
+  expect(review).toMatchObject({ status: 'running' })
+  expect(review.attempts).toHaveLength(1)
+  expect(review.history.at(-1)?.note).toBe('Running again in the same session on def5678')
+  expect(() => apply(state, again)).toThrow('after development submits again')
+})
+
+it('starts a fresh code review session once the open one is ended', () => {
+  const state = fixture()
+  launch(state, 'development')
+  submit(state, 'development')
+  launch(state, 'codeReview')
+  submit(state, 'codeReview')
+  apply(state, { kind: 'task.sendBack', taskId: 'codeReview', note: 'B-1: missing test' })
+  submit(state, 'development')
+  apply(state, { kind: 'task.closeExecution', taskId: 'codeReview', note: 'Fresh eyes' })
+  expect(() => apply(state, { kind: 'task.runAgain', taskId: 'codeReview' })).toThrow(
+    'no open session'
+  )
+  launch(state, 'codeReview')
+  expect(task(state, 'codeReview').attempts).toHaveLength(2)
 })
 
 it('gives returned findings to the next development launch when the session was closed', () => {
@@ -277,6 +307,8 @@ it('gives returned findings to the next development launch when the session was 
     'Address these findings first:\nReturned from QA: Crash on rotate'
   )
   submit(state, 'development')
+  // A fresh review session, once the earlier one ends, is not given QA's findings.
+  apply(state, { kind: 'task.closeExecution', taskId: 'codeReview', note: 'Closed it' })
   expect(launch(state, 'codeReview')).not.toContain('Crash on rotate')
 })
 

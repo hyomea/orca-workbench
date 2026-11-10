@@ -2,8 +2,10 @@ import type { PortfolioCommand, PortfolioState, PortfolioTask } from './portfoli
 import { workItemForTask } from './portfolio-feature-commands'
 import {
   assertPortfolioDevelopmentAcceptable,
+  assertPortfolioStageReady,
   assertPortfolioTrackSlot,
   portfolioOpenExecution,
+  portfolioStageCommit,
   portfolioTaskEvent,
   portfolioTrackTask,
   reopenPortfolioTask,
@@ -185,10 +187,8 @@ export function applyPortfolioTaskCommand(
       if (attempt && (attempt.state === 'pending' || attempt.state === 'unknown')) {
         throw new Error('Resolve the uncertain launch before changing this task.')
       }
-      // This round is over; reviewing the next submission starts a new execution.
-      if (attempt) {
-        attempt.state = 'closed'
-      }
+      // This round is over. The session stays open, so the next submission is checked by the same
+      // agent, which remembers what it found (task.runAgain).
       task.status = 'todo'
       task.evidence = ''
       portfolioTaskEvent(task, now, `Sent back to development: ${command.note}`)
@@ -212,6 +212,24 @@ export function applyPortfolioTaskCommand(
         throw new Error('Resolve the uncertain launch before changing this task.')
       }
       reopenPortfolioTask(task, task.stage === 'qa' ? 'externalQa' : 'pr', command.note, now)
+      return true
+    }
+    case 'task.runAgain': {
+      const task = portfolioTask(state, command.taskId)
+      if (task.stage === 'development' || task.status !== 'todo') {
+        throw new Error('Run a code review or QA task again after development submits again.')
+      }
+      if (task.attempts.at(-1)?.state !== 'launched') {
+        throw new Error('This task has no open session; start a new one.')
+      }
+      assertPortfolioStageReady(state, task)
+      task.status = 'running'
+      task.evidence = ''
+      portfolioTaskEvent(
+        task,
+        now,
+        `Running again in the same session on ${portfolioStageCommit(state, task)}`
+      )
       return true
     }
     default:

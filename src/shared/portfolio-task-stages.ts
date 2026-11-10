@@ -57,7 +57,9 @@ export const PortfolioTaskStageCommands = [
   // Code review or QA returns findings to the development task of the same track.
   z.object({ kind: z.literal('task.sendBack'), taskId: Id, note: Description }),
   // In team mode, new PR comments or external QA feedback reopen code review or QA to triage them.
-  z.object({ kind: z.literal('task.requestTriage'), taskId: Id, note: Description })
+  z.object({ kind: z.literal('task.requestTriage'), taskId: Id, note: Description }),
+  // Code review or QA looks at development's next submission in the session that sent it back.
+  z.object({ kind: z.literal('task.runAgain'), taskId: Id })
 ] as const
 
 export const PORTFOLIO_STAGE_NAMES: Record<PortfolioTaskStage, string> = {
@@ -140,7 +142,7 @@ export function reopenPortfolioTask(
 }
 
 // Reopens the track's development task with findings. Later stages must run again on the next
-// submission, so their finished results are cleared.
+// submission, so their finished results are cleared; an open session stays open to run it.
 export function returnPortfolioFindings(
   state: PortfolioState,
   development: PortfolioTask,
@@ -152,10 +154,6 @@ export function returnPortfolioFindings(
   for (const stage of ['codeReview', 'qa'] as const) {
     const later = portfolioTrackTask(state, development, stage)
     if (later && (later.status === 'review' || later.status === 'accepted')) {
-      const attempt = later.attempts.at(-1)
-      if (attempt?.state === 'launched') {
-        attempt.state = 'closed'
-      }
       later.status = 'todo'
       later.evidence = ''
       portfolioTaskEvent(later, now, 'Development reopened; run again on its next submission')
