@@ -103,6 +103,7 @@ function portfolioStagePrompt(state: PortfolioState, task: PortfolioTask): strin
               .join('\n')}`
           ]
         : []),
+      'Do not push or open a PR on your own. When the user confirms it from Workbench, push this branch and open (or update) a draft PR; never mark it ready, request reviewers, or merge.',
       ...portfolioReturnedFindings(task).map((note) => `Address these findings first:\n${note}`)
     ]
   }
@@ -118,6 +119,7 @@ function portfolioStagePrompt(state: PortfolioState, task: PortfolioTask): strin
     task.stage === 'codeReview'
       ? 'Stage: code review. Review the development work on this branch; do not edit code.'
       : 'Stage: QA. Test the development work on this branch; do not edit product code.',
+    'Do not push, or open, comment on, or mark ready a PR; the development agent opens it when the user confirms.',
     `Development task: ${development?.title ?? 'unknown'}${commit ? ` (submitted at commit ${commit})` : ''}`,
     ...portfolioTeamReviewPrompt(state, task),
     ...portfolioReturnedFindings(task).map((note) => `Triage this new feedback first:\n${note}`)

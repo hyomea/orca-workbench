@@ -71,6 +71,7 @@ const ORDER: Record<PortfolioTrackNext, number> = {
 const PR_NEXT: Record<PortfolioPrStatus, PortfolioTrackNext> = {
   checking: 'none',
   none: 'start',
+  draft: 'decide',
   ciFailing: 'attention',
   closed: 'attention',
   changesRequested: 'decide',

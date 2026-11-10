@@ -59,7 +59,9 @@ export const PortfolioTaskStageCommands = [
   // In team mode, new PR comments or external QA feedback reopen code review or QA to triage them.
   z.object({ kind: z.literal('task.requestTriage'), taskId: Id, note: Description }),
   // Code review or QA looks at development's next submission in the session that sent it back.
-  z.object({ kind: z.literal('task.runAgain'), taskId: Id })
+  z.object({ kind: z.literal('task.runAgain'), taskId: Id }),
+  // The user lets the development session push its branch and open, or update, a draft PR.
+  z.object({ kind: z.literal('task.confirmPush'), taskId: Id })
 ] as const
 
 export const PORTFOLIO_STAGE_NAMES: Record<PortfolioTaskStage, string> = {

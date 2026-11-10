@@ -135,6 +135,25 @@ export function runPortfolioTaskAgain(
   )
 }
 
+// The user confirmed a push: the development session publishes its branch as a draft PR, or
+// pushes the new commits to the one it opened.
+export function confirmPortfolioPush(
+  save: () => Promise<boolean>,
+  task: PortfolioTask,
+  prNumber: number | undefined
+): Promise<string | false> {
+  return saveAndRelay(
+    save,
+    task,
+    [
+      prNumber
+        ? `The user confirmed from Workbench: push your new commits to draft PR #${prNumber} for your Workbench task ${task.id}.`
+        : `The user confirmed from Workbench: push this branch and open a draft PR for your Workbench task ${task.id}. Title it with the ticket, and describe what changed and how it was verified, from your submitted evidence.`,
+      'Keep it a draft: do not mark it ready, request reviewers, or merge. Then reply with the PR link.'
+    ].join('\n')
+  )
+}
+
 // The message is stored either way; when it cannot reach the pane, the notice says so, and a
 // closed session receives it in its next launch prompt.
 async function saveAndRelay(

@@ -232,6 +232,21 @@ export function applyPortfolioTaskCommand(
       )
       return true
     }
+    case 'task.confirmPush': {
+      const task = portfolioTask(state, command.taskId)
+      if (
+        task.stage !== 'development' ||
+        (task.status !== 'review' && task.status !== 'accepted')
+      ) {
+        throw new Error('Confirm a push for a development task that has submitted its work.')
+      }
+      if (task.attempts.at(-1)?.state !== 'launched') {
+        throw new Error('The development session is closed; push and open the PR yourself.')
+      }
+      // Kept in the history: pushing is the user's decision, never the agent's own.
+      portfolioTaskEvent(task, now, 'User confirmed: push the branch to its draft PR')
+      return true
+    }
     default:
       return false
   }

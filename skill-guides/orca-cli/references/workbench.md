@@ -197,10 +197,16 @@ An initiative reviews in one of two modes, set by the user with `project.reviewM
   PR's comments and the QA agent that feedback: read only, a verdict per item (must fix, not
   needed with the reason, or needs discussion), and drafted replies for the user to post. The
   user asks for each new round from the task's page (`task.requestTriage`), decides what goes
-  back to development, and the track is done when its PR merges. The user pushes and opens
-  the PR; agents never push, open, comment on, or resolve anything there. On a track the user
-  builds (`author`), the PR opens only after the local code review has submitted, so the team
-  reviews a branch the reviewer agent has already checked.
+  back to development, and the track is done when its PR merges.
+
+On a track the user builds (`author`), the development agent publishes the branch, and only
+when the user confirms it from the development task's page (`task.confirmPush`, which sends
+the session the request): after development submits, it pushes and opens a draft PR; after
+later rounds, it pushes the new commits to that PR. It never marks the PR ready, requests
+reviewers, or merges. The code review agent then reviews locally, and its findings go back to
+development from the task's page. The user marks the PR ready for the team only after the local
+code review has submitted. Code review and QA agents never push, open, comment on, or resolve
+anything on a PR, and no agent pushes on its own initiative.
 
 ### Planning development steps
 
@@ -259,7 +265,7 @@ initiative, and never accept a task.
 
 1. If the work is not finished, do not submit. Tell the user what remains.
 2. Commit the work on the task branch, following the repository's commit conventions, so
-   the user reviews a fixed version. (Code review and QA usually have nothing to commit.) Do not push; the user decides when to push. When the
+   the user reviews a fixed version. (Code review and QA usually have nothing to commit.) Do not push; the user confirms each push from Workbench. When the
    user sent the task back, add a new commit for the changes rather than amending, so the next
    review can see what changed.
 3. Write the evidence as Markdown to a file outside the repository, such as

@@ -94,8 +94,9 @@ guess field names; read \`schema\`.
   current stage and who acts next, reading terminals for the ones that need attention.
 - Code review and QA findings return to development only when the user sends them back from
   the task's page; do not relay them yourself. In a team initiative the code review and QA
-  agents triage PR comments and external QA feedback when the user asks for a round; never
-  push, open, or comment on a PR.
+  agents triage PR comments and external QA feedback when the user asks for a round; they
+  never push, open, or comment on a PR. Only a development agent pushes and opens a draft PR,
+  when the user confirms it from the task's page; never push or open one yourself.
 - Follow each repository's own AGENTS.md / CLAUDE.md and the user's global instructions.
 - A discovery (an \`investigation\` outcome) is yours to work out with the user, following
   "Discovery" in the Workbench reference: read only, record findings as you go, keep facts apart

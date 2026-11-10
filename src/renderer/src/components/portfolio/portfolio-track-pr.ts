@@ -11,6 +11,7 @@ import { isGitHubPRSuppressed } from '../../../../shared/worktree/github-pr-supp
 export type PortfolioPrStatus =
   | 'checking'
   | 'none'
+  | 'draft'
   | 'ciFailing'
   | 'changesRequested'
   | 'readyToMerge'
@@ -43,6 +44,10 @@ export function portfolioPrStatus(pr: PRInfo | null): PortfolioPrStatus {
   }
   if (pr.checksStatus === 'failure') {
     return 'ciFailing'
+  }
+  // A draft is not up for the team's review yet; the user marks it ready.
+  if (pr.state === 'draft') {
+    return 'draft'
   }
   if (pr.reviewDecision === 'CHANGES_REQUESTED') {
     return 'changesRequested'
@@ -129,6 +134,8 @@ export function prStatusLabel(status: PortfolioPrStatus): string {
       return translate('portfolio.prChecking', 'Checking PR…')
     case 'none':
       return translate('portfolio.prNone', 'Ready to open a PR')
+    case 'draft':
+      return translate('portfolio.prDraft', 'Draft PR')
     case 'ciFailing':
       return translate('portfolio.prCiFailing', 'CI failing')
     case 'changesRequested':

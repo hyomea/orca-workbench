@@ -323,6 +323,25 @@ function acceptAll(state: PortfolioState): void {
   accept(state, 'development')
 }
 
+it('records the user’s push confirmation on a submitted development session only', () => {
+  const state = fixture()
+  const confirm = { kind: 'task.confirmPush', taskId: 'development' }
+  const prompt = launch(state, 'development')
+  expect(prompt).toContain('Do not push or open a PR on your own.')
+  expect(() => apply(state, confirm)).toThrow('has submitted its work')
+  submit(state, 'development')
+  apply(state, confirm)
+  expect(task(state, 'development').history.at(-1)).toMatchObject({
+    status: 'review',
+    note: 'User confirmed: push the branch to its draft PR'
+  })
+  // Not a new submission: code review still reviews the submitted commit.
+  expect(launch(state, 'codeReview')).toContain('Do not push, or open, comment on, or mark ready')
+  expect(() => apply(state, { ...confirm, taskId: 'codeReview' })).toThrow('development task')
+  apply(state, { kind: 'task.closeExecution', taskId: 'development', note: 'Done' })
+  expect(() => apply(state, confirm)).toThrow('session is closed')
+})
+
 it('asks code review to triage new PR comments in a team initiative', () => {
   const state = fixture()
   acceptAll(state)

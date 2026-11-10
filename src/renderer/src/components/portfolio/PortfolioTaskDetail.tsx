@@ -38,6 +38,7 @@ import { PortfolioTaskSteps } from './PortfolioTaskSteps'
 import { PortfolioTaskTriage } from './PortfolioTaskTriage'
 import { PortfolioEndExecution } from './PortfolioEndExecution'
 import { PortfolioTaskStart } from './PortfolioTaskStart'
+import { PortfolioTaskPush } from './PortfolioTaskPush'
 
 export type PortfolioWorkspace = { id: string; repoId: string; name: string }
 
@@ -207,6 +208,13 @@ export function PortfolioTaskDetail({
                 workspaces={workspaces}
                 busy={busy}
                 onLaunch={onLaunch}
+                onSave={onSave}
+                onNotice={setRelayNotice}
+              />
+              <PortfolioTaskPush
+                state={state}
+                task={task}
+                busy={busy}
                 onSave={onSave}
                 onNotice={setRelayNotice}
               />
