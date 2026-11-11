@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { PortfolioCommand } from '../portfolio'
 import { PortfolioNoteDraftInput } from '../portfolio-notes'
+import { PortfolioChecklistProposalInput } from '../portfolio-checklist'
 export { PortfolioIntake } from '../portfolio-intake'
 import { PortfolioBatch } from '../portfolio-batch'
 export { PortfolioBatch }
@@ -50,3 +51,7 @@ export const PortfolioSetPersonalNotesFolder = z.object({ folder: z.string().min
 export const PortfolioIndexPersonalNotes = z.object({})
 export const PortfolioPersonalNotes = z.object({ repo: z.string().min(1).max(200).optional() })
 export const PortfolioProposeNote = InWorkbench.extend({ draft: PortfolioNoteDraftInput })
+export const PortfolioProposeChecklist = InWorkbench.extend({
+  workItemId: z.string().min(1),
+  proposal: PortfolioChecklistProposalInput
+})

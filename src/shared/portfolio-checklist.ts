@@ -24,6 +24,23 @@ export const PortfolioChecklistEntry = PortfolioChecklistItem.omit({ id: true, a
 })
 export type PortfolioChecklistEntry = z.infer<typeof PortfolioChecklistEntry>
 
+// An agent's suggested addition or change, waiting in the outcome's inbox until the user accepts
+// (possibly reworded) or dismisses it. Only the user's acceptance changes the checklist.
+export const PortfolioChecklistProposalInput = z.object({
+  kind: PortfolioChecklistKind,
+  text: PortfolioChecklistItem.shape.text,
+  reason: z.string().trim().max(4000),
+  // The item it rewrites; absent proposes a new one.
+  itemId: Id.optional(),
+  // The task whose agent proposed it.
+  taskId: Id.optional()
+})
+export const PortfolioChecklistProposal = PortfolioChecklistProposalInput.extend({
+  id: Id,
+  at: z.number()
+})
+export type PortfolioChecklistProposal = z.infer<typeof PortfolioChecklistProposal>
+
 type ChecklistOwner = {
   id: string
   acceptanceCriteria: string
@@ -123,4 +140,33 @@ export function portfolioChecklistFromEntries(
         existing && existing.text === entry.text && existing.kind === entry.kind ? existing.at : now
     }
   })
+}
+
+function kindName(kind: PortfolioChecklistKind): string {
+  return kind === 'decision' ? 'decision' : 'criterion'
+}
+
+// What changed between two versions of a checklist, one line each, for the agents already
+// working on the outcome. Items are matched by id, so a reworded item reads as a change.
+export function portfolioChecklistChanges(
+  before: readonly PortfolioChecklistItem[],
+  after: readonly PortfolioChecklistItem[]
+): string[] {
+  const previous = new Map(before.map((entry) => [entry.id, entry]))
+  const lines: string[] = []
+  for (const entry of after) {
+    const old = previous.get(entry.id)
+    previous.delete(entry.id)
+    if (!old) {
+      lines.push(`Added ${kindName(entry.kind)}: ${entry.text}`)
+    } else if (old.text !== entry.text || old.kind !== entry.kind) {
+      lines.push(
+        `Changed ${kindName(old.kind)} "${old.text}" to ${kindName(entry.kind)}: ${entry.text}`
+      )
+    }
+  }
+  for (const old of previous.values()) {
+    lines.push(`Removed ${kindName(old.kind)}: ${old.text}`)
+  }
+  return lines
 }

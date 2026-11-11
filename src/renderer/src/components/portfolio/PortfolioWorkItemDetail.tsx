@@ -20,6 +20,7 @@ import {
 } from '../../../../shared/portfolio-features'
 import { PortfolioSpecification } from './PortfolioSpecification'
 import { PortfolioChecklist } from './PortfolioChecklist'
+import { PortfolioOutcomeInbox } from './PortfolioOutcomeInbox'
 import { PortfolioWorkItemReview } from './PortfolioWorkItemReview'
 import { workItemKinds } from './portfolio-feature-labels'
 import { PortfolioTickets } from './PortfolioTickets'
@@ -127,6 +128,7 @@ export function PortfolioWorkItemDetail({
           onDiscuss={onDiscuss}
         />
       )}
+      <PortfolioOutcomeInbox state={state} item={item} busy={busy} onSave={onSave} />
       <PortfolioDiscovery state={state} item={item} />
       <PortfolioOutcomeProgress
         state={state}
@@ -152,6 +154,7 @@ export function PortfolioWorkItemDetail({
         </TabsList>
         <TabsContent value="context" className="space-y-4">
           <PortfolioChecklist
+            state={state}
             item={item}
             editable={item.status !== 'accepted' && !published}
             busy={busy}

@@ -18,6 +18,8 @@ vi.mock('@/i18n/i18n', () => ({
   getIntlLocale: () => 'en',
   translate: (_key: string, fallback: string) => fallback
 }))
+// Checklist changes are relayed to open agent sessions; this page has none.
+vi.mock('./portfolio-task-review-actions', () => ({ relayToPortfolioTask: async () => '' }))
 afterEach(cleanup)
 function initialState() {
   const state = emptyPortfolio()

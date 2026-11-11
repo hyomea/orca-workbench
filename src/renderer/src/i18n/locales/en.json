@@ -25024,7 +25024,19 @@
     "editChecklist": "Edit checklist",
     "removeChecklistItem": "Remove item",
     "saveChecklist": "Save checklist",
-    "outcomesAbout": "About outcomes"
+    "outcomesAbout": "About outcomes",
+    "checklistSent": "Sent the change to {{names}}.",
+    "proposalByAgent": "An agent",
+    "proposedDecision": "Decision proposed by {{from}}",
+    "proposedCriterion": "Criterion proposed by {{from}}",
+    "proposalReplaces": "Replaces: {{text}}",
+    "acceptChange": "Accept change",
+    "addToChecklist": "Add to checklist",
+    "outcomeInbox": "Inbox",
+    "outcomeInboxCount_one": "Inbox · {{count}} proposed change",
+    "outcomeInboxCount_other": "Inbox · {{count}} proposed changes",
+    "proposalsBadge_one": "{{count}} to review",
+    "proposalsBadge_other": "{{count}} to review"
   },
   "wslDistroHold": {
     "terminalStopped": "The WSL distro {{distro}} is stopped, so Orca didn't start this terminal. Start the distro, then try again.",

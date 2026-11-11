@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { PortfolioDiscoveryConclusion } from './portfolio-outcome-discovery'
 import { PortfolioDesignAttachments } from './portfolio-design'
 import { PortfolioFeatureParity } from './portfolio-feature-parity'
-import { PortfolioChecklistEntry, PortfolioChecklistItem } from './portfolio-checklist'
+import { PortfolioChecklistItem, PortfolioChecklistProposal } from './portfolio-checklist'
 
 const Id = z.string().trim().min(1).max(4096)
 const Name = z.string().trim().min(1).max(200)
@@ -88,6 +88,8 @@ export const PortfolioWorkItem = PortfolioWorkItemInput.extend({
   conclusion: PortfolioDiscoveryConclusion.optional(),
   // Absent on outcomes saved before checklists: their criteria text is read as items.
   checklist: z.array(PortfolioChecklistItem).max(100).optional(),
+  // Agents' proposed checklist changes, waiting for the user.
+  proposals: z.array(PortfolioChecklistProposal).max(50).optional(),
   id: Id,
   baseVersion: z.number().int().nonnegative(),
   status: StoredWorkItemStatus,
@@ -161,12 +163,6 @@ export const PortfolioFeatureCommands = [
     feature: Id.nullable().optional(),
     // Omitted keeps the external QA feedback link; null removes it.
     qaFeedbackUrl: QaFeedbackUrl.nullable().optional()
-  }),
-  // Criteria and decisions can change while the work runs; the agents read the current list.
-  z.object({
-    kind: z.literal('workItem.checklist'),
-    workItemId: Id,
-    items: z.array(PortfolioChecklistEntry).max(100)
   }),
   // featureId links an outcome that has no feature yet to the one its specification belongs to.
   z.object({

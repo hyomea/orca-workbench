@@ -15,6 +15,7 @@ import {
   PortfolioWorkbenches,
   PortfolioExportNotes,
   PortfolioProposeNote,
+  PortfolioProposeChecklist,
   PortfolioReadDesign,
   PortfolioRemoveDesign,
   PortfolioLaunch,
@@ -174,6 +175,28 @@ export const PORTFOLIO_METHODS = [
         )
       })
       return { draftId: id }
+    }
+  }),
+  defineMethod({
+    // Agents propose; only the user's review in the outcome's inbox changes its checklist.
+    name: 'portfolio.proposeChecklist',
+    permission: 'workspace',
+    params: PortfolioProposeChecklist,
+    handler: async (params) => {
+      const id = randomUUID()
+      await store(params).update(null, (state) => {
+        applyPortfolioCommand(
+          state,
+          {
+            kind: 'workItem.proposeChecklist',
+            workItemId: params.workItemId,
+            proposal: params.proposal
+          },
+          id,
+          Date.now()
+        )
+      })
+      return { proposalId: id }
     }
   }),
   defineMethod({

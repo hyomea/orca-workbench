@@ -3,13 +3,14 @@ import { CircleCheck, Plus, Scale, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { translate } from '@/i18n/i18n'
-import type { PortfolioCommand } from '../../../../shared/portfolio'
+import type { PortfolioCommand, PortfolioState } from '../../../../shared/portfolio'
 import {
   portfolioChecklist,
   type PortfolioChecklistEntry,
   type PortfolioChecklistKind
 } from '../../../../shared/portfolio-checklist'
 import type { PortfolioWorkItem } from '../../../../shared/portfolio-features'
+import { saveChecklistChange } from './portfolio-checklist-relay'
 
 function kindName(kind: PortfolioChecklistKind): string {
   return kind === 'decision'
@@ -49,14 +50,25 @@ function Items({
   )
 }
 
+export function PortfolioRelayNotice({ notice }: { notice: string }): React.JSX.Element | null {
+  return notice ? (
+    <p role="status" className="whitespace-pre-line text-xs text-muted-foreground">
+      {notice}
+    </p>
+  ) : null
+}
+
 // What "done" means for the outcome: its acceptance criteria and the decisions made along the
-// way. It can change while the work runs, until sign-off; every task's agent reads it.
+// way. It can change while the work runs, until sign-off; every task's agent reads it, and open
+// sessions are told about each change.
 export function PortfolioChecklist({
+  state,
   item,
   editable,
   busy,
   onSave
 }: {
+  state: PortfolioState
   item: PortfolioWorkItem
   editable: boolean
   busy: boolean
@@ -64,6 +76,7 @@ export function PortfolioChecklist({
 }): React.JSX.Element {
   const saved = portfolioChecklist(item)
   const [draft, setDraft] = useState<PortfolioChecklistEntry[] | null>(null)
+  const [notice, setNotice] = useState('')
   const change = (index: number, patch: Partial<PortfolioChecklistEntry>) =>
     setDraft((current) =>
       (current ?? []).map((entry, at) => (at === index ? { ...entry, ...patch } : entry))
@@ -81,14 +94,16 @@ export function PortfolioChecklist({
               variant="ghost"
               size="sm"
               disabled={busy}
-              onClick={() =>
+              onClick={() => {
+                setNotice('')
                 setDraft(saved.map(({ id, kind, text, note }) => ({ id, kind, text, note })))
-              }
+              }}
             >
               {translate('portfolio.editChecklist', 'Edit checklist')}
             </Button>
           )}
         </div>
+        <PortfolioRelayNotice notice={notice} />
         {saved.length ? (
           <>
             <Items kind="criterion" entries={saved} />
@@ -174,9 +189,14 @@ export function PortfolioChecklist({
             size="sm"
             disabled={busy}
             onClick={async () => {
-              if (
-                await onSave({ kind: 'workItem.checklist', workItemId: item.id, items: usable })
-              ) {
+              const result = await saveChecklistChange(
+                state,
+                item.id,
+                { kind: 'workItem.checklist', workItemId: item.id, items: usable },
+                onSave
+              )
+              if (result !== false) {
+                setNotice(result)
                 setDraft(null)
               }
             }}

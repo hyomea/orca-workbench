@@ -1,10 +1,5 @@
 import type { PortfolioCommand, PortfolioState, PortfolioTask } from './portfolio'
-import {
-  portfolioChecklistFromEntries,
-  portfolioChecklistText,
-  portfolioChecklistWithCriteria,
-  portfolioCriteriaText
-} from './portfolio-checklist'
+import { portfolioChecklistText, portfolioChecklistWithCriteria } from './portfolio-checklist'
 import { verificationProgress } from './portfolio-verification'
 import { PortfolioWorkItemInput, portfolioTicketsText } from './portfolio-features'
 import { applyFeatureChange, featureInProject } from './portfolio-feature-records'
@@ -111,7 +106,6 @@ export function applyPortfolioFeatureCommand(
     command.kind !== 'workItem.update' &&
     command.kind !== 'workItem.transition' &&
     command.kind !== 'workItem.scope' &&
-    command.kind !== 'workItem.checklist' &&
     command.kind !== 'feature.publish'
   ) {
     return false
@@ -125,20 +119,6 @@ export function applyPortfolioFeatureCommand(
   const published = !!feature?.versions.some((version) => version.workItemId === item.id)
   // Tickets, parity, and the feature link can change while work is in progress; acceptance and
   // publication check whatever is set at that point.
-  if (command.kind === 'workItem.checklist') {
-    if (item.status === 'accepted' || published) {
-      throw new Error('Reopen the outcome before changing its checklist.')
-    }
-    item.checklist = portfolioChecklistFromEntries(item, command.items, now)
-    item.acceptanceCriteria = portfolioCriteriaText(item.checklist)
-    item.history.push({
-      id: `${item.id}:${item.history.length}`,
-      at: now,
-      status: item.status,
-      note: 'Checklist updated'
-    })
-    return true
-  }
   if (command.kind === 'workItem.scope') {
     if (item.status === 'accepted' || published) {
       throw new Error('Reopen the outcome before changing its tickets or parity.')
@@ -273,6 +253,9 @@ export function applyPortfolioFeatureCommand(
   }
   if (command.status === 'accepted' && tasks.some((task) => task.status !== 'accepted')) {
     throw new Error('Accept all linked tasks before signing off the outcome.')
+  }
+  if (command.status === 'accepted' && item.proposals?.length) {
+    throw new Error('Accept or dismiss the proposed checklist changes before signing off.')
   }
   if (command.status === 'accepted' && item.parity && !verificationProgress(state, item.id).ready) {
     throw new Error(

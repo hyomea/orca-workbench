@@ -83,12 +83,20 @@ function OutcomeRow({
         <span className="col-start-1 row-start-2 text-xs text-muted-foreground @2xl/work-items:col-auto @2xl/work-items:row-auto">
           {workItemKinds().find((kind) => kind.id === item.kind)?.name}
         </span>
-        <span className="col-start-2 row-start-2 @2xl/work-items:col-auto @2xl/work-items:row-auto">
+        <span className="col-start-2 row-start-2 flex flex-col items-start gap-1 @2xl/work-items:col-auto @2xl/work-items:row-auto">
           {outcome === 'readyToPlan' ? (
             <ReadyToPlan state={state} item={item} />
           ) : (
             <PortfolioOutcomePhaseBadge state={state} item={item} tracks={tracks} />
           )}
+          {item.proposals?.length ? (
+            <Badge>
+              {translate('portfolio.proposalsBadge', '{{count}} to review', {
+                count: item.proposals.length,
+                defaultValue_one: '{{count}} to review'
+              })}
+            </Badge>
+          ) : null}
         </span>
         <ChevronRight
           aria-hidden="true"

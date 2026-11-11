@@ -164,6 +164,15 @@ async function saveAndRelay(
   if (!(await save())) {
     return false
   }
+  return relayToPortfolioTask(target, prompt)
+}
+
+// Sends the message into the task's open session. Resolves to '' when it was sent or there is
+// no open session, else the notice to show.
+export async function relayToPortfolioTask(
+  target: PortfolioTask | undefined,
+  prompt: string
+): Promise<string> {
   if (!target || !portfolioOpenExecution(target)) {
     return ''
   }

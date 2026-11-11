@@ -8,6 +8,10 @@ import {
 } from './portfolio-features'
 import { applyPortfolioFeatureCommand } from './portfolio-feature-commands'
 import {
+  applyPortfolioChecklistCommand,
+  PortfolioChecklistCommands
+} from './portfolio-checklist-commands'
+import {
   applyPortfolioDiscoveryCommand,
   PortfolioDiscoveryCommands
 } from './portfolio-outcome-discovery'
@@ -153,6 +157,7 @@ const ProjectDetails = PortfolioProjectInput.omit({ reviewMode: true })
 
 export const PortfolioCommand = z.discriminatedUnion('kind', [
   ...PortfolioFeatureCommands,
+  ...PortfolioChecklistCommands,
   ...PortfolioDiscoveryCommands,
   ...PortfolioVerificationCommands,
   ...PortfolioNoteCommands,
@@ -206,6 +211,7 @@ export function applyPortfolioCommand(
   if (
     applyPortfolioVerificationCommand(state, command, id, now) ||
     applyPortfolioFeatureCommand(state, command, id, now) ||
+    applyPortfolioChecklistCommand(state, command, id, now) ||
     applyPortfolioDiscoveryCommand(state, command, now) ||
     applyPortfolioNoteCommand(state, command, id, now) ||
     applyPortfolioRoleCommand(state, command, id) ||

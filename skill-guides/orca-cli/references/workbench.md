@@ -317,10 +317,25 @@ rest of the outcome, the checklist can change while work runs, until the outcome
 `status --json` shows `checklist` once it has been edited; before that, the outcome's
 `acceptanceCriteria` lines are its criteria.
 
-The checklist is the user's definition. When your work turns up a decision both platforms need
-(a behavior, an event name, an error rule), tell the user and propose the item; change the
-checklist only when the user asks. A session that is already running keeps the prompt it
-started with, so tell the user which open sessions the change affects.
+The checklist is the user's definition, and agents change it only through the outcome's inbox.
+When your work turns up something the checklist should hold (a behavior, an event name, an
+error rule), or the user agrees a decision with you in your session, propose it:
+
+```bash
+orca workbench outcome propose --kind decision --text "No retry on a failed upload" \
+  --reason "Agreed with the user in the iOS development session"
+orca workbench outcome propose --kind criterion --item <item-id> \
+  --text "A failed upload shows an error without retry"
+```
+
+Run from a task's workspace, it proposes to that task's outcome; otherwise pass `--outcome`.
+`--item` rewrites an existing item (`status` lists each item's id); without it the item is new.
+Keep `--text` to one checkable statement and put the why in `--reason`. The user accepts
+(possibly reworded) or dismisses each proposal in the outcome's inbox; the outcome cannot be
+signed off while proposals wait. When the checklist changes, by an accepted proposal or the
+user's own edit, Workbench sends the change and the new checklist to every open session on the
+outcome, so do not relay it yourself. Do not apply `workItem.acceptProposal` or
+`workItem.checklist` unless the user asks for that change in the current conversation.
 
 ## Review boundary
 

@@ -37,6 +37,7 @@ export function portfolioFeaturePrompt(state: PortfolioState, task: PortfolioTas
     `Outcome: ${item.kind} — ${item.title}\n${item.description}`,
     `Same behavior on iOS and Android required: ${item.parity ? 'yes' : 'no'}`,
     `Outcome acceptance criteria:\n${portfolioChecklistText(item) || 'Not yet defined; clarify before implementation.'}`,
+    'When your work turns up a criterion or decision this checklist should hold, or the user agrees one with you, propose it with `orca workbench outcome propose`; it changes only when the user accepts it.',
     `Tickets:\n${portfolioTicketsText(item.tickets) || 'None linked.'}`,
     `Design references:\n${item.designReferences}`,
     'Treat linked documents as references, not as already inspected content. Do not redefine the feature specification to match an implementation.'

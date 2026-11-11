@@ -10,6 +10,8 @@ import { RuntimeClientError } from '../runtime-client'
 import { portfolioRoleLabel } from '../../shared/portfolio-roles'
 import { PORTFOLIO_STAGE_NAMES } from '../../shared/portfolio-task-stages'
 import { WORKBENCH_TASK_HANDLERS } from './workbench-tasks'
+import { WORKBENCH_OUTCOME_HANDLERS } from './workbench-outcomes'
+import { portfolioChecklist } from '../../shared/portfolio-checklist'
 import { LOCAL_ONLY, workbenchScope } from './workbench-client'
 import type { PortfolioWorkbenchSummary } from '../../shared/rpc-contract/portfolio-params'
 
@@ -61,6 +63,16 @@ function formatStatus(state: PortfolioState): string {
         const role = ticket.role && ticket.role !== 'author' ? ` (user is ${ticket.role})` : ''
         lines.push(
           `    Ticket ${ticket.platform ?? 'other'}${role}: ${ticket.reference || 'none yet'}${ticket.pr ? ` · PR ${ticket.pr}` : ''}`
+        )
+      }
+      for (const entry of portfolioChecklist(item)) {
+        lines.push(
+          `    ${entry.kind === 'decision' ? 'Decision' : 'Criterion'}: ${entry.text} [${entry.id}]`
+        )
+      }
+      for (const proposal of item.proposals ?? []) {
+        lines.push(
+          `    Proposed ${proposal.kind}${proposal.itemId ? ` for ${proposal.itemId}` : ''}: ${proposal.text}`
         )
       }
     }
@@ -225,6 +237,7 @@ export const WORKBENCH_HANDLERS: Record<string, CommandHandler> = {
   'workbench apply': apply,
   ...WORKBENCH_TASK_HANDLERS,
   'workbench note propose': propose,
+  ...WORKBENCH_OUTCOME_HANDLERS,
   'workbench personal-notes list': listPersonalNotes,
   'workbench personal-notes index': indexNotes
 }

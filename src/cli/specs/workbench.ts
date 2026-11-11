@@ -110,6 +110,31 @@ export const WORKBENCH_COMMAND_SPECS: CommandSpec[] = [
     ]
   },
   {
+    path: ['workbench', 'outcome', 'propose'],
+    summary: 'Propose a criterion or decision for an outcome’s checklist, for the user to accept',
+    usage:
+      'orca workbench outcome propose --kind <criterion|decision> --text <text> [--item <id>] [--reason <text>] [--outcome <id>] [--task <id>] [--json]',
+    allowedFlags: [
+      ...LOCAL_COMMAND_FLAGS,
+      'kind',
+      'text',
+      'item',
+      'reason',
+      'outcome',
+      'task',
+      'workbench'
+    ],
+    examples: [
+      'orca workbench outcome propose --kind decision --text "No retry on a failed upload" --reason "The user agreed in this session"',
+      'orca workbench outcome propose --kind criterion --item <item-id> --text "A failed upload shows an error without retry"'
+    ],
+    notes: [
+      'Without --outcome or --task, uses the outcome of the Workbench task open in the current workspace.',
+      '--item rewrites that checklist item (ids are in `status`); without it, the item is new.',
+      'The proposal waits in the outcome’s inbox. When the user accepts it, Workbench sends the change to every open session on the outcome.'
+    ]
+  },
+  {
     path: ['workbench', 'personal-notes', 'list'],
     summary: 'List the user’s personal notes with their summaries and paths',
     usage: 'orca workbench personal-notes list [--repo <name>] [--json]',

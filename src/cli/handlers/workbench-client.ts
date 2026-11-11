@@ -50,16 +50,24 @@ export async function read(ctx: HandlerContext, scope: WorkbenchScope): Promise<
 }
 
 // A task agent rarely knows its workbench: use the one holding a matching task.
-export async function readTaskWorkbench(
+export function readTaskWorkbench(
   ctx: HandlerContext,
   matches: (task: PortfolioTask) => boolean
+): Promise<{ scope: WorkbenchScope; state: PortfolioState }> {
+  return readWorkbenchWhere(ctx, (state) => state.tasks.some(matches))
+}
+
+// The one workbench whose data matches, unless --workbench names it.
+export async function readWorkbenchWhere(
+  ctx: HandlerContext,
+  matches: (state: PortfolioState) => boolean
 ): Promise<{ scope: WorkbenchScope; state: PortfolioState }> {
   if (!getOptionalStringFlag(ctx.flags, 'workbench')) {
     const found: { scope: WorkbenchScope; state: PortfolioState }[] = []
     for (const entry of await workbenches(ctx)) {
       const scope = { workbenchId: entry.id }
       const state = await read(ctx, scope)
-      if (state.tasks.some(matches)) {
+      if (matches(state)) {
         found.push({ scope, state })
       }
     }
