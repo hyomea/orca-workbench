@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/sheet'
 import { translate } from '@/i18n/i18n'
 import { PortfolioAgent, PortfolioCommand, type PortfolioState } from '../../../../shared/portfolio'
-import { portfolioRoleLabel } from '../../../../shared/portfolio-roles'
+import { portfolioRoleLabel, portfolioWorkingRoles } from '../../../../shared/portfolio-roles'
 
 type PortfolioRole = PortfolioState['roles'][number]
 import { PortfolioField, PortfolioSelect } from './portfolio-controls'
@@ -57,7 +57,7 @@ export function PortfolioComposer({
   )
   const [description, setDescription] = useState(role?.responsibility ?? '')
   const [criteria, setCriteria] = useState('')
-  const [roleId, setRoleId] = useState(state.roles[0]?.id ?? '')
+  const [roleId, setRoleId] = useState(portfolioWorkingRoles(state)[0]?.id ?? '')
   const [agent, setAgent] = useState<string>(role?.agent ?? 'codex')
   const [agentName, setAgentName] = useState(role?.agentName ?? '')
   const [error, setError] = useState('')
@@ -308,7 +308,7 @@ export function PortfolioComposer({
                   label={translate('portfolio.assignedRole', 'Assigned role')}
                   value={roleId}
                   onChange={setRoleId}
-                  options={state.roles.map((role) => ({
+                  options={portfolioWorkingRoles(state).map((role) => ({
                     id: role.id,
                     name: portfolioRoleLabel(role)
                   }))}

@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { translate } from '@/i18n/i18n'
 import type { PortfolioCommand, PortfolioState } from '../../../../shared/portfolio'
 import type { PortfolioWorkItem } from '../../../../shared/portfolio-features'
+import { portfolioWorkingRoles } from '../../../../shared/portfolio-roles'
 import { PortfolioSelect } from './portfolio-controls'
 import { ticketRoleName, workPlatformName } from './portfolio-feature-labels'
 import { outcomePhaseName, stageName } from './portfolio-track-labels'
@@ -82,6 +83,7 @@ export function PortfolioOutcomeProgress({
   }
   const own = tracks.filter((track) => track.item?.id === item.id)
   const open = item.status !== 'accepted'
+  const canAssign = portfolioWorkingRoles(state).length > 0
   const available = state.tasks.filter(
     (task) =>
       task.projectId === item.projectId &&
@@ -102,9 +104,9 @@ export function PortfolioOutcomeProgress({
               variant="ghost"
               size="sm"
               disabled={busy}
-              onClick={() => (state.roles.length ? onCreateTask(item.id) : onCreateRole())}
+              onClick={() => (canAssign ? onCreateTask(item.id) : onCreateRole())}
             >
-              {state.roles.length
+              {canAssign
                 ? translate('portfolio.newTask', 'New task')
                 : translate('portfolio.newRole', 'New role')}
             </Button>

@@ -1,3 +1,4 @@
+import { assertPortfolioWorkingRole } from './portfolio-roles'
 import type { PortfolioCommand, PortfolioState, PortfolioTask } from './portfolio'
 import { workItemForTask } from './portfolio-feature-commands'
 import {
@@ -29,12 +30,10 @@ export function applyPortfolioTaskCommand(
 ): boolean {
   switch (command.kind) {
     case 'task.create':
-      if (
-        !state.projects.some((project) => project.id === command.task.projectId) ||
-        !state.roles.some((role) => role.id === command.task.roleId)
-      ) {
+      if (!state.projects.some((project) => project.id === command.task.projectId)) {
         throw new Error('Choose an existing initiative and role.')
       }
+      assertPortfolioWorkingRole(state, command.task.roleId)
       if (command.task.workItemId) {
         workItemForTask(state, command.task.projectId, command.task.workItemId)
       }
@@ -117,9 +116,7 @@ export function applyPortfolioTaskCommand(
       if (task.status !== 'todo' || portfolioOpenExecution(task)) {
         throw new Error('Only a task that is not running can be edited.')
       }
-      if (!state.roles.some((role) => role.id === command.task.roleId)) {
-        throw new Error('Choose an existing role.')
-      }
+      assertPortfolioWorkingRole(state, command.task.roleId)
       const { platform: _platform, ...rest } = task
       const next = { ...rest, ...command.task }
       assertPortfolioTrackSlot(state, next)

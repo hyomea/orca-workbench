@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { readdir, stat } from 'node:fs/promises'
 import { join } from 'node:path'
 import { applyPortfolioCommand } from '../../shared/portfolio'
+import { PORTFOLIO_OUTCOME_COORDINATOR } from '../../shared/portfolio-roles'
 import {
   DEFAULT_WORKBENCH_ID,
   type PortfolioWorkbenchSummary
@@ -69,6 +70,12 @@ export async function createWorkbench(
   const store = workbenchStore(userData, id)
   await store.update(0, (state) => {
     applyPortfolioCommand(state, { kind: 'organization.rename', name }, randomUUID(), Date.now())
+    applyPortfolioCommand(
+      state,
+      { kind: 'role.create', role: PORTFOLIO_OUTCOME_COORDINATOR },
+      randomUUID(),
+      Date.now()
+    )
   })
   return { id, name, stewardPath: portfolioStewardDirectory(store) }
 }

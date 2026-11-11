@@ -4,7 +4,10 @@ import { Bot } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { translate } from '@/i18n/i18n'
 import type { PortfolioCommand, PortfolioState } from '../../../../shared/portfolio'
-import { portfolioRoleLabelById } from '../../../../shared/portfolio-roles'
+import {
+  PORTFOLIO_OUTCOME_COORDINATOR,
+  portfolioRoleLabelById
+} from '../../../../shared/portfolio-roles'
 import type { AgentStatusEntry } from '../../../../shared/agent-status/contracts/agent-status-types'
 import { PortfolioComposer, type PortfolioComposerKind } from './PortfolioComposer'
 import { PortfolioTaskDetail, type PortfolioWorkspace } from './PortfolioTaskDetail'
@@ -189,6 +192,10 @@ export function PortfolioBoard({
           >
             <PortfolioAgents
               roles={state.roles}
+              busy={busy}
+              onAddCoordinator={() =>
+                void onSave({ kind: 'role.create', role: PORTFOLIO_OUTCOME_COORDINATOR })
+              }
               onCreateRole={() => {
                 setPanel(null)
                 setComposer('role')

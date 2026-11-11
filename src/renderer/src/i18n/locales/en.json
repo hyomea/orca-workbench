@@ -25036,7 +25036,9 @@
     "outcomeInboxCount_one": "Inbox · {{count}} proposed change",
     "outcomeInboxCount_other": "Inbox · {{count}} proposed changes",
     "proposalsBadge_one": "{{count}} to review",
-    "proposalsBadge_other": "{{count}} to review"
+    "proposalsBadge_other": "{{count}} to review",
+    "addOutcomeCoordinator": "Add outcome coordinator",
+    "coordinatorRole": "Coordinates outcomes · {{agent}}"
   },
   "wslDistroHold": {
     "terminalStopped": "The WSL distro {{distro}} is stopped, so Orca didn't start this terminal. Start the distro, then try again.",

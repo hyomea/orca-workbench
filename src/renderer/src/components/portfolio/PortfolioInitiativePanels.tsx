@@ -44,19 +44,32 @@ export function PortfolioPanel({
 // The agents tasks can be assigned to: who they are and what each is responsible for.
 export function PortfolioAgents({
   roles,
+  busy,
   onCreateRole,
+  onAddCoordinator,
   onEditRole
 }: {
   roles: PortfolioState['roles']
+  busy: boolean
   onCreateRole: () => void
+  onAddCoordinator: () => void
   onEditRole: (roleId: string) => void
 }): React.JSX.Element {
   return (
     <div className="space-y-3">
-      <Button variant="outline" size="sm" onClick={onCreateRole}>
-        <Plus aria-hidden="true" />
-        {translate('portfolio.addRole', 'Add role')}
-      </Button>
+      <div className="flex flex-wrap gap-2">
+        <Button variant="outline" size="sm" onClick={onCreateRole}>
+          <Plus aria-hidden="true" />
+          {translate('portfolio.addRole', 'Add role')}
+        </Button>
+        {/* Workbenches made before the outcome coordinator existed start without one. */}
+        {!roles.some((role) => role.coordinator) && (
+          <Button variant="outline" size="sm" disabled={busy} onClick={onAddCoordinator}>
+            <Plus aria-hidden="true" />
+            {translate('portfolio.addOutcomeCoordinator', 'Add outcome coordinator')}
+          </Button>
+        )}
+      </div>
       {roles.length > 0 ? (
         <ul className="divide-y divide-border rounded-md border border-border">
           {roles.map((role) => (
@@ -73,7 +86,13 @@ export function PortfolioAgents({
                   <span className="min-w-0 break-words text-sm font-medium">
                     {portfolioRoleLabel(role)}
                   </span>
-                  <span className="text-2xs text-muted-foreground">{role.agent}</span>
+                  <span className="text-2xs text-muted-foreground">
+                    {role.coordinator
+                      ? translate('portfolio.coordinatorRole', 'Coordinates outcomes · {{agent}}', {
+                          agent: role.agent
+                        })
+                      : role.agent}
+                  </span>
                 </span>
                 <span className="block break-words text-xs leading-relaxed text-muted-foreground">
                   {role.responsibility}

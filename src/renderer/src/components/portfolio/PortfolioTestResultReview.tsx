@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { getIntlLocale, translate } from '@/i18n/i18n'
 import type { PortfolioCommand, PortfolioState } from '../../../../shared/portfolio'
-import { portfolioRoleLabel } from '../../../../shared/portfolio-roles'
+import { portfolioRoleLabel, portfolioWorkingRoles } from '../../../../shared/portfolio-roles'
 import type { PortfolioTestResult } from '../../../../shared/portfolio-verification'
 import { PortfolioField, PortfolioSelect } from './portfolio-controls'
 
@@ -108,7 +108,10 @@ export function PortfolioTestResultReview({
               value={roleId}
               onChange={setRoleId}
               disabled={busy}
-              options={state.roles.map((role) => ({ id: role.id, name: portfolioRoleLabel(role) }))}
+              options={portfolioWorkingRoles(state).map((role) => ({
+                id: role.id,
+                name: portfolioRoleLabel(role)
+              }))}
             />
             <Button
               variant="outline"
