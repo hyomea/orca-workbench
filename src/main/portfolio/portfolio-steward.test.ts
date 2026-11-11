@@ -70,7 +70,7 @@ it('introduces the steward by the name the user gave it', async () => {
     )
     await preparePortfolioSteward(store)
     expect(await readFile(join(path, 'CLAUDE.md'), 'utf8')).toContain(
-      '## Role\n\nYour name is Coco. The user also calls you the coordinator.\n\nYou are the user'
+      '## Role\n\nYour name is Coco. The user also calls you the workbench coordinator.\n\nYou are the user'
     )
   } finally {
     await rm(directory, { recursive: true, force: true })

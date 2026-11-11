@@ -30,7 +30,10 @@ export function applyPortfolioTaskCommand(
 ): boolean {
   switch (command.kind) {
     case 'task.create':
-      if (!state.projects.some((project) => project.id === command.task.projectId)) {
+      if (
+        !state.projects.some((project) => project.id === command.task.projectId) ||
+        !state.roles.some((role) => role.id === command.task.roleId)
+      ) {
         throw new Error('Choose an existing initiative and role.')
       }
       assertPortfolioWorkingRole(state, command.task.roleId)
