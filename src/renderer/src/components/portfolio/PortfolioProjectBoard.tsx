@@ -26,6 +26,7 @@ export function PortfolioProjectBoard({
   onOpenAgents,
   onOpenFeatures,
   onReviewModeChange,
+  hideHeader = false,
   children
 }: {
   project: PortfolioState['projects'][number]
@@ -40,89 +41,93 @@ export function PortfolioProjectBoard({
   onOpenAgents: () => void
   onOpenFeatures: () => void
   onReviewModeChange?: (mode: PortfolioReviewMode) => void
+  // An open outcome has its own heading and a way back; the initiative's header would crowd it.
+  hideHeader?: boolean
   children: ReactNode
 }): React.JSX.Element {
   return (
     <main className="@container/project min-h-0 min-w-0 p-5 @3xl/portfolio:p-6">
-      <header className="mb-5 space-y-3 border-b border-border pb-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-3 gap-y-1">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  className="-ml-2 h-auto max-w-full px-2 py-1 text-lg font-semibold"
-                  aria-label={translate('portfolio.switchInitiative', 'Switch initiative')}
-                >
-                  <h2 className="min-w-0 truncate">{project.name}</h2>
-                  <ChevronDown className="text-muted-foreground" aria-hidden="true" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start">
-                {projects.map((entry) => (
-                  <DropdownMenuItem key={entry.id} onSelect={() => onSelectProject?.(entry.id)}>
-                    <Check
-                      aria-hidden="true"
-                      className={entry.id === project.id ? undefined : 'invisible'}
-                    />
-                    {entry.name}
-                  </DropdownMenuItem>
-                ))}
-                {onCreateProject && (
-                  <>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onSelect={onCreateProject}>
-                      <Plus aria-hidden="true" />
-                      {translate('portfolio.newProject', 'New initiative')}
+      {!hideHeader && (
+        <header className="mb-5 space-y-3 border-b border-border pb-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-3 gap-y-1">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    className="-ml-2 h-auto max-w-full px-2 py-1 text-lg font-semibold"
+                    aria-label={translate('portfolio.switchInitiative', 'Switch initiative')}
+                  >
+                    <h2 className="min-w-0 truncate">{project.name}</h2>
+                    <ChevronDown className="text-muted-foreground" aria-hidden="true" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                  {projects.map((entry) => (
+                    <DropdownMenuItem key={entry.id} onSelect={() => onSelectProject?.(entry.id)}>
+                      <Check
+                        aria-hidden="true"
+                        className={entry.id === project.id ? undefined : 'invisible'}
+                      />
+                      {entry.name}
                     </DropdownMenuItem>
-                  </>
+                  ))}
+                  {onCreateProject && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onSelect={onCreateProject}>
+                        <Plus aria-hidden="true" />
+                        {translate('portfolio.newProject', 'New initiative')}
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <p className="text-xs text-muted-foreground">
+                {translate(
+                  'portfolio.purpose',
+                  'Define outcomes and sign them off. Run and review the work in Tasks.'
                 )}
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <p className="text-xs text-muted-foreground">
-              {translate(
-                'portfolio.purpose',
-                'Define outcomes and sign them off. Run and review the work in Tasks.'
+              </p>
+            </div>
+            {actions && <div className="flex items-center gap-2">{actions}</div>}
+          </div>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div
+              role="group"
+              aria-label={translate('portfolio.initiativeReference', 'Initiative setup')}
+              className="flex flex-wrap gap-2"
+            >
+              <Button variant="outline" size="sm" onClick={onOpenContext}>
+                <BookOpenText aria-hidden="true" />
+                {translate('portfolio.contextAndNotes', 'Context & notes')}
+              </Button>
+              <Button variant="outline" size="sm" onClick={onOpenAgents}>
+                <Bot aria-hidden="true" />
+                {translate('portfolio.agentsCount', 'Agents · {{count}}', {
+                  count: roleCount,
+                  defaultValue_one: 'Agents · {{count}}'
+                })}
+              </Button>
+              <Button variant="outline" size="sm" onClick={onOpenFeatures}>
+                <Layers aria-hidden="true" />
+                {translate('portfolio.featureCatalog', 'Feature catalog')}
+              </Button>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {onReviewModeChange && (
+                <ReviewModeSwitch
+                  mode={project.reviewMode ?? 'personal'}
+                  onChange={onReviewModeChange}
+                />
               )}
-            </p>
+              <Button variant="ghost" size="sm" onClick={onEditProject}>
+                {translate('portfolio.editProject', 'Edit initiative')}
+              </Button>
+            </div>
           </div>
-          {actions && <div className="flex items-center gap-2">{actions}</div>}
-        </div>
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div
-            role="group"
-            aria-label={translate('portfolio.initiativeReference', 'Initiative setup')}
-            className="flex flex-wrap gap-2"
-          >
-            <Button variant="outline" size="sm" onClick={onOpenContext}>
-              <BookOpenText aria-hidden="true" />
-              {translate('portfolio.contextAndNotes', 'Context & notes')}
-            </Button>
-            <Button variant="outline" size="sm" onClick={onOpenAgents}>
-              <Bot aria-hidden="true" />
-              {translate('portfolio.agentsCount', 'Agents · {{count}}', {
-                count: roleCount,
-                defaultValue_one: 'Agents · {{count}}'
-              })}
-            </Button>
-            <Button variant="outline" size="sm" onClick={onOpenFeatures}>
-              <Layers aria-hidden="true" />
-              {translate('portfolio.featureCatalog', 'Feature catalog')}
-            </Button>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            {onReviewModeChange && (
-              <ReviewModeSwitch
-                mode={project.reviewMode ?? 'personal'}
-                onChange={onReviewModeChange}
-              />
-            )}
-            <Button variant="ghost" size="sm" onClick={onEditProject}>
-              {translate('portfolio.editProject', 'Edit initiative')}
-            </Button>
-          </div>
-        </div>
-      </header>
+        </header>
+      )}
       {children}
     </main>
   )

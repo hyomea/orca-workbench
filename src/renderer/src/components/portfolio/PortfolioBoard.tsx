@@ -125,6 +125,7 @@ export function PortfolioBoard({
             project={project}
             projects={state.projects}
             actions={actions}
+            hideHeader={!!outcomeId}
             onSelectProject={(id) => {
               selectProject(id)
               setOutcomeId('')
