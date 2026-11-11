@@ -26,6 +26,10 @@ import {
 import { PortfolioCodeReview, PortfolioCommit } from './portfolio-review'
 import { applyPortfolioTaskCommand } from './portfolio-task-commands'
 import {
+  applyPortfolioOutcomeCoordinatorCommand,
+  PortfolioOutcomeCoordinatorCommands
+} from './portfolio-outcome-coordinator'
+import {
   applyPortfolioTaskSubmissionCommand,
   PortfolioTaskSubmissionCommands
 } from './portfolio-task-submission'
@@ -166,6 +170,7 @@ const ProjectDetails = PortfolioProjectInput.omit({ reviewMode: true })
 export const PortfolioCommand = z.discriminatedUnion('kind', [
   ...PortfolioFeatureCommands,
   ...PortfolioChecklistCommands,
+  ...PortfolioOutcomeCoordinatorCommands,
   ...PortfolioDiscoveryCommands,
   ...PortfolioVerificationCommands,
   ...PortfolioNoteCommands,
@@ -221,6 +226,7 @@ export function applyPortfolioCommand(
     applyPortfolioVerificationCommand(state, command, id, now) ||
     applyPortfolioFeatureCommand(state, command, id, now) ||
     applyPortfolioChecklistCommand(state, command, id, now) ||
+    applyPortfolioOutcomeCoordinatorCommand(state, command, now) ||
     applyPortfolioDiscoveryCommand(state, command, now) ||
     applyPortfolioNoteCommand(state, command, id, now) ||
     applyPortfolioRoleCommand(state, command, id) ||

@@ -21,6 +21,7 @@ import {
   PortfolioLaunch,
   PortfolioMutate,
   PortfolioPrepareSteward,
+  PortfolioPrepareCoordinator,
   PortfolioRead,
   PortfolioIndexPersonalNotes,
   PortfolioPersonalNotes,
@@ -46,6 +47,7 @@ import {
   scanPersonalNotes,
   setPersonalNotesFolder
 } from '../../../../portfolio/personal-notes'
+import { prepareOutcomeCoordinator } from '../../../../portfolio/portfolio-outcome-coordinator'
 import {
   launchPortfolioTask,
   portfolioExecutionInFlight
@@ -121,6 +123,18 @@ export const PORTFOLIO_METHODS = [
     params: PortfolioPrepareSteward,
     handler: (params) =>
       preparePortfolioSteward(store(params), portfolioStewardCli(getAppEnvironment().isPackaged()))
+  }),
+  defineMethod({
+    // The user started the outcome's coordinator: its folder is written and the hand-off recorded.
+    name: 'portfolio.prepareCoordinator',
+    permission: 'workspace',
+    params: PortfolioPrepareCoordinator,
+    handler: (params) =>
+      prepareOutcomeCoordinator(
+        store(params),
+        params.workItemId,
+        portfolioStewardCli(getAppEnvironment().isPackaged())
+      )
   }),
   defineMethod({
     name: 'portfolio.exportNotes',

@@ -38,6 +38,28 @@ export async function openPortfolioSteward(prompt?: string): Promise<void> {
     .parse(
       await callRuntimeRpc({ kind: 'local' }, 'portfolio.prepareSteward', activeWorkbenchParams())
     )
+  await openCoordinatorChat(path, 'claude', prompt)
+}
+
+// The outcome's own coordinator, in its own folder: starting it records the hand-off, and
+// reopening returns to its running chat.
+export async function openOutcomeCoordinator(workItemId: string): Promise<void> {
+  const { path, agent } = z
+    .object({ path: z.string().min(1), agent: z.enum(['codex', 'claude', 'opencode']) })
+    .parse(
+      await callRuntimeRpc({ kind: 'local' }, 'portfolio.prepareCoordinator', {
+        ...activeWorkbenchParams(),
+        workItemId
+      })
+    )
+  await openCoordinatorChat(path, agent)
+}
+
+async function openCoordinatorChat(
+  path: string,
+  agent: 'codex' | 'claude' | 'opencode',
+  prompt?: string
+): Promise<void> {
   const worktreeId = await activateLocalFolderWorkspace(path, 'folder')
   if (stewardRunning(useAppStore.getState(), worktreeId)) {
     if (prompt) {
@@ -48,10 +70,10 @@ export async function openPortfolioSteward(prompt?: string): Promise<void> {
   const result = launchAgentInNewTab({
     requestId: newAgentLaunchRequestId(),
     requestedSurface: 'chat',
-    agent: 'claude',
+    agent,
     worktreeId,
     ...(prompt ? { prompt } : {}),
-    // The user's own Claude Code permissions, as outside Orca.
+    // The user's own permissions, as outside Orca.
     sessionOptions: { permissionMode: 'own' },
     launchSource: 'task_page'
   })

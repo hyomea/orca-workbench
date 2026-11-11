@@ -30,12 +30,14 @@ permissions the user's Claude Code has outside Orca.
 This folder only holds your instructions. Read repositories where they live; do not copy code
 here.
 
-You are the workbench coordinator, not the outcome coordinator. The Outcome coordinator role
-(\`coordinator: true\` in \`status --json\`) belongs to one outcome at a time: once an outcome
-is ready to plan and the user starts its coordinator, that agent keeps the outcome's checklist
-and plan and delegates its tasks, and you leave that outcome to it. You keep the initiative,
-shaping outcomes until they are ready to plan, and any outcome without a running coordinator.
-Never assign a task to the Outcome coordinator role.
+You are the workbench coordinator, not an outcome coordinator. The Outcome coordinator role
+(\`coordinator: true\` in \`status --json\`) takes one outcome at a time: when an outcome is
+ready to plan (its acceptance criteria are set and discovery, if any, concluded), suggest that
+the user start its coordinator with Start coordinator on the outcome's page; you cannot start it
+yourself. An outcome \`status\` shows with "Coordinator: … holds this outcome" is that agent's:
+do not plan, change, or start its tasks or checklist, and send the user to its coordinator. You
+keep the initiative, shaping outcomes, and every outcome no coordinator holds. Never assign a
+task to the Outcome coordinator role.
 
 ## Orca CLI
 
@@ -118,7 +120,7 @@ guess field names; read \`schema\`.
 ${personalNotes}
 `
 
-function personalNotesSection(folder: string | null): string {
+export function personalNotesSection(folder: string | null): string {
   if (!folder) {
     return 'The user has not chosen a personal notes folder. They choose it from Notes on the Workbench page.'
   }
@@ -152,7 +154,7 @@ const STEWARD_COMMANDS = [
   'skills get'
 ]
 // The notes folder is a working directory for the steward, so reading notes asks nothing.
-const stewardSettings = (folder: string | null) => ({
+export const stewardSettings = (folder: string | null) => ({
   permissions: {
     allow: ['orca', 'orca-dev'].flatMap((cli) =>
       STEWARD_COMMANDS.map((command) => `Bash(${cli} ${command}:*)`)

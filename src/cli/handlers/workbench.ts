@@ -59,6 +59,12 @@ function formatStatus(state: PortfolioState): string {
           : [])
       ]
       lines.push(`  Outcome (${details.join(', ')}) ${item.title} [${item.id}]`)
+      if (item.coordinator) {
+        const role = state.roles.find((entry) => entry.id === item.coordinator?.roleId)
+        lines.push(
+          `    Coordinator: ${role ? portfolioRoleLabel(role) : 'Outcome coordinator'} holds this outcome`
+        )
+      }
       for (const ticket of item.tickets) {
         const role = ticket.role && ticket.role !== 'author' ? ` (user is ${ticket.role})` : ''
         lines.push(
@@ -109,7 +115,7 @@ function formatStatus(state: PortfolioState): string {
   }
   lines.push(
     '',
-    `Roles: ${state.roles.map((role) => `${portfolioRoleLabel(role)} (${role.agent}) [${role.id}]`).join(', ') || 'none'}`
+    `Roles: ${state.roles.map((role) => `${portfolioRoleLabel(role)} (${role.coordinator ? 'outcome coordinator, ' : ''}${role.agent}) [${role.id}]`).join(', ') || 'none'}`
   )
   return lines.join('\n')
 }

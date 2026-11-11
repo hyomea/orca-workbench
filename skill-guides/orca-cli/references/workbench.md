@@ -348,14 +348,20 @@ outcome, so do not relay it yourself. Do not apply `workItem.acceptProposal` or
 
 ## Coordinators
 
-A workbench has two coordinators with separate jobs. The workbench coordinator (the steward,
-started from the Workbench page) keeps the initiative: it shapes outcomes until they are ready
-to plan and plans any outcome that has no coordinator running. The Outcome coordinator is a role
-(`coordinator: true`) that every new workbench starts with: for one outcome at a time it keeps
-the checklist and plan current and delegates the outcome's tasks, asking the user before any
-agent starts. It never takes a task, so `task.create` rejects it as a task's role. Neither is
-the `orchestration` skill's coordinator; Workbench work goes through Workbench tasks, not
-orchestration runs.
+A workbench has two kinds of coordinator with separate jobs. The workbench coordinator (the
+steward, started from the Workbench page) keeps the initiative: it shapes outcomes until they
+are ready to plan and plans any outcome no coordinator holds. The Outcome coordinator is a role
+(`coordinator: true`) that every new workbench starts with. When an outcome is ready to plan,
+the user starts its coordinator with Start coordinator on the outcome's page; that records the
+hand-off (`coordinator` on the outcome, "Coordinator: … holds this outcome" in `status`) and opens
+a chat in the outcome's own folder. The outcome coordinator keeps that outcome's checklist and
+plan current and delegates its tasks, asking the user before any agent starts; the workbench
+coordinator leaves the outcome alone until the user hands it back. The coordinator role never
+takes a task, so `task.create` rejects it. Neither is the `orchestration` skill's coordinator;
+Workbench work goes through Workbench tasks, not orchestration runs.
+
+A task agent on a held outcome keeps working with the user in its own session and proposing
+checklist changes with `outcome propose`; the coordinator follows its task through Workbench.
 
 ## Review boundary
 

@@ -55,3 +55,4 @@ export const PortfolioProposeChecklist = InWorkbench.extend({
   workItemId: z.string().min(1),
   proposal: PortfolioChecklistProposalInput
 })
+export const PortfolioPrepareCoordinator = InWorkbench.extend({ workItemId: z.string().min(1) })

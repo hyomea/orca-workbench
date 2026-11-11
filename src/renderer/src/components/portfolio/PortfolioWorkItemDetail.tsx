@@ -21,6 +21,7 @@ import {
 import { PortfolioSpecification } from './PortfolioSpecification'
 import { PortfolioChecklist } from './PortfolioChecklist'
 import { PortfolioOutcomeInbox } from './PortfolioOutcomeInbox'
+import { PortfolioOutcomeCoordinator } from './PortfolioOutcomeCoordinator'
 import { PortfolioWorkItemReview } from './PortfolioWorkItemReview'
 import { workItemKinds } from './portfolio-feature-labels'
 import { PortfolioTickets } from './PortfolioTickets'
@@ -85,22 +86,31 @@ export function PortfolioWorkItemDetail({
           </div>
           <PortfolioTickets tickets={item.tickets} />
         </div>
-        <div className="flex flex-wrap gap-2">
-          {item.status !== 'accepted' && !published && !editingScope && (
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={busy}
-              onClick={() => setEditingScope(true)}
-            >
-              {translate('portfolio.editScope', 'Tickets, parity, and feature')}
-            </Button>
-          )}
-          {editable && (
-            <Button variant="outline" size="sm" disabled={busy} onClick={onEdit}>
-              {translate('portfolio.editOutcome', 'Edit outcome')}
-            </Button>
-          )}
+        <div className="flex flex-col items-end gap-2">
+          <PortfolioOutcomeCoordinator
+            state={state}
+            item={item}
+            tracks={tracks}
+            busy={busy}
+            onSave={onSave}
+          />
+          <div className="flex flex-wrap gap-2">
+            {item.status !== 'accepted' && !published && !editingScope && (
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={busy}
+                onClick={() => setEditingScope(true)}
+              >
+                {translate('portfolio.editScope', 'Tickets, parity, and feature')}
+              </Button>
+            )}
+            {editable && (
+              <Button variant="outline" size="sm" disabled={busy} onClick={onEdit}>
+                {translate('portfolio.editOutcome', 'Edit outcome')}
+              </Button>
+            )}
+          </div>
         </div>
       </div>
       {editingScope && (

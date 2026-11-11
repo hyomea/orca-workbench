@@ -3,6 +3,7 @@ import { PortfolioDiscoveryConclusion } from './portfolio-outcome-discovery'
 import { PortfolioDesignAttachments } from './portfolio-design'
 import { PortfolioFeatureParity } from './portfolio-feature-parity'
 import { PortfolioChecklistItem, PortfolioChecklistProposal } from './portfolio-checklist'
+import { PortfolioOutcomeCoordinator } from './portfolio-outcome-coordinator'
 
 const Id = z.string().trim().min(1).max(4096)
 const Name = z.string().trim().min(1).max(200)
@@ -90,6 +91,8 @@ export const PortfolioWorkItem = PortfolioWorkItemInput.extend({
   checklist: z.array(PortfolioChecklistItem).max(100).optional(),
   // Agents' proposed checklist changes, waiting for the user.
   proposals: z.array(PortfolioChecklistProposal).max(50).optional(),
+  // Set once the user hands the outcome over to its own coordinator.
+  coordinator: PortfolioOutcomeCoordinator.optional(),
   id: Id,
   baseVersion: z.number().int().nonnegative(),
   status: StoredWorkItemStatus,
