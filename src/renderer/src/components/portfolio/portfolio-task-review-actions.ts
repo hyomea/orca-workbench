@@ -6,6 +6,7 @@ import { translate } from '@/i18n/i18n'
 import { sendMessageToAgent } from '@/lib/agent-session/messaging/agent-message-send'
 import { activeAgentNotesSendFailureMessage } from '@/lib/agent-session/messaging/terminal/active-agent-note-send-result'
 import type { PortfolioTask } from '../../../../shared/portfolio'
+import { portfolioRunAgainMessage } from '../../../../shared/portfolio-task-messages'
 import { portfolioOpenExecution } from '../../../../shared/portfolio-task-stages'
 import { parsePaneKey } from '../../../../shared/workspace-layout/stable-pane-id'
 
@@ -124,20 +125,7 @@ export function runPortfolioTaskAgain(
   commit: string,
   since: string | undefined
 ): Promise<string | false> {
-  const range = since
-    ? `the commits from ${since} to ${commit}`
-    : 'the commits since your last look'
-  return saveAndRelay(
-    save,
-    task,
-    [
-      `Development submitted again (commit ${commit}) for your Workbench task ${task.id}.`,
-      task.stage === 'qa'
-        ? `Test this version: check ${range}, that each finding you sent back is resolved, re-run the checks they affect, and look for regressions.`
-        : `Review ${range}: check that each finding you sent back is resolved, and look for new problems.`,
-      'Then submit your updated report with `task submit`; an earlier report covers the older commit. Do not push, or open or comment on a PR.'
-    ].join('\n')
-  )
+  return saveAndRelay(save, task, portfolioRunAgainMessage(task, commit, since))
 }
 
 // The user confirmed a push: the development session publishes its branch as a draft PR, or

@@ -11,6 +11,7 @@ import { portfolioRoleLabel } from '../../shared/portfolio-roles'
 import { PORTFOLIO_STAGE_NAMES } from '../../shared/portfolio-task-stages'
 import { WORKBENCH_TASK_HANDLERS } from './workbench-tasks'
 import { WORKBENCH_OUTCOME_HANDLERS } from './workbench-outcomes'
+import { WORKBENCH_COORDINATOR_HANDLERS } from './workbench-coordinator'
 import { portfolioChecklist } from '../../shared/portfolio-checklist'
 import { LOCAL_ONLY, workbenchScope } from './workbench-client'
 import type { PortfolioWorkbenchSummary } from '../../shared/rpc-contract/portfolio-params'
@@ -244,6 +245,7 @@ export const WORKBENCH_HANDLERS: Record<string, CommandHandler> = {
   ...WORKBENCH_TASK_HANDLERS,
   'workbench note propose': propose,
   ...WORKBENCH_OUTCOME_HANDLERS,
+  ...WORKBENCH_COORDINATOR_HANDLERS,
   'workbench personal-notes list': listPersonalNotes,
   'workbench personal-notes index': indexNotes
 }

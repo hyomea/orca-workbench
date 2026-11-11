@@ -5,7 +5,7 @@ import { portfolioCoordinatorRole } from '../../shared/portfolio-outcome-coordin
 import { portfolioRoleLabel } from '../../shared/portfolio-roles'
 import type { PortfolioStore } from './portfolio-store'
 import { readPersonalNotesFolder } from './personal-notes'
-import { personalNotesSection, stewardSettings } from './portfolio-steward'
+import { COORDINATOR_ASK, personalNotesSection, stewardSettings } from './portfolio-steward'
 
 const OWN_NOTES = 'coordinator-notes.md'
 
@@ -93,7 +93,12 @@ ORCA terminal list / terminal read                  # follow the working agents
   this conversation. Code review and QA start after the stage before them, as the reference says.
 - Follow the working agents through Workbench and their terminals, and tell the user what needs
   them: a submission to review, an agent waiting, a track behind development's latest commit.
-  Do not message agents yourself; Workbench sends checklist changes and findings to them.
+- You can reach a task's open session, each time only after the user agrees in this
+  conversation: show the exact message, then send it with
+  \`ORCA workbench task message <task-id> --body-file <file>\`; or, for a code review or QA that
+  sent findings back or is behind development, run \`ORCA workbench task again <task-id>\`.
+  Claude Code also asks the user to approve each of these commands. Workbench already sends
+  checklist changes to open sessions, so do not repeat them.
 - Do not write or change code, push, or open, comment on, or approve PRs. Never accept a task,
   approve a test result, or sign off the outcome; those are the user's decisions.
 - Touch only this outcome. If the user asks about another outcome or the initiative, say that the
@@ -131,7 +136,7 @@ export async function prepareOutcomeCoordinator(
   await writeFile(join(path, 'AGENTS.md'), text, { mode: 0o600 })
   await writeFile(
     join(path, '.claude', 'settings.json'),
-    `${JSON.stringify(stewardSettings(folder), null, 2)}\n`,
+    `${JSON.stringify(stewardSettings(folder, COORDINATOR_ASK), null, 2)}\n`,
     { mode: 0o600 }
   )
   await writeFile(

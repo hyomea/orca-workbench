@@ -96,6 +96,28 @@ export const WORKBENCH_COMMAND_SPECS: CommandSpec[] = [
     ]
   },
   {
+    path: ['workbench', 'task', 'message'],
+    summary: 'Send a message the user approved into a task’s session (outcome coordinator only)',
+    usage: 'orca workbench task message <task> (--body <text> | --body-file <path|->) [--json]',
+    allowedFlags: [...LOCAL_COMMAND_FLAGS, 'task', 'body', 'body-file', 'workbench'],
+    positionalArgs: ['task'],
+    notes: [
+      'Runs only from the folder of the coordinator holding the task’s outcome, for a task with an open session.',
+      'Show the user the exact message and send it only after they agree. The message is recorded in the task’s history.'
+    ]
+  },
+  {
+    path: ['workbench', 'task', 'again'],
+    summary:
+      'Have a code review or QA session look at development’s latest commit (outcome coordinator only)',
+    usage: 'orca workbench task again <task> [--json]',
+    allowedFlags: [...LOCAL_COMMAND_FLAGS, 'task', 'workbench'],
+    positionalArgs: ['task'],
+    notes: [
+      'The same as Review again in Workbench: for a session that sent findings back or is behind development, after the user agrees.'
+    ]
+  },
+  {
     path: ['workbench', 'note', 'propose'],
     summary: 'Propose an initiative note for the user to review in Workbench',
     usage:

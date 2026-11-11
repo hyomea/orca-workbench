@@ -153,12 +153,21 @@ const STEWARD_COMMANDS = [
   'repo list',
   'skills get'
 ]
+const rules = (commands: readonly string[]) =>
+  ['orca', 'orca-dev'].flatMap((cli) => commands.map((command) => `Bash(${cli} ${command}:*)`))
+// Starting an agent always asks the user, even under the broad workbench rule: ask wins over
+// allow. A coordinator also asks before it messages an agent or has a review look again.
+export const STEWARD_ASK = ['workbench task start']
+export const COORDINATOR_ASK = [
+  'workbench task start',
+  'workbench task message',
+  'workbench task again'
+]
 // The notes folder is a working directory for the steward, so reading notes asks nothing.
-export const stewardSettings = (folder: string | null) => ({
+export const stewardSettings = (folder: string | null, ask: readonly string[] = STEWARD_ASK) => ({
   permissions: {
-    allow: ['orca', 'orca-dev'].flatMap((cli) =>
-      STEWARD_COMMANDS.map((command) => `Bash(${cli} ${command}:*)`)
-    ),
+    allow: rules(STEWARD_COMMANDS),
+    ask: rules(ask),
     ...(folder ? { additionalDirectories: [folder] } : {})
   }
 })

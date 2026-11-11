@@ -18,7 +18,14 @@ export const PortfolioTaskSubmissionCommands = [
   }),
   // The development session pushed because the user asked in the session rather than from
   // Workbench; recorded like a confirmed push so the history shows every push.
-  z.object({ kind: z.literal('task.recordPush'), taskId: Id, commit: PortfolioCommit })
+  z.object({ kind: z.literal('task.recordPush'), taskId: Id, commit: PortfolioCommit }),
+  // The outcome coordinator sent a message the user approved into the task's session.
+  z.object({
+    kind: z.literal('task.recordMessage'),
+    taskId: Id,
+    from: z.string().trim().min(1).max(200),
+    note: Evidence
+  })
 ] as const
 type SubmissionCommand = z.infer<(typeof PortfolioTaskSubmissionCommands)[number]>
 
@@ -34,6 +41,13 @@ export function applyPortfolioTaskSubmissionCommand(
   const task = state.tasks.find((entry) => entry.id === typed.taskId)
   if (!task) {
     throw new Error('Task no longer exists.')
+  }
+  if (typed.kind === 'task.recordMessage') {
+    if (!portfolioOpenExecution(task)) {
+      throw new Error('This task has no open session.')
+    }
+    portfolioTaskEvent(task, now, `Message from ${typed.from}: ${typed.note}`)
+    return true
   }
   if (task.stage !== 'development' || !portfolioOpenExecution(task)) {
     throw new Error('Only an open development session can do this.')

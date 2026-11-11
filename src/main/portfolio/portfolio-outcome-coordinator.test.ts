@@ -79,6 +79,14 @@ it('writes the outcome coordinator its own folder and records the hand-off', asy
   expect(await readFile(join(path, 'AGENTS.md'), 'utf8')).toBe(instructions)
   const settings = JSON.parse(await readFile(join(path, '.claude', 'settings.json'), 'utf8'))
   expect(settings.permissions.allow).toContain('Bash(orca-dev workbench:*)')
+  // Messaging an agent, a review looking again, and starting a task always ask the user.
+  expect(settings.permissions.ask).toEqual(
+    expect.arrayContaining([
+      'Bash(orca-dev workbench task message:*)',
+      'Bash(orca-dev workbench task again:*)',
+      'Bash(orca-dev workbench task start:*)'
+    ])
+  )
   const state = await store.read()
   const item = state.workItems[0]
   expect(item.coordinator).toMatchObject({ path, roleId: state.roles[0].id })

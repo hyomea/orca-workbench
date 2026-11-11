@@ -13,7 +13,7 @@ export async function workbenches(ctx: HandlerContext): Promise<PortfolioWorkben
   return (await ctx.client.call<PortfolioWorkbenchSummary[]>('portfolio.workbenches', {})).result
 }
 
-function inside(path: string, folder: string): boolean {
+export function inside(path: string, folder: string): boolean {
   const rest = relative(folder, path)
   return rest === '' || (!rest.startsWith('..') && !isAbsolute(rest))
 }
