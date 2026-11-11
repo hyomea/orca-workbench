@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import { portfolioOutcomeInboxCount } from '../../../../shared/portfolio-outcome-reports'
 import { Button } from '@/components/ui/button'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { translate } from '@/i18n/i18n'
@@ -51,6 +52,7 @@ function OutcomeRow({
   pin?: { pinned: boolean; onToggle: () => void }
   onSelect: (id: string) => void
 }): React.JSX.Element {
+  const inbox = portfolioOutcomeInboxCount(state, item.id)
   return (
     <li className="group/pin flex items-center">
       <Button
@@ -89,14 +91,14 @@ function OutcomeRow({
           ) : (
             <PortfolioOutcomePhaseBadge state={state} item={item} tracks={tracks} />
           )}
-          {item.proposals?.length ? (
+          {inbox > 0 && (
             <Badge>
               {translate('portfolio.proposalsBadge', '{{count}} to review', {
-                count: item.proposals.length,
+                count: inbox,
                 defaultValue_one: '{{count}} to review'
               })}
             </Badge>
-          ) : null}
+          )}
         </span>
         <ChevronRight
           aria-hidden="true"

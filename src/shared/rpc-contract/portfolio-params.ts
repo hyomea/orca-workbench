@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { PortfolioCommand } from '../portfolio'
 import { PortfolioNoteDraftInput } from '../portfolio-notes'
 import { PortfolioChecklistProposalInput } from '../portfolio-checklist'
+import { PortfolioOutcomeReportInput } from '../portfolio-outcome-reports'
 export { PortfolioIntake } from '../portfolio-intake'
 import { PortfolioBatch } from '../portfolio-batch'
 export { PortfolioBatch }
@@ -56,3 +57,7 @@ export const PortfolioProposeChecklist = InWorkbench.extend({
   proposal: PortfolioChecklistProposalInput
 })
 export const PortfolioPrepareCoordinator = InWorkbench.extend({ workItemId: z.string().min(1) })
+export const PortfolioReportOutcome = InWorkbench.extend({
+  workItemId: z.string().min(1),
+  report: PortfolioOutcomeReportInput
+})

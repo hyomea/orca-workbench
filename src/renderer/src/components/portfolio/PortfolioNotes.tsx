@@ -31,15 +31,20 @@ export function PortfolioNotes({
   projectId,
   busy,
   onSave,
-  onExport
+  onExport,
+  openDraftId
 }: {
   state: PortfolioState
   projectId: string
   busy: boolean
   onSave: (command: PortfolioCommand) => Promise<boolean>
   onExport: PortfolioNotesExport
+  // A proposal to open straight away, such as one chosen from an outcome's inbox.
+  openDraftId?: string
 }): React.JSX.Element {
-  const [mode, setMode] = useState<Mode>({ kind: 'list' })
+  const [mode, setMode] = useState<Mode>(
+    openDraftId ? { kind: 'draft', id: openDraftId } : { kind: 'list' }
+  )
   const [status, setStatus] = useState('')
   const input = useRef<HTMLInputElement>(null)
   const notes = state.notes

@@ -39,7 +39,8 @@ export function PortfolioWorkItemDetail({
   onSelectTask,
   onCreateRole,
   onOpenTasks,
-  onDiscuss
+  onDiscuss,
+  onReviewNote
 }: {
   item: PortfolioWorkItem
   feature: PortfolioFeature | undefined
@@ -53,6 +54,7 @@ export function PortfolioWorkItemDetail({
   onCreateRole: () => void
   onOpenTasks: () => void
   onDiscuss: (prompt: string) => void
+  onReviewNote: (draftId: string) => void
 }): React.JSX.Element {
   const editable = canEditPortfolioContext(state, item.id)
   const [tab, setTab] = useState('context')
@@ -138,7 +140,13 @@ export function PortfolioWorkItemDetail({
           onDiscuss={onDiscuss}
         />
       )}
-      <PortfolioOutcomeInbox state={state} item={item} busy={busy} onSave={onSave} />
+      <PortfolioOutcomeInbox
+        state={state}
+        item={item}
+        busy={busy}
+        onSave={onSave}
+        onReviewNote={onReviewNote}
+      />
       <PortfolioDiscovery state={state} item={item} />
       <PortfolioOutcomeProgress
         state={state}

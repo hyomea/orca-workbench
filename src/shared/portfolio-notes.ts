@@ -20,6 +20,8 @@ export const PortfolioNoteDraftInput = z.object({
   projectId: Id,
   noteId: Id.optional(),
   taskId: Id.optional(),
+  // The outcome it concerns, so its coordinator and inbox show it; a task's outcome by default.
+  workItemId: Id.optional(),
   title: PortfolioNoteContent.shape.title,
   body: PortfolioNoteContent.shape.body,
   reason: z.string().trim().max(4000)
@@ -173,8 +175,19 @@ export function applyPortfolioNoteCommand(
           'This initiative has too many pending note proposals. Ask the user to review them first.'
         )
       }
+      const workItemId =
+        draft.workItemId ?? state.tasks.find((task) => task.id === draft.taskId)?.workItemId
+      if (
+        workItemId &&
+        !state.workItems.some(
+          (item) => item.id === workItemId && item.projectId === draft.projectId
+        )
+      ) {
+        throw new Error('The outcome does not belong to this initiative.')
+      }
       state.noteDrafts.push({
         ...draft,
+        ...(workItemId ? { workItemId } : {}),
         id,
         at: now,
         ...(target ? { baseVersion: target.version } : {})

@@ -66,3 +66,16 @@ it('rejects a kind other than criterion or decision', async () => {
   const { ctx } = context([], [['kind', 'note']])
   await expect(propose(ctx)).rejects.toThrow('--kind must be criterion or decision')
 })
+
+it('reports a question to the outcome of the session open in this workspace', async () => {
+  const { call, ctx } = context(
+    [{ id: 'dev', workItemId: 'o1', attempts: [{ worktreeId: 'w1', state: 'launched' }] }],
+    [['body', 'Rebase onto origin/development before the PR?']]
+  )
+  await WORKBENCH_OUTCOME_HANDLERS['workbench outcome report'](ctx)
+  expect(call).toHaveBeenLastCalledWith('portfolio.reportOutcome', {
+    workbenchId: 'default',
+    workItemId: 'o1',
+    report: { body: 'Rebase onto origin/development before the PR?', taskId: 'dev' }
+  })
+})

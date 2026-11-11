@@ -74,6 +74,8 @@ export function PortfolioBoard({
   const [composer, setComposer] = useState<PortfolioComposerKind | null>(null)
   const [editingRoleId, setEditingRoleId] = useState('')
   const [outcomeId, setOutcomeId] = useState('')
+  // A note proposal opened from an outcome's inbox.
+  const [noteDraftId, setNoteDraftId] = useState('')
   const [panel, setPanel] = useState<'context' | 'agents' | 'features' | null>(null)
   const editingRole =
     composer === 'role.edit' ? state.roles.find((role) => role.id === editingRoleId) : undefined
@@ -134,6 +136,9 @@ export function PortfolioBoard({
             roleCount={state.roles.length}
             onEditProject={() => setComposer('project.edit')}
             onOpenContext={() => setPanel('context')}
+            noteProposals={
+              state.noteDrafts.filter((draft) => draft.projectId === project.id).length
+            }
             onOpenAgents={() => setPanel('agents')}
             onOpenFeatures={() => setPanel('features')}
             onReviewModeChange={(mode) =>
@@ -159,6 +164,10 @@ export function PortfolioBoard({
               onDiscuss={onOpenSteward}
               itemId={outcomeId}
               onItemChange={setOutcomeId}
+              onReviewNote={(draftId) => {
+                setNoteDraftId(draftId)
+                setPanel('context')
+              }}
             />
           </PortfolioProjectBoard>
           <PortfolioPanel
@@ -168,12 +177,16 @@ export function PortfolioBoard({
               'portfolio.contextPanelHint',
               'What every agent on this initiative is told, and the notes they read.'
             )}
-            onClose={() => setPanel(null)}
+            onClose={() => {
+              setPanel(null)
+              setNoteDraftId('')
+            }}
           >
             <div className="space-y-5">
               <PortfolioInitiativeContext project={project} repos={repos} />
               <PortfolioNotes
-                key={project.id}
+                key={`${project.id}:${noteDraftId}`}
+                openDraftId={noteDraftId}
                 state={state}
                 projectId={project.id}
                 busy={busy}

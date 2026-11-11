@@ -11,8 +11,9 @@ import {
 import type { PortfolioWorkItem } from '../../../../shared/portfolio-features'
 import { PortfolioRelayNotice } from './PortfolioChecklist'
 import { saveChecklistChange } from './portfolio-checklist-relay'
+import { portfolioOutcomeNoteDrafts } from '../../../../shared/portfolio-outcome-reports'
 
-function proposer(state: PortfolioState, proposal: PortfolioChecklistProposal): string {
+function proposer(state: PortfolioState, proposal: { taskId?: string }): string {
   const task = state.tasks.find((entry) => entry.id === proposal.taskId)
   if (!task) {
     return translate('portfolio.proposalByAgent', 'An agent')
@@ -105,16 +106,21 @@ export function PortfolioOutcomeInbox({
   state,
   item,
   busy,
-  onSave
+  onSave,
+  onReviewNote
 }: {
   state: PortfolioState
   item: PortfolioWorkItem
   busy: boolean
   onSave: (command: PortfolioCommand) => Promise<boolean>
+  onReviewNote: (draftId: string) => void
 }): React.JSX.Element | null {
   const [notice, setNotice] = useState('')
   const proposals = item.proposals ?? []
-  if (!proposals.length && !notice) {
+  const reports = item.reports ?? []
+  const notes = portfolioOutcomeNoteDrafts(state, item.id)
+  const count = proposals.length + reports.length + notes.length
+  if (!count && !notice) {
     return null
   }
   const decide = async (command: PortfolioCommand): Promise<void> => {
@@ -130,12 +136,79 @@ export function PortfolioOutcomeInbox({
     >
       <h3 className="flex items-center gap-2 text-sm font-medium">
         <Inbox className="size-4 text-muted-foreground" aria-hidden="true" />
-        {translate('portfolio.outcomeInboxCount', 'Inbox · {{count}} proposed changes', {
-          count: proposals.length,
-          defaultValue_one: 'Inbox · {{count}} proposed change'
+        {translate('portfolio.outcomeInboxCount', 'Inbox · {{count}} to review', {
+          count,
+          defaultValue_one: 'Inbox · {{count}} to review'
         })}
       </h3>
       <PortfolioRelayNotice notice={notice} />
+      {reports.length > 0 && (
+        <ul
+          aria-label={translate('portfolio.agentQuestions', 'Questions from agents')}
+          className="space-y-2"
+        >
+          {reports.map((report) => (
+            <li key={report.id} className="space-y-1.5 rounded-md bg-muted/40 p-2">
+              <p className="text-xs text-muted-foreground">
+                {translate('portfolio.questionFrom', 'Question from {{from}}', {
+                  from: proposer(state, report)
+                })}
+              </p>
+              <p className="whitespace-pre-wrap break-words text-sm">{report.body}</p>
+              <div className="flex justify-end">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={busy}
+                  onClick={() =>
+                    void onSave({
+                      kind: 'workItem.resolveReport',
+                      workItemId: item.id,
+                      reportId: report.id
+                    })
+                  }
+                >
+                  {translate('portfolio.resolveQuestion', 'Mark answered')}
+                </Button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+      {notes.length > 0 && (
+        <ul
+          aria-label={translate('portfolio.inboxNoteProposals', 'Note proposals')}
+          className="space-y-2"
+        >
+          {notes.map((draft) => (
+            <li
+              key={draft.id}
+              className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-muted/40 p-2"
+            >
+              <span className="min-w-0 space-y-0.5">
+                <span className="block text-xs text-muted-foreground">
+                  {draft.noteId
+                    ? translate('portfolio.noteChangeFrom', 'Note change proposed by {{from}}', {
+                        from: proposer(state, draft)
+                      })
+                    : translate('portfolio.newNoteFrom', 'New note proposed by {{from}}', {
+                        from: proposer(state, draft)
+                      })}
+                </span>
+                <span className="block break-words text-sm">{draft.title}</span>
+                {draft.reason && (
+                  <span className="block break-words text-xs text-muted-foreground">
+                    {draft.reason}
+                  </span>
+                )}
+              </span>
+              <Button variant="outline" size="sm" onClick={() => onReviewNote(draft.id)}>
+                {translate('portfolio.reviewNote', 'Review note')}
+              </Button>
+            </li>
+          ))}
+        </ul>
+      )}
       {proposals.length > 0 && (
         <ul className="space-y-2">
           {proposals.map((proposal) => (

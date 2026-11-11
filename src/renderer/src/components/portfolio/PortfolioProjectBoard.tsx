@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { BookOpenText, Bot, Check, ChevronDown, Layers, Plus } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -23,6 +24,7 @@ export function PortfolioProjectBoard({
   roleCount,
   onEditProject,
   onOpenContext,
+  noteProposals = 0,
   onOpenAgents,
   onOpenFeatures,
   onReviewModeChange,
@@ -38,6 +40,8 @@ export function PortfolioProjectBoard({
   roleCount: number
   onEditProject: () => void
   onOpenContext: () => void
+  // Agents' note proposals waiting for the user, counted on the button that leads to them.
+  noteProposals?: number
   onOpenAgents: () => void
   onOpenFeatures: () => void
   onReviewModeChange?: (mode: PortfolioReviewMode) => void
@@ -101,6 +105,14 @@ export function PortfolioProjectBoard({
               <Button variant="outline" size="sm" onClick={onOpenContext}>
                 <BookOpenText aria-hidden="true" />
                 {translate('portfolio.contextAndNotes', 'Context & notes')}
+                {noteProposals > 0 && (
+                  <Badge className="ml-1">
+                    {translate('portfolio.toReviewCount', '{{count}} to review', {
+                      count: noteProposals,
+                      defaultValue_one: '{{count}} to review'
+                    })}
+                  </Badge>
+                )}
               </Button>
               <Button variant="outline" size="sm" onClick={onOpenAgents}>
                 <Bot aria-hidden="true" />

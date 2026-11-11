@@ -1,5 +1,6 @@
 import type { CommandHandler, HandlerContext } from '../dispatch'
 import { getOptionalStringFlag, getRequiredStringFlag } from '../flags'
+import { readCommandBody } from '../command-body-input'
 import { printResult } from '../format'
 import { resolveCurrentWorktreeSelection } from '../selectors'
 import { rejectRemoteSelectionFlags } from '../remote-selection-flag-rejection'
@@ -83,6 +84,31 @@ async function proposeChecklist(ctx: HandlerContext): Promise<void> {
   )
 }
 
+// Open questions and decisions the agent needs go to the outcome's inbox, where its coordinator
+// brings them to the user, instead of staying in the agent's own chat.
+async function reportToOutcome(ctx: HandlerContext): Promise<void> {
+  rejectRemoteSelectionFlags(ctx.flags, LOCAL_ONLY)
+  const body = await readCommandBody(ctx.flags, ctx.cwd, {
+    required: true,
+    maximumCharacters: 4000,
+    tooLargeCode: 'report_too_large',
+    label: 'Report'
+  })
+  const { scope, workItemId, taskId } = await proposalTarget(ctx)
+  const response = await ctx.client.call<{ reportId: string }>('portfolio.reportOutcome', {
+    ...scope,
+    workItemId,
+    report: { body, ...(taskId ? { taskId } : {}) }
+  })
+  printResult(
+    response,
+    ctx.json,
+    () =>
+      'Sent to the outcome’s inbox. Its coordinator brings it to the user; keep working on what does not depend on it.'
+  )
+}
+
 export const WORKBENCH_OUTCOME_HANDLERS: Record<string, CommandHandler> = {
-  'workbench outcome propose': proposeChecklist
+  'workbench outcome propose': proposeChecklist,
+  'workbench outcome report': reportToOutcome
 }

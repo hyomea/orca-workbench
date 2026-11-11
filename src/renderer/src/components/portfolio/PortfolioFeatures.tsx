@@ -28,6 +28,7 @@ export function PortfolioFeatures({
   onCreateRole,
   onOpenTasks,
   onDiscuss,
+  onReviewNote,
   itemId: shownItemId,
   onItemChange,
   onOpenOutcome
@@ -44,6 +45,8 @@ export function PortfolioFeatures({
   onCreateRole: () => void
   onOpenTasks: () => void
   onDiscuss: (prompt: string) => void
+  // Opens a note proposal for review; absent where notes are out of reach.
+  onReviewNote?: (draftId: string) => void
   // The page can own which outcome is open, so the feature catalog can open one in it.
   itemId?: string
   onItemChange?: (id: string) => void
@@ -82,6 +85,7 @@ export function PortfolioFeatures({
       onCreateRole={onCreateRole}
       onOpenTasks={onOpenTasks}
       onDiscuss={onDiscuss}
+      onReviewNote={onReviewNote ?? (() => {})}
     />
   )
   return (

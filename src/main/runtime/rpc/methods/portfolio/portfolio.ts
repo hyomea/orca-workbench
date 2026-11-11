@@ -16,6 +16,7 @@ import {
   PortfolioExportNotes,
   PortfolioProposeNote,
   PortfolioProposeChecklist,
+  PortfolioReportOutcome,
   PortfolioReadDesign,
   PortfolioRemoveDesign,
   PortfolioLaunch,
@@ -211,6 +212,24 @@ export const PORTFOLIO_METHODS = [
         )
       })
       return { proposalId: id }
+    }
+  }),
+  defineMethod({
+    // An agent's open question goes to the outcome's inbox, for its coordinator and the user.
+    name: 'portfolio.reportOutcome',
+    permission: 'workspace',
+    params: PortfolioReportOutcome,
+    handler: async (params) => {
+      const id = randomUUID()
+      await store(params).update(null, (state) => {
+        applyPortfolioCommand(
+          state,
+          { kind: 'workItem.report', workItemId: params.workItemId, report: params.report },
+          id,
+          Date.now()
+        )
+      })
+      return { reportId: id }
     }
   }),
   defineMethod({

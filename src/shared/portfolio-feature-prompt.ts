@@ -39,6 +39,7 @@ export function portfolioFeaturePrompt(state: PortfolioState, task: PortfolioTas
     `Same behavior on iOS and Android required: ${item.parity ? 'yes' : 'no'}`,
     `Outcome acceptance criteria:\n${portfolioChecklistText(item) || 'Not yet defined; clarify before implementation.'}`,
     'When your work turns up a criterion or decision this checklist should hold, or the user agrees one with you, propose it with `orca workbench outcome propose`; it changes only when the user accepts it.',
+    'Send each open question or decision you need from the user or another stage to the outcome’s inbox with `orca workbench outcome report`, besides telling the user here; its coordinator brings it to the user. Do not message other agents: anything another task needs goes through the coordinator.',
     ...(item.coordinator
       ? [
           `Outcome coordinator: ${portfolioRoleLabelById(state, item.coordinator.roleId) || 'assigned'} coordinates this outcome for the user and follows your task through Workbench. Keep reporting to the user in this session and proposing checklist changes with \`orca workbench outcome propose\`.`

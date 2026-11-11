@@ -363,6 +363,14 @@ Workbench work goes through Workbench tasks, not orchestration runs.
 A task agent on a held outcome keeps working with the user in its own session and proposing
 checklist changes with `outcome propose`; the coordinator follows its task through Workbench.
 
+Agents never message each other. A task agent sends each open question or decision it needs
+to the outcome's inbox with `outcome report --body <text>`, and proposes notes with
+`note propose` (its outcome is linked from `--task`, or pass `--outcome`). The outcome's
+coordinator brings these to the user, carries what one task needs from another, and decides
+with the user when a stage runs again or a branch rebases; for an outcome no coordinator holds,
+the workbench coordinator does. The user sees all of it in the outcome's inbox, and the
+Context & notes button counts note proposals waiting.
+
 Only the coordinator holding an outcome can reach its tasks' open sessions, from its own folder
 and each time after the user agrees: `task message <task> --body-file <file>` sends a message
 (recorded in the task's history), and `task again <task>` has a code review or QA look at

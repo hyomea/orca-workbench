@@ -107,6 +107,7 @@ function portfolioStagePrompt(state: PortfolioState, task: PortfolioTask): strin
         : []),
       'Do not push or open a PR on your own. When the user confirms it from Workbench, push this branch and open (or update) a draft PR; never mark it ready, request reviewers, or merge. If the user asks you in this session to push, push, then record it with `orca workbench task pushed`.',
       'If the user asks for more changes after you submit, commit them and run `task submit` again: it resubmits, so code review and QA can look at the new commits.',
+      'Rebase this branch only when the user or the outcome coordinator asks; when the base has moved, report it with `outcome report` instead. After a rebase, run the tests and resubmit.',
       ...portfolioReturnedFindings(task).map((note) => `Address these findings first:\n${note}`)
     ]
   }

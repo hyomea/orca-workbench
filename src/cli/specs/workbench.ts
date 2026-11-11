@@ -121,7 +121,7 @@ export const WORKBENCH_COMMAND_SPECS: CommandSpec[] = [
     path: ['workbench', 'note', 'propose'],
     summary: 'Propose an initiative note for the user to review in Workbench',
     usage:
-      'orca workbench note propose --project <id> --title <title> (--body <text> | --body-file <path|->) [--note <id>] [--task <id>] [--reason <text>] [--json]',
+      'orca workbench note propose --project <id> --title <title> (--body <text> | --body-file <path|->) [--note <id>] [--task <id>] [--outcome <id>] [--reason <text>] [--json]',
     allowedFlags: [
       ...LOCAL_COMMAND_FLAGS,
       'project',
@@ -130,6 +130,7 @@ export const WORKBENCH_COMMAND_SPECS: CommandSpec[] = [
       'body-file',
       'note',
       'task',
+      'outcome',
       'reason',
       'workbench'
     ],
@@ -138,7 +139,8 @@ export const WORKBENCH_COMMAND_SPECS: CommandSpec[] = [
     ],
     notes: [
       '--project takes the initiative id.',
-      'The note changes only after the user accepts the proposal. Pass --note to propose a replacement for an existing note.'
+      'The note changes only after the user accepts the proposal. Pass --note to propose a replacement for an existing note.',
+      '--outcome links the proposal to an outcome, so it shows in that outcome’s inbox for its coordinator; it defaults to the outcome of --task.'
     ]
   },
   {
@@ -164,6 +166,20 @@ export const WORKBENCH_COMMAND_SPECS: CommandSpec[] = [
       'Without --outcome or --task, uses the outcome of the Workbench task open in the current workspace.',
       '--item rewrites that checklist item (ids are in `status`); without it, the item is new.',
       'The proposal waits in the outcome’s inbox. When the user accepts it, Workbench sends the change to every open session on the outcome.'
+    ]
+  },
+  {
+    path: ['workbench', 'outcome', 'report'],
+    summary: 'Send an open question or decision you need to the outcome’s inbox',
+    usage:
+      'orca workbench outcome report (--body <text> | --body-file <path|->) [--outcome <id>] [--task <id>] [--json]',
+    allowedFlags: [...LOCAL_COMMAND_FLAGS, 'body', 'body-file', 'outcome', 'task', 'workbench'],
+    examples: [
+      'orca workbench outcome report --body "origin/development is 7 commits ahead of this branch’s base; rebase before the PR?"'
+    ],
+    notes: [
+      'Without --outcome or --task, uses the outcome of the Workbench task open in the current workspace.',
+      'One question or decision per report. The outcome’s coordinator, or the workbench coordinator, brings it to the user; do not act on it until the answer comes back.'
     ]
   },
   {

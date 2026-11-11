@@ -77,6 +77,11 @@ function formatStatus(state: PortfolioState): string {
           `    ${entry.kind === 'decision' ? 'Decision' : 'Criterion'}: ${entry.text} [${entry.id}]`
         )
       }
+      for (const report of item.reports ?? []) {
+        lines.push(
+          `    Question [${report.id}]${report.taskId ? ` from ${report.taskId}` : ''}: ${report.body.split('\n')[0]}`
+        )
+      }
       for (const proposal of item.proposals ?? []) {
         lines.push(
           `    Proposed ${proposal.kind}${proposal.itemId ? ` for ${proposal.itemId}` : ''}: ${proposal.text}`
@@ -169,6 +174,7 @@ async function propose(ctx: HandlerContext): Promise<void> {
   })
   const noteId = getOptionalStringFlag(ctx.flags, 'note')
   const taskId = getOptionalStringFlag(ctx.flags, 'task')
+  const workItemId = getOptionalStringFlag(ctx.flags, 'outcome')
   const response = await ctx.client.call<{ draftId: string }>('portfolio.proposeNote', {
     ...(await workbenchScope(ctx)),
     draft: {
@@ -177,7 +183,8 @@ async function propose(ctx: HandlerContext): Promise<void> {
       body,
       reason: getOptionalStringFlag(ctx.flags, 'reason') ?? '',
       ...(noteId ? { noteId } : {}),
-      ...(taskId ? { taskId } : {})
+      ...(taskId ? { taskId } : {}),
+      ...(workItemId ? { workItemId } : {})
     }
   })
   printResult(response, ctx.json, () => 'Note proposal submitted for review in Workbench.')
