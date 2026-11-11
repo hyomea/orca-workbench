@@ -4,7 +4,7 @@ import {
   type PortfolioAttempt,
   type PortfolioTask
 } from './portfolio'
-import { portfolioFeaturePrompt } from './portfolio-feature-commands'
+import { portfolioFeaturePrompt } from './portfolio-feature-prompt'
 import {
   assertPortfolioStageReady,
   portfolioReturnedFindings,

@@ -25009,7 +25009,22 @@
     "pinToTop": "Pin {{name}} to the top",
     "unpin": "Unpin {{name}}",
     "renameWorkbench": "Rename workbench",
-    "switchInitiative": "Switch initiative"
+    "switchInitiative": "Switch initiative",
+    "addCriterion": "Add criterion",
+    "addDecision": "Add decision",
+    "checklist": "Checklist",
+    "checklistCriteria": "Acceptance criteria",
+    "checklistCriterion": "Criterion",
+    "checklistDecision": "Decision",
+    "checklistDecisions": "Decisions",
+    "checklistEmpty": "No acceptance criteria yet. Add what must be true for this outcome to be done.",
+    "checklistNote": "Where it came from",
+    "checklistNotePlaceholder": "Where it came from or why (optional)",
+    "checklistText": "Checklist item",
+    "editChecklist": "Edit checklist",
+    "removeChecklistItem": "Remove item",
+    "saveChecklist": "Save checklist",
+    "outcomesAbout": "About outcomes"
   },
   "wslDistroHold": {
     "terminalStopped": "The WSL distro {{distro}} is stopped, so Orca didn't start this terminal. Start the distro, then try again.",

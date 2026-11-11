@@ -36,22 +36,36 @@ export function PortfolioDiscovery({
   if (!item.findings && !conclusion) {
     return null
   }
+  const findings = item.findings ? (
+    <CommentMarkdownAsync content={item.findings} variant="document" className="text-sm" />
+  ) : (
+    <p className="text-sm text-muted-foreground">
+      {translate('portfolio.discoveryNoFindings', 'No findings were recorded.')}
+    </p>
+  )
+  const title = translate('portfolio.discoveryFindings', 'Discovery findings')
+  // Once concluded, the findings are background for the work, so they fold behind one line.
+  if (conclusion) {
+    return (
+      <details
+        aria-label={translate('portfolio.discoverySection', 'Discovery')}
+        className="rounded-md border border-border p-3"
+      >
+        <summary className="cursor-pointer text-sm">
+          <span className="font-medium">{title}</span>
+          <span className="text-muted-foreground"> · {conclusion}</span>
+        </summary>
+        <div className="mt-3">{findings}</div>
+      </details>
+    )
+  }
   return (
     <section
       aria-label={translate('portfolio.discoverySection', 'Discovery')}
       className="space-y-2 rounded-md border border-border p-3"
     >
-      <h4 className="text-sm font-medium">
-        {translate('portfolio.discoveryFindings', 'Discovery findings')}
-      </h4>
-      {conclusion && <p className="text-sm font-medium">{conclusion}</p>}
-      {item.findings ? (
-        <CommentMarkdownAsync content={item.findings} variant="document" className="text-sm" />
-      ) : (
-        <p className="text-sm text-muted-foreground">
-          {translate('portfolio.discoveryNoFindings', 'No findings were recorded.')}
-        </p>
-      )}
+      <h4 className="text-sm font-medium">{title}</h4>
+      {findings}
     </section>
   )
 }

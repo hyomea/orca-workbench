@@ -1,4 +1,5 @@
 import { applyPortfolioCommand, type PortfolioCommand, type PortfolioState } from './portfolio'
+import { portfolioChecklistText } from './portfolio-checklist'
 import {
   developmentExecutionOpen,
   verificationProgress,
@@ -48,7 +49,7 @@ export function applyPortfolioVerificationCommand(
     verification.plans.push({
       version: (plan?.version ?? 0) + 1,
       scenarios: command.scenarios,
-      acceptanceCriteria: item.acceptanceCriteria,
+      acceptanceCriteria: portfolioChecklistText(item),
       designReferences: item.designReferences,
       designAttachments: structuredClone(item.designAttachments),
       sourceReference: portfolioTicketsText(item.tickets),

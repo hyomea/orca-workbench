@@ -1,6 +1,6 @@
 import { PortfolioFeatureList } from './PortfolioFeatureList'
 import { useState } from 'react'
-import { ArrowLeft, Plus } from 'lucide-react'
+import { ArrowLeft, Info, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { translate } from '@/i18n/i18n'
 import type { PortfolioCommand, PortfolioState } from '../../../../shared/portfolio'
@@ -55,6 +55,7 @@ export function PortfolioFeatures({
   const itemId = shownItemId ?? ownItemId
   const setItemId = onItemChange ?? setOwnItemId
   const [composer, setComposer] = useState<Composer | null>(null)
+  const [showHint, setShowHint] = useState(false)
   const tracks = usePortfolioTracks(state, projectId)
   const pins = usePinned('outcomes')
   const features = state.features.filter((feature) => feature.projectId === projectId)
@@ -100,16 +101,30 @@ export function PortfolioFeatures({
       ) : view === 'outcomes' ? (
         <>
           <div className="flex flex-wrap items-start justify-between gap-3">
+            {/* The explanation is for a first read, so it waits behind the info button. */}
             <div className="space-y-1">
-              <h3 className="text-base font-semibold">
-                {translate('portfolio.outcomes', 'Outcomes')}
-              </h3>
-              <p className="max-w-2xl text-sm text-muted-foreground">
-                {translate(
-                  'portfolio.outcomesHint',
-                  'Each outcome is something this initiative should achieve, such as a new capability, a bug fix, or engineering work. Link its tickets per platform; it updates a feature only when it changes one.'
-                )}
-              </p>
+              <div className="flex items-center gap-1">
+                <h3 className="text-base font-semibold">
+                  {translate('portfolio.outcomes', 'Outcomes')}
+                </h3>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label={translate('portfolio.outcomesAbout', 'About outcomes')}
+                  aria-expanded={showHint}
+                  onClick={() => setShowHint(!showHint)}
+                >
+                  <Info className="text-muted-foreground" aria-hidden="true" />
+                </Button>
+              </div>
+              {showHint && (
+                <p className="max-w-2xl text-sm text-muted-foreground">
+                  {translate(
+                    'portfolio.outcomesHint',
+                    'Each outcome is something this initiative should achieve, such as a new capability, a bug fix, or engineering work. Link its tickets per platform; it updates a feature only when it changes one.'
+                  )}
+                </p>
+              )}
             </div>
             <Button size="sm" disabled={busy} onClick={() => setComposer('outcome')}>
               <Plus aria-hidden="true" />

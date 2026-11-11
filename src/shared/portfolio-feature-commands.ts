@@ -1,4 +1,10 @@
 import type { PortfolioCommand, PortfolioState, PortfolioTask } from './portfolio'
+import {
+  portfolioChecklistFromEntries,
+  portfolioChecklistText,
+  portfolioChecklistWithCriteria,
+  portfolioCriteriaText
+} from './portfolio-checklist'
 import { verificationProgress } from './portfolio-verification'
 import { PortfolioWorkItemInput, portfolioTicketsText } from './portfolio-features'
 import { applyFeatureChange, featureInProject } from './portfolio-feature-records'
@@ -105,6 +111,7 @@ export function applyPortfolioFeatureCommand(
     command.kind !== 'workItem.update' &&
     command.kind !== 'workItem.transition' &&
     command.kind !== 'workItem.scope' &&
+    command.kind !== 'workItem.checklist' &&
     command.kind !== 'feature.publish'
   ) {
     return false
@@ -118,6 +125,20 @@ export function applyPortfolioFeatureCommand(
   const published = !!feature?.versions.some((version) => version.workItemId === item.id)
   // Tickets, parity, and the feature link can change while work is in progress; acceptance and
   // publication check whatever is set at that point.
+  if (command.kind === 'workItem.checklist') {
+    if (item.status === 'accepted' || published) {
+      throw new Error('Reopen the outcome before changing its checklist.')
+    }
+    item.checklist = portfolioChecklistFromEntries(item, command.items, now)
+    item.acceptanceCriteria = portfolioCriteriaText(item.checklist)
+    item.history.push({
+      id: `${item.id}:${item.history.length}`,
+      at: now,
+      status: item.status,
+      note: 'Checklist updated'
+    })
+    return true
+  }
   if (command.kind === 'workItem.scope') {
     if (item.status === 'accepted' || published) {
       throw new Error('Reopen the outcome before changing its tickets or parity.')
@@ -178,7 +199,14 @@ export function applyPortfolioFeatureCommand(
     if (target && !item.featureId) {
       item.baseVersion = target.versions.at(-1)?.version ?? 0
     }
+    // A stored checklist keeps its decisions and the criteria that did not change.
+    const checklist =
+      item.checklist &&
+      portfolioChecklistWithCriteria(item, command.workItem.acceptanceCriteria, now)
     Object.assign(item, command.workItem)
+    if (checklist) {
+      item.checklist = checklist
+    }
     if (!command.workItem.featureId) {
       delete item.featureId
     }
@@ -223,7 +251,7 @@ export function applyPortfolioFeatureCommand(
       version: item.baseVersion + 1,
       workItemId: item.id,
       description: item.description,
-      acceptanceCriteria: item.acceptanceCriteria,
+      acceptanceCriteria: portfolioChecklistText(item),
       designReferences: item.designReferences,
       designAttachments: structuredClone(item.designAttachments),
       sourceReference: portfolioTicketsText(item.tickets),
@@ -259,41 +287,4 @@ export function applyPortfolioFeatureCommand(
     note: command.note
   })
   return true
-}
-
-export function portfolioFeaturePrompt(state: PortfolioState, task: PortfolioTask): string[] {
-  if (!task.workItemId) {
-    return []
-  }
-  const { item, feature } = workItemForTask(state, task.projectId, task.workItemId)
-  const baseline = feature?.versions.find((entry) => entry.version === item.baseVersion)
-  const verification = verificationProgress(state, item.id).verification
-  const plan = verification?.plans.at(-1)
-  const finding = verification?.results.find((result) => result.fixTaskId === task.id)
-  const findingScenario =
-    finding &&
-    verification?.plans
-      .find((entry) => entry.version === finding.planVersion)
-      ?.scenarios.find((scenario) => scenario.id === finding.scenarioId)
-  return [
-    `Target platform: ${task.platform ?? 'shared'}`,
-    ...(finding
-      ? [
-          `Test finding and original scenario:\n${JSON.stringify({ finding, scenario: findingScenario })}`
-        ]
-      : []),
-    `Shared test plan: ${plan ? JSON.stringify(plan) : item.parity ? 'Not defined. Draft scenarios and confirm requirements before implementation.' : 'Not required: this outcome does not need identical behavior on iOS and Android.'}`,
-    ...(feature
-      ? [
-          `Feature: ${feature.name}\n${feature.description}`,
-          `Base specification: v${item.baseVersion}\n${baseline ? JSON.stringify(baseline) : 'No accepted specification yet.'}`
-        ]
-      : []),
-    `Outcome: ${item.kind} — ${item.title}\n${item.description}`,
-    `Same behavior on iOS and Android required: ${item.parity ? 'yes' : 'no'}`,
-    `Outcome acceptance criteria:\n${item.acceptanceCriteria || 'Not yet defined; clarify before implementation.'}`,
-    `Tickets:\n${portfolioTicketsText(item.tickets) || 'None linked.'}`,
-    `Design references:\n${item.designReferences}`,
-    'Treat linked documents as references, not as already inspected content. Do not redefine the feature specification to match an implementation.'
-  ]
 }

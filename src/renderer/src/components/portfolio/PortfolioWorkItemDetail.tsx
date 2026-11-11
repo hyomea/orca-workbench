@@ -19,6 +19,7 @@ import {
   type PortfolioWorkItem
 } from '../../../../shared/portfolio-features'
 import { PortfolioSpecification } from './PortfolioSpecification'
+import { PortfolioChecklist } from './PortfolioChecklist'
 import { PortfolioWorkItemReview } from './PortfolioWorkItemReview'
 import { workItemKinds } from './portfolio-feature-labels'
 import { PortfolioTickets } from './PortfolioTickets'
@@ -150,8 +151,16 @@ export function PortfolioWorkItemDetail({
           </TabsTrigger>
         </TabsList>
         <TabsContent value="context" className="space-y-4">
+          <PortfolioChecklist
+            item={item}
+            editable={item.status !== 'accepted' && !published}
+            busy={busy}
+            onSave={onSave}
+          />
+          {/* The checklist above shows the criteria; the rest of the definition follows. */}
           <PortfolioSpecification
             {...item}
+            acceptanceCriteria=""
             sourceReference={portfolioTicketsText(item.tickets)}
             designAttachments={editable ? undefined : item.designAttachments}
           />
