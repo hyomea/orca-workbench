@@ -47,6 +47,8 @@ export function attentionLabel(attention: PortfolioTaskAttention): string {
       return translate('portfolio.attentionStopped', 'Agent stopped without submitting')
     case 'agent-unseen':
       return translate('portfolio.attentionUnseen', 'No agent activity observed')
+    case 'outdated':
+      return translate('portfolio.attentionOutdated', 'Behind development’s latest commit')
   }
 }
 
@@ -85,6 +87,11 @@ export function taskNextStep(lane: string, attention?: PortfolioTaskAttention): 
       return translate(
         'portfolio.nextInput',
         'The agent is waiting for your answer in its workspace.'
+      )
+    case 'outdated':
+      return translate(
+        'portfolio.nextOutdated',
+        'Development submitted newer commits since this looked at its work. Send it the new commits before accepting.'
       )
     default:
       return translate(

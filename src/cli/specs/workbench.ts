@@ -70,7 +70,17 @@ export const WORKBENCH_COMMAND_SPECS: CommandSpec[] = [
     notes: [
       'Without a task id, submits the running task in the workspace that contains the current directory.',
       'Evidence says what changed, which commands ran and their results, which acceptance criteria are met, and open questions.',
-      'The task moves to review; only the user accepts it.'
+      'The task moves to review; only the user accepts it.',
+      'A development task already in review resubmits: run it again after committing changes the user asked for, with evidence for the whole submission.'
+    ]
+  },
+  {
+    path: ['workbench', 'task', 'pushed'],
+    summary: 'Record that the development session pushed its branch at the user’s request',
+    usage: 'orca workbench task pushed [--task <task>] [--json]',
+    allowedFlags: [...LOCAL_COMMAND_FLAGS, 'task', 'workbench'],
+    notes: [
+      'Run it right after a push the user asked for in the session, so the task history shows it. A push the user confirms from Workbench is recorded already.'
     ]
   },
   {

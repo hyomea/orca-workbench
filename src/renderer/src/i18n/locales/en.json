@@ -25038,7 +25038,11 @@
     "proposalsBadge_one": "{{count}} to review",
     "proposalsBadge_other": "{{count}} to review",
     "addOutcomeCoordinator": "Add outcome coordinator",
-    "coordinatorRole": "Coordinates outcomes · {{agent}}"
+    "coordinatorRole": "Coordinates outcomes · {{agent}}",
+    "stageOutdated": "This looked at {{reviewed}}; development has since submitted {{current}}.",
+    "stageOutdatedClosed": "Its session is closed. Move the task back to To do and start a new session to look at the new commits.",
+    "attentionOutdated": "Behind development’s latest commit",
+    "nextOutdated": "Development submitted newer commits since this looked at its work. Send it the new commits before accepting."
   },
   "wslDistroHold": {
     "terminalStopped": "The WSL distro {{distro}} is stopped, so Orca didn't start this terminal. Start the distro, then try again.",

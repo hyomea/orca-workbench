@@ -48,8 +48,15 @@ async function currentTask(
     return { scope, state, task }
   }
   const { worktreeId } = await resolveCurrentWorktreeSelection(ctx.cwd, ctx.client)
-  const runsHere = (task: PortfolioTask) =>
-    task.status === 'running' && task.attempts.at(-1)?.worktreeId === worktreeId
+  // A development task in review still counts while its session is open: it can resubmit.
+  const runsHere = (task: PortfolioTask) => {
+    const attempt = task.attempts.at(-1)
+    return (
+      attempt?.worktreeId === worktreeId &&
+      (task.status === 'running' ||
+        (task.stage === 'development' && task.status === 'review' && attempt.state !== 'closed'))
+    )
+  }
   const { scope, state } = await readTaskWorkbench(ctx, runsHere)
   const running = state.tasks.filter(runsHere)
   if (running.length !== 1) {
@@ -98,23 +105,27 @@ async function submitTask(ctx: HandlerContext): Promise<void> {
   })
   const { scope, state, task } = await currentTask(ctx)
   const taskId = task.id
-  // Only work in progress is submitted; a planned or decided task is the user's to move.
-  if (task.status !== 'running') {
+  // Only work in progress is submitted, or newer development commits while it is in review; a
+  // planned or decided task is the user's to move.
+  if (task.status !== 'running' && !(task.stage === 'development' && task.status === 'review')) {
     throw new RuntimeClientError(
       'invalid_argument',
-      `Task ${taskId} is ${task.status}; only a running task can be submitted for review.`
+      `Task ${taskId} is ${task.status}; only a running task, or development in review, can be submitted.`
     )
   }
   const commit = await committedHead(ctx, task)
+  const resubmit = task.status === 'review'
   const response = await ctx.client.call<PortfolioState>('portfolio.mutate', {
     ...scope,
     revision: state.revision,
-    command: { kind: 'task.transition', taskId, status: 'review', note: evidence, commit }
+    command: resubmit
+      ? { kind: 'task.resubmit', taskId, note: evidence, commit }
+      : { kind: 'task.transition', taskId, status: 'review', note: evidence, commit }
   })
-  printResult(
-    response,
-    ctx.json,
-    () => 'Submitted for review. The user decides whether to accept it.'
+  printResult(response, ctx.json, () =>
+    resubmit
+      ? `Resubmitted at ${commit}. Workbench shows the user that code review and QA looked at an older commit; it sends them the new one when the user asks.`
+      : 'Submitted for review. The user decides whether to accept it.'
   )
 }
 
@@ -149,8 +160,31 @@ async function markStep(ctx: HandlerContext): Promise<void> {
   })
 }
 
+// The user asked the development session to push: record it, as a push confirmed from Workbench is.
+async function recordPush(ctx: HandlerContext): Promise<void> {
+  rejectRemoteSelectionFlags(ctx.flags, LOCAL_ONLY)
+  const { scope, state, task } = await currentTask(ctx)
+  const worktreeId = task.attempts.at(-1)?.worktreeId
+  const { result } = await ctx.client.call<GitStatusResult>('git.status', {
+    worktree: `id:${worktreeId}`
+  })
+  if (result.readError || !PortfolioCommit.safeParse(result.head).success) {
+    throw new RuntimeClientError(
+      'invalid_argument',
+      `Cannot read the task workspace's Git state: ${result.readError ?? 'no commit is checked out'}.`
+    )
+  }
+  const response = await ctx.client.call<PortfolioState>('portfolio.mutate', {
+    ...scope,
+    revision: state.revision,
+    command: { kind: 'task.recordPush', taskId: task.id, commit: result.head as string }
+  })
+  printResult(response, ctx.json, () => `Recorded the push at ${result.head}.`)
+}
+
 export const WORKBENCH_TASK_HANDLERS: Record<string, CommandHandler> = {
   'workbench task start': startTask,
   'workbench task submit': submitTask,
-  'workbench task step': markStep
+  'workbench task step': markStep,
+  'workbench task pushed': recordPush
 }

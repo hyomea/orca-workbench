@@ -10,6 +10,7 @@ export const WORKBENCH_HANDLER_GROUP: HandlerGroup = {
     'workbench task start',
     'workbench task submit',
     'workbench task step',
+    'workbench task pushed',
     'workbench note propose',
     'workbench outcome propose',
     'workbench personal-notes list',

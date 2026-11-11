@@ -116,21 +116,26 @@ export function requestPortfolioTriage(
   )
 }
 
-// The code review or QA session that sent findings back looks at development's next submission.
+// The same code review or QA session looks at development's latest submission: after it sent
+// findings back, or when development resubmitted newer commits than it was given.
 export function runPortfolioTaskAgain(
   save: () => Promise<boolean>,
   task: PortfolioTask,
-  commit: string
+  commit: string,
+  since: string | undefined
 ): Promise<string | false> {
+  const range = since
+    ? `the commits from ${since} to ${commit}`
+    : 'the commits since your last look'
   return saveAndRelay(
     save,
     task,
     [
       `Development submitted again (commit ${commit}) for your Workbench task ${task.id}.`,
       task.stage === 'qa'
-        ? 'Test this version: check that each finding you sent back is resolved, re-run the checks they affect, and look for regressions.'
-        : 'Review the commits since your last review: check that each finding you sent back is resolved, and look for new problems.',
-      'Then submit your updated report with `task submit`. Do not push, or open or comment on a PR.'
+        ? `Test this version: check ${range}, that each finding you sent back is resolved, re-run the checks they affect, and look for regressions.`
+        : `Review ${range}: check that each finding you sent back is resolved, and look for new problems.`,
+      'Then submit your updated report with `task submit`; an earlier report covers the older commit. Do not push, or open or comment on a PR.'
     ].join('\n')
   )
 }

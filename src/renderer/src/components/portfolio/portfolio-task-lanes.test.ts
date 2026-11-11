@@ -82,3 +82,14 @@ it('ignores status left in the pane by an earlier session', () => {
     portfolioTaskObservation(running, { a: { ...status('working'), restoredUnconfirmed: true } })
   ).toBeUndefined()
 })
+
+it('asks the user to send newer commits to a code review or QA that is behind, unless it is planned', () => {
+  const later = launchedAt + 1000
+  for (const current of ['running', 'review', 'accepted'] as const) {
+    expect(portfolioTaskLane(task(current, {}), status('working'), later, true)).toEqual({
+      lane: 'attention',
+      attention: 'outdated'
+    })
+  }
+  expect(portfolioTaskLane(task('todo'), undefined, later, true)).toEqual({ lane: 'ready' })
+})

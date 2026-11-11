@@ -7,6 +7,12 @@ import {
   portfolioTrackRole,
   portfolioTrackTicket
 } from './portfolio-ticket-roles'
+import {
+  portfolioStageCommit,
+  portfolioStageOutdated,
+  portfolioSubmissionIndex,
+  portfolioTrackTask
+} from './portfolio-track-commits'
 
 const Id = z.string().trim().min(1).max(4096)
 const Name = z.string().trim().min(1).max(200)
@@ -75,22 +81,6 @@ const RETURN_SOURCE_NAMES: Record<PortfolioReturnSource, string> = {
   qa: 'QA',
   pr: 'PR review',
   externalQa: 'external QA'
-}
-
-export function portfolioTrackTask(
-  state: PortfolioState,
-  task: Pick<PortfolioTask, 'id' | 'workItemId' | 'platform'>,
-  stage: PortfolioTaskStage
-): PortfolioTask | undefined {
-  if (!task.workItemId) {
-    return undefined
-  }
-  return state.tasks.findLast(
-    (entry) =>
-      entry.stage === stage &&
-      entry.workItemId === task.workItemId &&
-      entry.platform === task.platform
-  )
 }
 
 export function portfolioOpenExecution(task: PortfolioTask): boolean {
@@ -163,42 +153,10 @@ export function returnPortfolioFindings(
   }
 }
 
-// A submission is the entry that moved the task into review; later entries can keep that status
-// (such as an execution closed during review) without being a new submission.
-function latestSubmissionIndex(task: PortfolioTask): number {
-  return task.history.findLastIndex(
-    (entry, index) => entry.status === 'review' && task.history[index - 1]?.status !== 'review'
-  )
-}
-
-export function portfolioSubmittedCommit(task: PortfolioTask): string | undefined {
-  return task.history[latestSubmissionIndex(task)]?.commit
-}
-
-export function portfolioSubmittedAt(task: PortfolioTask): number | undefined {
-  return task.history[latestSubmissionIndex(task)]?.at
-}
-
-// The version a code review or QA task looks at: what development submitted. QA can also take
-// the commit an accepted code review recorded, since the reviewer adds no commits of its own and
-// development may have been submitted before submissions recorded one.
-export function portfolioStageCommit(
-  state: PortfolioState,
-  task: PortfolioTask
-): string | undefined {
-  const development = portfolioTrackTask(state, task, 'development')
-  const submitted = development && portfolioSubmittedCommit(development)
-  if (submitted || task.stage !== 'qa') {
-    return submitted
-  }
-  const review = portfolioTrackTask(state, task, 'codeReview')
-  return review?.status === 'accepted' ? portfolioSubmittedCommit(review) : undefined
-}
-
 // Findings returned since the task last submitted, for its next launch prompt.
 export function portfolioReturnedFindings(task: PortfolioTask): string[] {
   return task.history
-    .slice(latestSubmissionIndex(task) + 1)
+    .slice(portfolioSubmissionIndex(task) + 1)
     .filter((entry) => entry.returnedFrom)
     .map((entry) => entry.note)
 }
@@ -239,14 +197,28 @@ function assertPortfolioReviewerStageReady(state: PortfolioState, task: Portfoli
   }
 }
 
-export function assertPortfolioDevelopmentAcceptable(
-  state: PortfolioState,
-  task: PortfolioTask
-): void {
+// Development is accepted after its later stages, and every acceptance covers the commit
+// development last submitted, not one it has since replaced.
+export function assertPortfolioTaskAcceptable(state: PortfolioState, task: PortfolioTask): void {
+  const outdated = (later: PortfolioTask) => {
+    const stale = portfolioStageOutdated(state, later)
+    if (stale) {
+      throw new Error(
+        `The ${PORTFOLIO_STAGE_NAMES[later.stage]} looked at ${stale.reviewed.slice(0, 8)}, but development has since submitted ${stale.current.slice(0, 8)}. Have it look at the new commits first.`
+      )
+    }
+  }
+  if (task.stage !== 'development') {
+    outdated(task)
+    return
+  }
   for (const stage of ['codeReview', 'qa'] as const) {
-    const later = task.stage === 'development' && portfolioTrackTask(state, task, stage)
+    const later = portfolioTrackTask(state, task, stage)
     if (later && later.status !== 'accepted') {
       throw new Error(`Accept the ${PORTFOLIO_STAGE_NAMES[stage]} before accepting development.`)
+    }
+    if (later) {
+      outdated(later)
     }
   }
 }
@@ -269,7 +241,7 @@ export function portfolioAcceptBlocker(
   task: PortfolioTask
 ): string | undefined {
   try {
-    assertPortfolioDevelopmentAcceptable(state, task)
+    assertPortfolioTaskAcceptable(state, task)
     return undefined
   } catch (failure) {
     return failure instanceof Error ? failure.message : String(failure)

@@ -5,10 +5,11 @@ import type {
   PortfolioWorkItem,
   PortfolioWorkPlatform
 } from '../../../../shared/portfolio-features'
+import type { PortfolioTaskStage } from '../../../../shared/portfolio-task-stages'
 import {
-  portfolioSubmittedCommit,
-  type PortfolioTaskStage
-} from '../../../../shared/portfolio-task-stages'
+  portfolioStageOutdated,
+  portfolioSubmittedCommit
+} from '../../../../shared/portfolio-track-commits'
 import {
   portfolioTaskLane,
   portfolioTaskObservation,
@@ -103,12 +104,17 @@ function track(
   tasks: readonly PortfolioTask[],
   activity: Record<string, AgentStatusEntry>,
   now: number,
-  prFor: PortfolioPrLookup | undefined
+  prFor: PortfolioPrLookup | undefined,
+  state: PortfolioState
 ): PortfolioTrack {
   const cells: PortfolioTrack['cells'] = {}
   for (const task of tasks) {
     const observation = portfolioTaskObservation(task, activity)
-    cells[task.stage] = { task, observation, ...portfolioTaskLane(task, observation, now) }
+    cells[task.stage] = {
+      task,
+      observation,
+      ...portfolioTaskLane(task, observation, now, !!portfolioStageOutdated(state, task))
+    }
   }
   const development = cells.development
   // Before roles, a backend ticket without development was another team's work.
@@ -229,7 +235,8 @@ export function portfolioTracks(
           tasks.filter((task) => task.platform === platform),
           activity,
           now,
-          teamPr(item.projectId)
+          teamPr(item.projectId),
+          state
         )
       )
     }
@@ -247,7 +254,8 @@ export function portfolioTracks(
         [task],
         activity,
         now,
-        teamPr(task.projectId)
+        teamPr(task.projectId),
+        state
       )
     )
   }

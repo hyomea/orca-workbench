@@ -265,9 +265,12 @@ initiative, and never accept a task.
 
 1. If the work is not finished, do not submit. Tell the user what remains.
 2. Commit the work on the task branch, following the repository's commit conventions, so
-   the user reviews a fixed version. (Code review and QA usually have nothing to commit.) Do not push; the user confirms each push from Workbench. When the
-   user sent the task back, add a new commit for the changes rather than amending, so the next
-   review can see what changed.
+   the user reviews a fixed version. (Code review and QA usually have nothing to commit.) Do
+   not push on your own: the user confirms a push from Workbench, or asks for one in your
+   session; after a push the user asked for in the session, run
+   `ORCA workbench task pushed` so the task history shows it. Code review and QA never push.
+   When the user sent the task back, add a new commit for the changes rather than amending, so
+   the next review can see what changed.
 3. Write the evidence as Markdown to a file outside the repository, such as
    `$TMPDIR/orca-task-evidence.md`, with these sections:
    - **Changes**: what changed, by file or module.
@@ -294,7 +297,13 @@ initiative, and never accept a task.
 5. Tell the user it was submitted, with the commit. If the command fails, report its error; do not retry with
    another task id.
 
-Only a running task can be submitted. Evidence is limited to 20,000 characters.
+Only a running task can be submitted, with one exception: a development task in review whose
+session is still open resubmits. When the user asks development for more changes after it
+submitted, commit them and run `task submit` again with evidence for the whole submission.
+The newer commit replaces the one under review; Workbench then shows a code review or QA that
+looked at the older commit as behind, and the user sends it the new commits with one click, so
+do not message those sessions yourself. A code review or QA report covers the commit it was
+given, not whatever the branch holds when it submits. Evidence is limited to 20,000 characters.
 
 ## Outcome phase and sign-off
 

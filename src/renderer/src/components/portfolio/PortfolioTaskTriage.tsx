@@ -10,7 +10,7 @@ import {
   portfolioSubmittedAt,
   portfolioSubmittedCommit,
   portfolioTrackTask
-} from '../../../../shared/portfolio-task-stages'
+} from '../../../../shared/portfolio-track-commits'
 import { portfolioTrackRole } from '../../../../shared/portfolio-ticket-roles'
 import { PortfolioField } from './portfolio-controls'
 import {

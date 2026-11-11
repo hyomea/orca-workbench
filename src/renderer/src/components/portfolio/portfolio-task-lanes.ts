@@ -9,6 +9,8 @@ export type PortfolioTaskAttention =
   | 'agent-needs-input'
   | 'agent-stopped'
   | 'agent-unseen'
+  // Code review or QA looked at a commit development has since replaced.
+  | 'outdated'
 
 // A launch that has not reported in yet is still starting, not lost.
 const STARTUP_GRACE_MS = 2 * 60 * 1000
@@ -35,9 +37,14 @@ export function portfolioTaskObservation(
 export function portfolioTaskLane(
   task: PortfolioTask,
   observation: AgentStatusEntry | undefined,
-  now: number
+  now: number,
+  outdated = false
 ): { lane: PortfolioTaskLane; attention?: PortfolioTaskAttention } {
   const attempt = task.attempts.at(-1)
+  // Planned work simply looks at the latest commit when it runs again.
+  if (outdated && task.status !== 'todo') {
+    return { lane: 'attention', attention: 'outdated' }
+  }
   if (task.status === 'accepted') {
     return { lane: 'accepted' }
   }

@@ -5,12 +5,8 @@ import {
   type PortfolioTask
 } from './portfolio'
 import { portfolioFeaturePrompt } from './portfolio-feature-prompt'
-import {
-  assertPortfolioStageReady,
-  portfolioReturnedFindings,
-  portfolioStageCommit,
-  portfolioTrackTask
-} from './portfolio-task-stages'
+import { assertPortfolioStageReady, portfolioReturnedFindings } from './portfolio-task-stages'
+import { portfolioStageCommit, portfolioTrackTask } from './portfolio-track-commits'
 import { portfolioTrackRole, portfolioTrackTicket } from './portfolio-ticket-roles'
 
 export function preparePortfolioAttempt(
@@ -60,12 +56,18 @@ export function preparePortfolioAttempt(
       'Another development task is running in this workspace. Choose a separate workspace.'
     )
   }
+  // Code review and QA record the development commit they look at, to notice a newer one.
+  const commit =
+    task.stage !== 'development' && portfolioTrackRole(state, task) !== 'reviewer'
+      ? portfolioStageCommit(state, task)
+      : undefined
   const attempt: PortfolioAttempt = {
     operationId,
     worktreeId,
     agent: role.agent,
     createdAt: now,
     state: 'pending',
+    ...(commit ? { commit } : {}),
     prompt: [
       `Initiative: ${project.name}`,
       `Objective: ${project.objective}`,
@@ -103,7 +105,8 @@ function portfolioStagePrompt(state: PortfolioState, task: PortfolioTask): strin
               .join('\n')}`
           ]
         : []),
-      'Do not push or open a PR on your own. When the user confirms it from Workbench, push this branch and open (or update) a draft PR; never mark it ready, request reviewers, or merge.',
+      'Do not push or open a PR on your own. When the user confirms it from Workbench, push this branch and open (or update) a draft PR; never mark it ready, request reviewers, or merge. If the user asks you in this session to push, push, then record it with `orca workbench task pushed`.',
+      'If the user asks for more changes after you submit, commit them and run `task submit` again: it resubmits, so code review and QA can look at the new commits.',
       ...portfolioReturnedFindings(task).map((note) => `Address these findings first:\n${note}`)
     ]
   }

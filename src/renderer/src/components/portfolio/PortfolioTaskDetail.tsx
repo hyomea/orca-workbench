@@ -18,11 +18,12 @@ import type {
   PortfolioState,
   PortfolioTask
 } from '../../../../shared/portfolio'
+import { portfolioAcceptBlocker } from '../../../../shared/portfolio-task-stages'
 import {
-  portfolioAcceptBlocker,
+  portfolioStageOutdated,
   portfolioSubmittedCommit,
   portfolioTrackTask
-} from '../../../../shared/portfolio-task-stages'
+} from '../../../../shared/portfolio-track-commits'
 import { portfolioTrackRole } from '../../../../shared/portfolio-ticket-roles'
 import type { AgentStatusEntry } from '../../../../shared/agent-status/contracts/agent-status-types'
 import { PortfolioField } from './portfolio-controls'
@@ -96,7 +97,12 @@ export function PortfolioTaskDetail({
   const now = useNow(30_000)
   const attempt = task.attempts.at(-1)
   const unresolved = attempt && (attempt.state === 'pending' || attempt.state === 'unknown')
-  const { lane, attention } = portfolioTaskLane(task, activity, now)
+  const { lane, attention } = portfolioTaskLane(
+    task,
+    activity,
+    now,
+    !!portfolioStageOutdated(state, task)
+  )
   const canStart = task.status === 'todo' && (!attempt || attempt.state === 'closed')
   const acceptBlocker = lane === 'decide' ? portfolioAcceptBlocker(state, task) : undefined
   const workspaceName = workspaces.find((entry) => entry.id === attempt?.worktreeId)?.name

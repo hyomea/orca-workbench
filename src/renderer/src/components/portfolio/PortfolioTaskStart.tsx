@@ -2,10 +2,12 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { translate } from '@/i18n/i18n'
 import type { PortfolioCommand, PortfolioState, PortfolioTask } from '../../../../shared/portfolio'
+import { portfolioStageBlocker } from '../../../../shared/portfolio-task-stages'
 import {
-  portfolioStageBlocker,
-  portfolioStageCommit
-} from '../../../../shared/portfolio-task-stages'
+  portfolioReviewedCommit,
+  portfolioStageCommit,
+  portfolioStageOutdated
+} from '../../../../shared/portfolio-track-commits'
 import { PortfolioSelect } from './portfolio-controls'
 import { PortfolioEndExecution } from './PortfolioEndExecution'
 import { runPortfolioTaskAgain } from './portfolio-task-review-actions'
@@ -43,19 +45,46 @@ export function PortfolioTaskStart({
     const notice = await runPortfolioTaskAgain(
       () => onSave({ kind: 'task.runAgain', taskId: task.id }),
       task,
-      commit
+      commit,
+      portfolioReviewedCommit(state, task)
     )
     if (notice !== false) {
       onNotice(notice)
     }
   }
-  if (task.status !== 'todo') {
+  // Development resubmitted newer commits than this session was given; its report, if any,
+  // covers the older one.
+  const stale = portfolioStageOutdated(state, task)
+  const staleNotice = stale && (
+    <p className="text-muted-foreground">
+      {translate(
+        'portfolio.stageOutdated',
+        'This looked at {{reviewed}}; development has since submitted {{current}}.',
+        { reviewed: stale.reviewed.slice(0, 8), current: stale.current.slice(0, 8) }
+      )}
+    </p>
+  )
+  if (task.status !== 'todo' && !stale) {
     return null
   }
   const blocker = portfolioStageBlocker(state, task)
+  if (task.status !== 'todo' && attempt?.state !== 'launched') {
+    return (
+      <div className="space-y-2">
+        {staleNotice}
+        <p className="text-muted-foreground">
+          {translate(
+            'portfolio.stageOutdatedClosed',
+            'Its session is closed. Move the task back to To do and start a new session to look at the new commits.'
+          )}
+        </p>
+      </div>
+    )
+  }
   if (attempt && attempt.state !== 'closed') {
     return attempt.state === 'launched' && task.stage !== 'development' ? (
       <div className="space-y-2">
+        {staleNotice}
         {blocker && <p className="text-muted-foreground">{blocker}</p>}
         <Button disabled={busy || Boolean(blocker)} onClick={() => void runAgain()}>
           {task.stage === 'qa'

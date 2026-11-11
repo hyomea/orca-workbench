@@ -26,6 +26,10 @@ import {
 import { PortfolioCodeReview, PortfolioCommit } from './portfolio-review'
 import { applyPortfolioTaskCommand } from './portfolio-task-commands'
 import {
+  applyPortfolioTaskSubmissionCommand,
+  PortfolioTaskSubmissionCommands
+} from './portfolio-task-submission'
+import {
   PortfolioReturnSource,
   PortfolioReviewMode,
   PortfolioTaskStage,
@@ -73,7 +77,9 @@ export const PortfolioAttempt = z.object({
   handle: z.string().optional(),
   paneKey: z.string().optional(),
   sessionId: z.string().optional(),
-  warning: z.string().optional()
+  warning: z.string().optional(),
+  // For code review and QA: the development commit this session was asked to look at.
+  commit: PortfolioCommit.optional()
 })
 export const PortfolioTask = PortfolioTaskInput.extend({
   id: Id,
@@ -90,7 +96,9 @@ export const PortfolioTask = PortfolioTaskInput.extend({
       note: z.string(),
       codeReview: PortfolioCodeReview.optional(),
       commit: PortfolioCommit.optional(),
-      returnedFrom: PortfolioReturnSource.optional()
+      returnedFrom: PortfolioReturnSource.optional(),
+      // Development submitted newer commits while its earlier submission was in review.
+      resubmitted: z.literal(true).optional()
     })
   )
 })
@@ -163,6 +171,7 @@ export const PortfolioCommand = z.discriminatedUnion('kind', [
   ...PortfolioNoteCommands,
   ...PortfolioRoleCommands,
   ...PortfolioTaskStageCommands,
+  ...PortfolioTaskSubmissionCommands,
   z.object({ kind: z.literal('organization.rename'), name: Name }),
   z.object({ kind: z.literal('steward.rename'), name: Name.nullable() }),
   z.object({ kind: z.literal('project.create'), project: PortfolioProjectInput }),
@@ -215,7 +224,8 @@ export function applyPortfolioCommand(
     applyPortfolioDiscoveryCommand(state, command, now) ||
     applyPortfolioNoteCommand(state, command, id, now) ||
     applyPortfolioRoleCommand(state, command, id) ||
-    applyPortfolioTaskCommand(state, command, id, now)
+    applyPortfolioTaskCommand(state, command, id, now) ||
+    applyPortfolioTaskSubmissionCommand(state, command, now)
   ) {
     return
   }

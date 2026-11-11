@@ -11,9 +11,9 @@ import {
 import {
   portfolioAcceptBlocker,
   portfolioStageBlocker,
-  portfolioTrackTask,
   type PortfolioTaskStage
 } from './portfolio-task-stages'
+import { portfolioTrackTask } from './portfolio-track-commits'
 
 function apply(state: PortfolioState, command: unknown, id = 'change', now = 1): void {
   applyPortfolioCommand(state, PortfolioCommand.parse(command), id, now)

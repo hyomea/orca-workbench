@@ -49,7 +49,7 @@ it('routes every documented workbench command to a handler', () => {
 
 const HEAD = 'f3867912aa'
 
-function submitContext(status: string, entries: unknown[] = []) {
+function submitContext(status: string, entries: unknown[] = [], stage = 'development') {
   vi.spyOn(console, 'log').mockImplementation(() => {})
   const call = vi.fn(async (method: string) => ({
     id: 'r',
@@ -58,7 +58,12 @@ function submitContext(status: string, entries: unknown[] = []) {
       method === 'portfolio.workbenches'
         ? WORKBENCHES
         : method === 'portfolio.read'
-          ? { revision: 3, tasks: [{ id: 't1', status, attempts: [{ worktreeId: 'w1' }] }] }
+          ? {
+              revision: 3,
+              tasks: [
+                { id: 't1', status, stage, attempts: [{ worktreeId: 'w1', state: 'launched' }] }
+              ]
+            }
           : method === 'git.status'
             ? { entries, conflictOperation: 'unknown', head: HEAD }
             : {}
@@ -103,8 +108,29 @@ it('refuses to submit work that is not committed', async () => {
 it('refuses to submit a task that is not running', async () => {
   const { call, ctx } = submitContext('accepted')
   await expect(WORKBENCH_HANDLERS['workbench task submit'](ctx)).rejects.toThrow(
-    'only a running task can be submitted'
+    'only a running task, or development in review, can be submitted'
   )
+  expect(call).not.toHaveBeenCalledWith('portfolio.mutate', expect.anything())
+})
+
+it('resubmits development that is already in review, at its new commit', async () => {
+  const { call, ctx } = submitContext('review')
+  await WORKBENCH_HANDLERS['workbench task submit'](ctx)
+  expect(call).toHaveBeenLastCalledWith('portfolio.mutate', {
+    workbenchId: 'default',
+    revision: 3,
+    command: {
+      kind: 'task.resubmit',
+      taskId: 't1',
+      note: 'Tests pass: ./gradlew test',
+      commit: HEAD
+    }
+  })
+})
+
+it('does not resubmit a code review that is in review', async () => {
+  const { call, ctx } = submitContext('review', [], 'codeReview')
+  await expect(WORKBENCH_HANDLERS['workbench task submit'](ctx)).rejects.toThrow('is review')
   expect(call).not.toHaveBeenCalledWith('portfolio.mutate', expect.anything())
 })
 

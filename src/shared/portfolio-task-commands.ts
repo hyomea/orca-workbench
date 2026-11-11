@@ -2,16 +2,19 @@ import { assertPortfolioWorkingRole } from './portfolio-roles'
 import type { PortfolioCommand, PortfolioState, PortfolioTask } from './portfolio'
 import { workItemForTask } from './portfolio-feature-commands'
 import {
-  assertPortfolioDevelopmentAcceptable,
+  assertPortfolioTaskAcceptable,
   assertPortfolioStageReady,
   assertPortfolioTrackSlot,
   portfolioOpenExecution,
-  portfolioStageCommit,
   portfolioTaskEvent,
-  portfolioTrackTask,
   reopenPortfolioTask,
   returnPortfolioFindings
 } from './portfolio-task-stages'
+import {
+  portfolioStageCommit,
+  portfolioStageOutdated,
+  portfolioTrackTask
+} from './portfolio-track-commits'
 import { portfolioTrackRole } from './portfolio-ticket-roles'
 
 export function portfolioTask(state: PortfolioState, taskId: string): PortfolioTask {
@@ -90,7 +93,7 @@ export function applyPortfolioTaskCommand(
         throw new Error('Record whether you reviewed the code or skipped it before accepting.')
       }
       if (command.status === 'accepted') {
-        assertPortfolioDevelopmentAcceptable(state, task)
+        assertPortfolioTaskAcceptable(state, task)
       }
       if (command.status === 'review') {
         task.evidence = command.note
@@ -215,21 +218,27 @@ export function applyPortfolioTaskCommand(
       return true
     }
     case 'task.runAgain': {
+      // After findings went back (todo), or when development submitted newer commits than the
+      // session was given, the same session looks at the latest submission.
       const task = portfolioTask(state, command.taskId)
-      if (task.stage === 'development' || task.status !== 'todo') {
+      const attempt = task.attempts.at(-1)
+      if (
+        task.stage === 'development' ||
+        (task.status !== 'todo' && !portfolioStageOutdated(state, task))
+      ) {
         throw new Error('Run a code review or QA task again after development submits again.')
       }
-      if (task.attempts.at(-1)?.state !== 'launched') {
+      if (!attempt || attempt.state !== 'launched') {
         throw new Error('This task has no open session; start a new one.')
       }
       assertPortfolioStageReady(state, task)
+      const commit = portfolioStageCommit(state, task)
       task.status = 'running'
       task.evidence = ''
-      portfolioTaskEvent(
-        task,
-        now,
-        `Running again in the same session on ${portfolioStageCommit(state, task)}`
-      )
+      if (commit) {
+        attempt.commit = commit
+      }
+      portfolioTaskEvent(task, now, `Running again in the same session on ${commit}`)
       return true
     }
     case 'task.confirmPush': {
