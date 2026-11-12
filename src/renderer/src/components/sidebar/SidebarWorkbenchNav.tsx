@@ -8,6 +8,7 @@ import {
   createWorkbench,
   exportWorkbench,
   importWorkbench,
+  removeWorkbench,
   selectWorkbench,
   useActiveWorkbenchId,
   useWorkbenchList
@@ -18,7 +19,6 @@ import {
   DEFAULT_WORKBENCH_ID,
   type PortfolioWorkbenchSummary
 } from '../../../../shared/rpc-contract/portfolio-params'
-import { removeWorkbench } from '@/components/portfolio/workbench-selection'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
