@@ -73,10 +73,7 @@ function GitHubStarButton({
       if (mountedRef.current) {
         setState('web-fallback')
       }
-      return
     }
-    // Starring anywhere must complete the nag so later thresholds cannot prompt again.
-    await window.api.starNag.complete()
   }
 
   if (state === 'hidden' || (state === 'starred' && hasRepos)) {

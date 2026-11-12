@@ -71,8 +71,6 @@ export function GeneralSupportSection({
     if (mountedRef.current) {
       setStarState('starred')
     }
-    // Starring here must also silence the threshold-based popup permanently.
-    await window.api.starNag.complete()
   }
 
   return (

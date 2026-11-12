@@ -2761,16 +2761,6 @@
         "activitySubagentCount_other": "{{count}} 個子代理程式正在執行",
         "activityMonitorCount_other": "正在監控 {{count}} 個背景工作"
       },
-      "StarNagCard": {
-        "30c36231c1": "Orca 是開放原始碼專案。如果它今天幫到了你，在 GitHub 上給顆星能幫助其他開發者找到它。",
-        "b5e685e4d9": "關閉",
-        "5f6df21046": "喜歡 Orca 嗎？",
-        "2d67b6c849": "在 GitHub 上給星",
-        "af3c9bbb37": "正在給星…",
-        "d32015fec7": "正在開啟...",
-        "157bb5ecbb": "開啟 GitHub",
-        "8c967b4d15": "稍後"
-      },
       "TaskPage": {
         "ff69a30681": "取消",
         "8ff6fdc368": "建立中…",
@@ -18179,22 +18169,6 @@
       },
       "ShortcutKeyCombo": {
         "07eb4985a1": "連按兩下 {{value0}}"
-      },
-      "star": {
-        "nag": {
-          "StarNagToastHost": {
-            "starredThanks": "已加星，謝謝！",
-            "githubOpened": "已開啟 GitHub",
-            "opening": "正在開啟…",
-            "starring": "正在加星…",
-            "openGithub": "開啟 GitHub",
-            "starOnGithub": "在 GitHub 上加星",
-            "onboardingCompleted": "入門流程已完成！",
-            "body": "如果你目前喜歡 Orca，在 GitHub 上加星可以幫助其他開發者發現它。",
-            "dismiss": "關閉",
-            "later": "稍後"
-          }
-        }
       },
       "nativeChat": {
         "contextMenu": {

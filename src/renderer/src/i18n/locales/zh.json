@@ -2306,16 +2306,6 @@
       "SelectedTextCopyMenu": {
         "9b40d7b018": "复制"
       },
-      "StarNagCard": {
-        "30c36231c1": "Orca 是开源项目。如果它今天帮到了你，GitHub 星标会帮助其他开发者找到它。",
-        "b5e685e4d9": "关闭",
-        "5f6df21046": "喜欢 Orca 吗？",
-        "2d67b6c849": "在 GitHub 上加星标",
-        "af3c9bbb37": "正在加星标...",
-        "d32015fec7": "正在打开...",
-        "157bb5ecbb": "打开 GitHub",
-        "8c967b4d15": "稍后"
-      },
       "TaskPage": {
         "ff69a30681": "取消",
         "8ff6fdc368": "创建中…",
@@ -17730,22 +17720,6 @@
       },
       "ShortcutKeyCombo": {
         "07eb4985a1": "双击 {{value0}}"
-      },
-      "star": {
-        "nag": {
-          "StarNagToastHost": {
-            "starredThanks": "已加星，谢谢！",
-            "githubOpened": "已打开 GitHub",
-            "opening": "正在打开…",
-            "starring": "正在加星…",
-            "openGithub": "打开 GitHub",
-            "starOnGithub": "在 GitHub 上加星",
-            "onboardingCompleted": "入门流程已完成！",
-            "body": "如果你目前喜欢 Orca，在 GitHub 上加星可以帮助其他开发者发现它。",
-            "dismiss": "关闭",
-            "later": "稍后"
-          }
-        }
       },
       "nativeChat": {
         "contextMenu": {

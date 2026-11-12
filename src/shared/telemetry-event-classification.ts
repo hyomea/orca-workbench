@@ -37,7 +37,6 @@ const COHORT_EXTENDED_SET = eventsDeclaringKey('nth_repo_added')
 type _CohortExtendedRoster =
   | 'app_opened'
   | 'app_starred_orca'
-  | 'star_nag_outcome'
   | 'feature_interaction_usage_bucket_reached'
   | 'repo_added'
   | 'add_repo_setup_step_action'

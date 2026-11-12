@@ -7,12 +7,6 @@ import {
   getFeatureInteractionCategory
 } from './feature-interactions'
 import {
-  starNagAgentBucketSchema,
-  starNagOutcomeSchema,
-  starNagPromptModeSchema,
-  starNagPromptSourceSchema
-} from './star-nag-telemetry'
-import {
   agentKindSchema,
   errorClassSchema,
   launchSourceSchema,
@@ -71,40 +65,6 @@ export const appStarredOrcaSchema = z
     nth_repo_added: nthRepoAddedSchema
   })
   .strict()
-
-export const starNagOutcomeEventSchema = z
-  .object({
-    outcome: starNagOutcomeSchema,
-    source: starNagPromptSourceSchema,
-    mode: starNagPromptModeSchema,
-    threshold: z.number().int().positive(),
-    agents_since_baseline: z.number().int().nonnegative(),
-    agents_since_baseline_bucket: starNagAgentBucketSchema,
-    nth_repo_added: nthRepoAddedSchema,
-    next_threshold: z.number().int().positive().optional(),
-    cooldown_days: z.number().int().positive().optional()
-  })
-  .strict()
-  .refine(
-    (payload) =>
-      payload.next_threshold === undefined ||
-      payload.outcome === 'dismissed' ||
-      payload.outcome === 'later',
-    {
-      message: 'next_threshold is only valid for later or dismissed outcomes',
-      path: ['next_threshold']
-    }
-  )
-  .refine(
-    (payload) =>
-      payload.cooldown_days === undefined ||
-      payload.outcome === 'later' ||
-      payload.outcome === 'dismissed',
-    {
-      message: 'cooldown_days is only valid for later or dismissed outcomes',
-      path: ['cooldown_days']
-    }
-  )
 
 export const workspaceCreatedSchema = z
   .object({

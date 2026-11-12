@@ -14,12 +14,6 @@ type MainOwnedUIState =
   | '_expandedWorktreeCardPropertiesDefaulted'
   | '_jiraIssueWorktreeCardPropertyDefaulted'
   | '_hostWorktreeCardPropertyDefaulted'
-  | 'starNagBaselineAgents'
-  | 'starNagAppVersion'
-  | 'starNagNextThreshold'
-  | 'starNagCompleted'
-  | 'starNagDeferredUntil'
-  | 'starNagAgentValueMomentAppVersion'
   // Desktop-local replay queue: a paired client must not overwrite it.
   | 'pendingRuntimeRepoRemovals'
 const _uiUpdateParity: AssertNoMissingKeys<

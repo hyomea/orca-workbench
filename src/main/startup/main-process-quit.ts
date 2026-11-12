@@ -134,7 +134,6 @@ function installWillQuitHandler(): void {
     // Remove the Windows tray icon only after renderer vetoes are past.
     destroySystemTray()
     // Final stats flush closes working sessions synchronously; quit supplies no terminating hook to preserve their duration.
-    state.starNag?.stop()
     state.automations?.stop()
     // Why: plugin hosts are forked children; dispose sends shutdown and
     // escalates to SIGKILL so they cannot outlive the app. The promise joins

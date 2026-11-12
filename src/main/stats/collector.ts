@@ -31,8 +31,6 @@ export class StatsCollector {
   /** Set by flushAsync so the quit flush is the final write; see scheduleSave. */
   private quitFlushStarted = false
   private quitFlushPromise: Promise<void> | null = null
-  // Notify star-nag without cyclic imports or coupling the collector to its consumer.
-  private agentStartListeners: ((totalAgentsSpawned: number) => void)[] = []
 
   constructor() {
     const data = loadStatsFile(getStatsFile())
@@ -40,13 +38,6 @@ export class StatsCollector {
     // Compact pre-#35544 files so later boots stop parsing the legacy event log.
     if (Array.isArray(data.events) && data.events.length > 0) {
       this.scheduleSave()
-    }
-  }
-
-  onAgentStarted(listener: (totalAgentsSpawned: number) => void): () => void {
-    this.agentStartListeners.push(listener)
-    return () => {
-      this.agentStartListeners = this.agentStartListeners.filter((l) => l !== listener)
     }
   }
 
@@ -141,14 +132,6 @@ export class StatsCollector {
     switch (event.type) {
       case 'agent_start':
         this.aggregates.totalAgentsSpawned++
-        // Notify after increment and isolate listeners so observer failures cannot lose persisted events.
-        for (const listener of this.agentStartListeners) {
-          try {
-            listener(this.aggregates.totalAgentsSpawned)
-          } catch (err) {
-            console.error('[stats] agent-start listener threw:', err)
-          }
-        }
         break
       case 'pr_created':
         this.aggregates.totalPRsCreated++

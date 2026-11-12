@@ -2306,16 +2306,6 @@
       "SelectedTextCopyMenu": {
         "9b40d7b018": "복사"
       },
-      "StarNagCard": {
-        "30c36231c1": "Orca는 오픈 소스입니다. 오늘 도움이 되었다면 GitHub 스타가 다른 개발자가 Orca를 찾는 데 도움이 됩니다.",
-        "b5e685e4d9": "닫기",
-        "5f6df21046": "Orca를 즐기고 있나요?",
-        "2d67b6c849": "GitHub에서 별표 주기",
-        "af3c9bbb37": "스타 표시 중…",
-        "d32015fec7": "여는 중...",
-        "157bb5ecbb": "GitHub 열기",
-        "8c967b4d15": "나중에"
-      },
       "TaskPage": {
         "ff69a30681": "취소",
         "8ff6fdc368": "만드는 중…",
@@ -17730,22 +17720,6 @@
       },
       "ShortcutKeyCombo": {
         "07eb4985a1": "{{value0}} 두 번 누르기"
-      },
-      "star": {
-        "nag": {
-          "StarNagToastHost": {
-            "starredThanks": "별표를 눌러주셔서 감사합니다!",
-            "githubOpened": "GitHub 열림",
-            "opening": "여는 중…",
-            "starring": "별표 누르는 중…",
-            "openGithub": "GitHub 열기",
-            "starOnGithub": "GitHub에서 별표 누르기",
-            "onboardingCompleted": "온보딩 완료!",
-            "body": "Orca가 마음에 드신다면 GitHub 별표가 다른 개발자가 Orca를 발견하는 데 도움이 됩니다.",
-            "dismiss": "닫기",
-            "later": "Later"
-          }
-        }
       },
       "nativeChat": {
         "contextMenu": {

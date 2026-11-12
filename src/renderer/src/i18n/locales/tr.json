@@ -2802,16 +2802,6 @@
         "activityMonitorCount_other": "{{count}} arka plan görevi izleniyor",
         "activityMonitorCount_one": "{{count}} arka plan görevi izleniyor"
       },
-      "StarNagCard": {
-        "30c36231c1": "Orca açık kaynaktır. Bugün işinize yaradıysa, bir GitHub yıldızı diğer geliştiricilerin onu bulmasına yardımcı olur.",
-        "b5e685e4d9": "Kapat",
-        "5f6df21046": "Orca'yı beğendiniz mi?",
-        "2d67b6c849": "GitHub'da yıldızla",
-        "af3c9bbb37": "Yıldızlanıyor…",
-        "d32015fec7": "Açılıyor...",
-        "157bb5ecbb": "GitHub'ı aç",
-        "8c967b4d15": "Daha sonra"
-      },
       "TaskPage": {
         "ff69a30681": "İptal",
         "8ff6fdc368": "Oluşturuluyor…",
@@ -18418,22 +18408,6 @@
       },
       "ShortcutKeyCombo": {
         "07eb4985a1": "{{value0}} tuşuna iki kez basın"
-      },
-      "star": {
-        "nag": {
-          "StarNagToastHost": {
-            "starredThanks": "Yıldızlandı, teşekkürler!",
-            "githubOpened": "GitHub açıldı",
-            "opening": "Açılıyor…",
-            "starring": "Yıldızlanıyor…",
-            "openGithub": "GitHub'ı aç",
-            "starOnGithub": "GitHub'da yıldızla",
-            "onboardingCompleted": "Kurulum tamamlandı!",
-            "body": "Orca'yı şu ana kadar beğendiyseniz bir GitHub yıldızı, diğer geliştiricilerin onu keşfetmesine yardımcı olur.",
-            "dismiss": "Kapat",
-            "later": "Daha sonra"
-          }
-        }
       },
       "nativeChat": {
         "contextMenu": {

@@ -7,7 +7,6 @@
 # Prune after a fix: pnpm check:direct-link-open-ratchet --prune
 1 src/renderer/src/components/Landing.tsx
 1 src/renderer/src/components/LinuxPackageInstallRecoveryCard.tsx
-1 src/renderer/src/components/StarNagCard.tsx
 1 src/renderer/src/components/UpdateErrorCardContent.tsx
 1 src/renderer/src/components/browser-pane/assemble-chrome/browser-page-context-menu-items.tsx
 1 src/renderer/src/components/browser-pane/assemble-chrome/browser-page-toolbar.tsx
@@ -29,7 +28,6 @@
 1 src/renderer/src/components/integrations/source-control/bitbucket-credentials-dialog.tsx
 1 src/renderer/src/components/integrations/source-control/bitbucket-integration-card.tsx
 1 src/renderer/src/components/stats/ShareUsageButton.tsx
-1 src/renderer/src/components/star-nag/StarNagToastHost.tsx
 1 src/renderer/src/components/tab-bar/BrowserTab.tsx
 1 src/renderer/src/lib/browser/navigation/http-link-routing.ts
 1 src/renderer/src/lib/workspace-ports/workspace-port-actions.ts

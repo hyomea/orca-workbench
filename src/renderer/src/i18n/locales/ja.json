@@ -2306,16 +2306,6 @@
       "SelectedTextCopyMenu": {
         "9b40d7b018": "コピー"
       },
-      "StarNagCard": {
-        "30c36231c1": "Orca はオープンソースです。今日役に立ったなら、GitHub のスターが他の開発者の発見につながります。",
-        "b5e685e4d9": "閉じる",
-        "5f6df21046": "Orca を楽しんでいますか？",
-        "2d67b6c849": "GitHub でスターを付ける",
-        "af3c9bbb37": "スターを付けています…",
-        "d32015fec7": "開いています…",
-        "157bb5ecbb": "GitHub を開く",
-        "8c967b4d15": "後で"
-      },
       "TaskPage": {
         "ff69a30681": "キャンセル",
         "8ff6fdc368": "作成中…",
@@ -17730,22 +17720,6 @@
       },
       "ShortcutKeyCombo": {
         "07eb4985a1": "{{value0}} を 2 回押す"
-      },
-      "star": {
-        "nag": {
-          "StarNagToastHost": {
-            "starredThanks": "スターを付けました。ありがとうございます！",
-            "githubOpened": "GitHub を開きました",
-            "opening": "開いています…",
-            "starring": "スターを付けています…",
-            "openGithub": "GitHub を開く",
-            "starOnGithub": "GitHub でスターを付ける",
-            "onboardingCompleted": "初期設定が完了しました！",
-            "body": "ここまでの Orca を気に入っていただけたら、GitHub でスターを付けると他の開発者が見つけやすくなります。",
-            "dismiss": "閉じる",
-            "later": "後で"
-          }
-        }
       },
       "nativeChat": {
         "contextMenu": {

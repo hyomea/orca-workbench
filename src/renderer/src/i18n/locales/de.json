@@ -2826,16 +2826,6 @@
         "activityMonitorCount_one": "{{count}} Hintergrundaufgabe wird überwacht",
         "activityMonitorCount_other": "{{count}} Hintergrundaufgaben werden überwacht"
       },
-      "StarNagCard": {
-        "30c36231c1": "Orca ist Open Source. Wenn es heute hilfreich war, hilft ein Stern auf GitHub anderen Entwicklern, Orca zu finden.",
-        "b5e685e4d9": "Ausblenden",
-        "5f6df21046": "Zufrieden mit Orca?",
-        "2d67b6c849": "Stern auf GitHub vergeben",
-        "af3c9bbb37": "Stern wird vergeben…",
-        "d32015fec7": "Wird geöffnet…",
-        "157bb5ecbb": "GitHub öffnen",
-        "8c967b4d15": "Später"
-      },
       "TaskPage": {
         "ff69a30681": "Abbrechen",
         "8ff6fdc368": "Wird erstellt…",
@@ -18434,22 +18424,6 @@
       },
       "ShortcutKeyCombo": {
         "07eb4985a1": "{{value0}} zweimal drücken"
-      },
-      "star": {
-        "nag": {
-          "StarNagToastHost": {
-            "starredThanks": "Stern vergeben — vielen Dank!",
-            "githubOpened": "GitHub geöffnet",
-            "opening": "Wird geöffnet…",
-            "starring": "Stern wird vergeben…",
-            "openGithub": "GitHub öffnen",
-            "starOnGithub": "Stern auf GitHub vergeben",
-            "onboardingCompleted": "Einführung abgeschlossen!",
-            "body": "Wenn dir Orca bisher gefällt, hilft ein Stern auf GitHub anderen Entwicklern, die App zu entdecken.",
-            "dismiss": "Ausblenden",
-            "later": "Später"
-          }
-        }
       },
       "nativeChat": {
         "contextMenu": {

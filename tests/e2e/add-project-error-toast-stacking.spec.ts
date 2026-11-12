@@ -101,69 +101,6 @@ for (const theme of ['dark', 'light'] as const) {
       await expect(pathField).toHaveValue(missingPath)
       expect(await pathField.evaluate((input) => input === document.activeElement)).toBe(true)
 
-      for (const pointerType of ['mouse', 'touch'] as const) {
-        await client.app.evaluate(({ BrowserWindow }) => {
-          BrowserWindow.getAllWindows()[0].webContents.send('star-nag:show', {
-            mode: 'web',
-            surface: 'toast'
-          })
-        })
-        const customToast = page
-          .locator('[data-sonner-toast]')
-          .filter({ hasText: 'Onboarding completed!' })
-        await expect(customToast).toBeVisible()
-        const clickToastControl = async (control: Locator): Promise<void> => {
-          if (pointerType === 'mouse') {
-            await control.click()
-            return
-          }
-          const cdp = await page.context().newCDPSession(page)
-          try {
-            await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true })
-            await control.click({ trial: true })
-            const bounds = await control.boundingBox()
-            if (!bounds) {
-              throw new Error('Missing toast control target')
-            }
-            await cdp.send('Input.dispatchTouchEvent', {
-              type: 'touchStart',
-              touchPoints: [{ x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 }]
-            })
-            await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
-          } finally {
-            await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: false })
-            await cdp.detach()
-          }
-        }
-        await pathField.click()
-        await clickToastControl(customToast.getByRole('button', { name: 'Dismiss', exact: true }))
-        await expect(customToast).toBeHidden()
-        await expect(page.getByRole('dialog', { name: /Open host project/i })).toBeVisible()
-        await expect(pathField).toHaveValue(missingPath)
-        expect(await pathField.evaluate((input) => input === document.activeElement)).toBe(true)
-      }
-      // A toast raised while the modal is open comes forward, so its actions run above it.
-      await client.app.evaluate(({ BrowserWindow }) => {
-        BrowserWindow.getAllWindows()[0].webContents.send('star-nag:show', {
-          mode: 'web',
-          surface: 'toast'
-        })
-      })
-      const raisedToast = page
-        .locator('[data-sonner-toast]')
-        .filter({ hasText: 'Onboarding completed!' })
-      await expect(raisedToast).toBeVisible()
-      await pathField.click()
-      await raisedToast.getByRole('button', { name: 'Later', exact: true }).click()
-      await expect(raisedToast).toBeHidden()
-      await expect(page.getByRole('dialog', { name: /Open host project/i })).toBeVisible()
-      await expect(pathField).toHaveValue(missingPath)
-      expect(await pathField.evaluate((input) => input === document.activeElement)).toBe(true)
-      await page.screenshot({
-        path: testInfo.outputPath(`toast-dismissed-modal-preserved-${theme}.png`),
-        animations: 'disabled'
-      })
-
       // A real action-toast renderer, fed a synthetic notification in this disposable client only.
       await client.app.evaluate(({ ipcMain, BrowserWindow }) => {
         ipcMain.removeHandler('mobile:consumePendingUnpairedDeviceAuthFailure')

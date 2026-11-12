@@ -27,8 +27,7 @@ describe('onboarding completion persistence', () => {
       configurable: true,
       value: {
         settings: { set: saveSettings },
-        onboarding: { update: saveProgress },
-        starNag: { onboardingCompleted: vi.fn() }
+        onboarding: { update: saveProgress }
       }
     })
     const notify = vi.spyOn(toast, 'error').mockImplementation(() => 'notice')

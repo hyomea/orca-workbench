@@ -91,8 +91,7 @@ function renderActions(
   Object.defineProperty(window, 'api', {
     configurable: true,
     value: {
-      onboarding: { update },
-      starNag: { onboardingCompleted: vi.fn() }
+      onboarding: { update }
     }
   })
   const onOnboardingChange = vi.fn()

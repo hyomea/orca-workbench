@@ -19235,16 +19235,6 @@
           "a683a4bc8e": "Tentar carregar predefinidos novamente"
         }
       },
-      "StarNagCard": {
-        "30c36231c1": "O Orca é open source. Se ele ajudou hoje, uma estrela no GitHub ajuda outros desenvolvedores a encontrá-lo.",
-        "b5e685e4d9": "Descartar",
-        "5f6df21046": "Está gostando do Orca?",
-        "2d67b6c849": "Dar estrela no GitHub",
-        "af3c9bbb37": "Dando estrela…",
-        "d32015fec7": "Abrindo...",
-        "157bb5ecbb": "Abrir GitHub",
-        "8c967b4d15": "Mais tarde"
-      },
       "dictation": {
         "DictationController": {
           "de136f1199": "Erro de fala: {{value0}}",
@@ -19491,22 +19481,6 @@
         "noGitLabMrsDescription": "Nenhum MR do GitLab corresponde a este filtro.",
         "noGitLabWorkTitle": "Nenhum trabalho do GitLab",
         "noGitLabWorkDescription": "Nenhum trabalho do GitLab corresponde a este filtro."
-      },
-      "star": {
-        "nag": {
-          "StarNagToastHost": {
-            "starredThanks": "Estrela dada — obrigado!",
-            "githubOpened": "GitHub aberto",
-            "opening": "Abrindo…",
-            "starring": "Dando estrela…",
-            "openGithub": "Abrir GitHub",
-            "starOnGithub": "Dar estrela no GitHub",
-            "onboardingCompleted": "Integração concluída!",
-            "body": "Se você está gostando do Orca até agora, uma estrela no GitHub ajuda outros desenvolvedores a descobri-lo.",
-            "dismiss": "Descartar",
-            "later": "Mais tarde"
-          }
-        }
       },
       "worktree": {
         "creation": {

@@ -2904,16 +2904,6 @@
         "activityMonitorCount_many": "Наблюдение за фоновыми задачами: {{count}}",
         "activityMonitorCount_other": "Наблюдение за фоновыми задачами: {{count}}"
       },
-      "StarNagCard": {
-        "30c36231c1": "Orca — проект с открытым исходным кодом. Если он помог вам сегодня, звезда на GitHub поможет другим разработчикам найти его.",
-        "b5e685e4d9": "Скрыть",
-        "5f6df21046": "Нравится Orca?",
-        "2d67b6c849": "Поставить звезду на GitHub",
-        "af3c9bbb37": "Добавление звезды…",
-        "d32015fec7": "Открытие…",
-        "157bb5ecbb": "Открыть GitHub",
-        "8c967b4d15": "Позже"
-      },
       "TaskPage": {
         "ff69a30681": "Отмена",
         "8ff6fdc368": "Создание…",
@@ -18992,22 +18982,6 @@
       },
       "ShortcutKeyCombo": {
         "07eb4985a1": "Дважды нажмите {{value0}}"
-      },
-      "star": {
-        "nag": {
-          "StarNagToastHost": {
-            "starredThanks": "Звезда добавлена — спасибо!",
-            "githubOpened": "GitHub открыт",
-            "opening": "Открытие…",
-            "starring": "Добавление звезды…",
-            "openGithub": "Открыть GitHub",
-            "starOnGithub": "Поставить звезду на GitHub",
-            "onboardingCompleted": "Начальная настройка завершена!",
-            "body": "Если вам нравится Orca, звезда на GitHub поможет другим разработчикам узнать о ней.",
-            "dismiss": "Скрыть",
-            "later": "Позже"
-          }
-        }
       },
       "nativeChat": {
         "contextMenu": {
