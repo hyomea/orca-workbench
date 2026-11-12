@@ -11,9 +11,6 @@ import { applyPortfolioBatch } from '../../../../../shared/portfolio-batch'
 import {
   PortfolioAttachDesign,
   PortfolioBatchParams,
-  PortfolioCreateWorkbench,
-  PortfolioRemoveWorkbench,
-  PortfolioWorkbenches,
   PortfolioExportNotes,
   PortfolioProposeNote,
   PortfolioProposeChecklist,
@@ -31,12 +28,7 @@ import {
 } from '../../../../../shared/rpc-contract/portfolio-params'
 import { AgentLaunchReplay } from '../../../../../shared/rpc-contract/agent-launch-params'
 import type { PortfolioStore } from '../../../../portfolio/portfolio-store'
-import {
-  createWorkbench,
-  listWorkbenches,
-  removeWorkbench,
-  workbenchStore
-} from '../../../../portfolio/workbench-spaces'
+import { workbenchStore } from '../../../../portfolio/workbench-spaces'
 import { exportPortfolioNotes } from '../../../../portfolio/portfolio-note-files'
 import {
   portfolioStewardCli,
@@ -58,6 +50,7 @@ import {
 import { defineMethod } from '../../core'
 import { AGENT_LAUNCH_METHODS } from '../agent-launch/agent-launch'
 import { PORTFOLIO_DISCOVERY_METHODS } from './portfolio-discovery'
+import { PORTFOLIO_WORKBENCH_METHODS } from './portfolio-workbench'
 
 function userData(): string {
   return getAppEnvironment().getPath('userData')
@@ -70,24 +63,7 @@ function store(params: { workbenchId?: string } = {}): PortfolioStore {
 
 export const PORTFOLIO_METHODS = [
   ...PORTFOLIO_DISCOVERY_METHODS,
-  defineMethod({
-    name: 'portfolio.workbenches',
-    permission: 'workspace',
-    params: PortfolioWorkbenches,
-    handler: () => listWorkbenches(userData())
-  }),
-  defineMethod({
-    name: 'portfolio.createWorkbench',
-    permission: 'workspace',
-    params: PortfolioCreateWorkbench,
-    handler: (params) => createWorkbench(userData(), params.name)
-  }),
-  defineMethod({
-    name: 'portfolio.removeWorkbench',
-    permission: 'workspace',
-    params: PortfolioRemoveWorkbench,
-    handler: (params) => removeWorkbench(userData(), params.workbenchId)
-  }),
+  ...PORTFOLIO_WORKBENCH_METHODS,
   defineMethod({
     name: 'portfolio.attachDesign',
     permission: 'workspace',

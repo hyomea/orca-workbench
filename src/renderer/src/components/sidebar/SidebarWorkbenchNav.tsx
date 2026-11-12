@@ -1,11 +1,13 @@
 import React from 'react'
-import { Ellipsis, FolderKanban, Plus, Trash2 } from 'lucide-react'
+import { Download, Ellipsis, FolderKanban, Plus, Trash2, Upload } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAppStore } from '@/store'
 import { useTranslate } from '@/i18n/use-translate'
 import { isImeOwnedKeyboardEvent } from '@/lib/ime-composition-keyboard-event'
 import {
   createWorkbench,
+  exportWorkbench,
+  importWorkbench,
   selectWorkbench,
   useActiveWorkbenchId,
   useWorkbenchList
@@ -29,6 +31,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 
@@ -42,6 +45,8 @@ export function SidebarWorkbenchNav(): React.JSX.Element {
   const [naming, setNaming] = React.useState(false)
   const [name, setName] = React.useState('')
   const [error, setError] = React.useState('')
+  const [notice, setNotice] = React.useState('')
+  const [transferring, setTransferring] = React.useState(false)
   const [deleteTarget, setDeleteTarget] = React.useState<PortfolioWorkbenchSummary | null>(null)
   const [removing, setRemoving] = React.useState(false)
   const onPage = activeView === 'portfolio'
@@ -82,6 +87,18 @@ export function SidebarWorkbenchNav(): React.JSX.Element {
       setRemoving(false)
     }
   }
+  const runTransfer = async (action: () => Promise<void>): Promise<void> => {
+    setTransferring(true)
+    setError('')
+    setNotice('')
+    try {
+      await action()
+    } catch (failure) {
+      setError(failure instanceof Error ? failure.message : String(failure))
+    } finally {
+      setTransferring(false)
+    }
+  }
   return (
     <div>
       <div className="group flex items-center rounded-md text-[13px] font-medium text-worktree-sidebar-foreground/60 hover:bg-worktree-sidebar-foreground/8">
@@ -101,10 +118,53 @@ export function SidebarWorkbenchNav(): React.JSX.Element {
         >
           <Plus className="size-3.5" />
         </button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              disabled={transferring}
+              aria-label={t('portfolio.workbenchLibraryActions', 'Workbench library actions')}
+              className="mr-1 rounded p-0.5 text-worktree-sidebar-foreground/55 hover:text-worktree-sidebar-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-worktree-sidebar-ring"
+            >
+              <Ellipsis className="size-3.5" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem
+              onSelect={() =>
+                void runTransfer(async () => {
+                  const result = await importWorkbench()
+                  if (result) {
+                    setActiveView('portfolio')
+                    setNotice(
+                      result.unlinkedProjects
+                        ? t(
+                            'portfolio.importWorkbenchRelink',
+                            'Imported {{name}}. Relink its repositories before starting tasks.',
+                            { name: result.name }
+                          )
+                        : t('portfolio.importWorkbenchDone', 'Imported {{name}}.', {
+                            name: result.name
+                          })
+                    )
+                  }
+                })
+              }
+            >
+              <Upload aria-hidden="true" />
+              {t('portfolio.importWorkbench', 'Import workbench…')}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
       {error && !naming && (
         <p role="alert" className="px-2 py-1 text-xs text-destructive">
           {error}
+        </p>
+      )}
+      {notice && (
+        <p role="status" className="px-2 py-1 text-xs text-worktree-sidebar-foreground/70">
+          {notice}
         </p>
       )}
       <ul aria-label={t('portfolio.workbenches', 'Workbenches')} className="space-y-0.5">
@@ -132,6 +192,7 @@ export function SidebarWorkbenchNav(): React.JSX.Element {
                 <DropdownMenuTrigger asChild>
                   <button
                     type="button"
+                    disabled={transferring}
                     aria-label={t('portfolio.workbenchItemActions', 'Actions for {{name}}', {
                       name: entry.name
                     })}
@@ -141,6 +202,19 @@ export function SidebarWorkbenchNav(): React.JSX.Element {
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    onSelect={() =>
+                      void runTransfer(async () => {
+                        if (await exportWorkbench(entry.id)) {
+                          setNotice(t('portfolio.exportWorkbenchDone', 'Workbench exported.'))
+                        }
+                      })
+                    }
+                  >
+                    <Download aria-hidden="true" />
+                    {t('portfolio.exportWorkbench', 'Export workbench…')}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem variant="destructive" onSelect={() => setDeleteTarget(entry)}>
                     <Trash2 aria-hidden="true" />
                     {entry.id === DEFAULT_WORKBENCH_ID

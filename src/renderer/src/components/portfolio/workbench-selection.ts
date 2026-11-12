@@ -77,6 +77,31 @@ export async function createWorkbench(name: string): Promise<void> {
   selectWorkbench(created.id)
 }
 
+export async function exportWorkbench(id: string): Promise<string | null> {
+  return z
+    .string()
+    .nullable()
+    .parse(
+      await callRuntimeRpc({ kind: 'local' }, 'portfolio.exportWorkbench', { workbenchId: id })
+    )
+}
+
+export async function importWorkbench(): Promise<{
+  name: string
+  unlinkedProjects: number
+} | null> {
+  const result = z
+    .object({ workbench: Summaries.element, unlinkedProjects: z.number().int().nonnegative() })
+    .nullable()
+    .parse(await callRuntimeRpc({ kind: 'local' }, 'portfolio.importWorkbench', {}))
+  if (!result) {
+    return null
+  }
+  await refreshWorkbenchList()
+  selectWorkbench(result.workbench.id)
+  return { name: result.workbench.name, unlinkedProjects: result.unlinkedProjects }
+}
+
 export async function removeWorkbench(id: string): Promise<void> {
   await callRuntimeRpc({ kind: 'local' }, 'portfolio.removeWorkbench', { workbenchId: id })
   try {

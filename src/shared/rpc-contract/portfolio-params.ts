@@ -15,6 +15,8 @@ const InWorkbench = z.object({ workbenchId: WorkbenchId.optional() })
 export const PortfolioWorkbenches = z.object({})
 export const PortfolioCreateWorkbench = z.object({ name: z.string().trim().min(1).max(200) })
 export const PortfolioRemoveWorkbench = z.object({ workbenchId: WorkbenchId })
+export const PortfolioExportWorkbench = z.object({ workbenchId: WorkbenchId })
+export const PortfolioImportWorkbench = z.object({})
 export type PortfolioWorkbenchSummary = { id: string; name: string; stewardPath: string }
 
 export const PortfolioRead = InWorkbench
