@@ -5,6 +5,8 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
@@ -16,12 +18,16 @@ export function PortfolioWorkbenchMenu({
   disabled,
   onRefresh,
   onRename,
+  stewardAgent,
+  onStewardAgentChange,
   onOpenNotes,
   onChooseNotesFolder
 }: {
   disabled: boolean
   onRefresh: () => void
   onRename: () => void
+  stewardAgent: 'codex' | 'claude'
+  onStewardAgentChange: (agent: 'codex' | 'claude') => void
   onOpenNotes: () => void
   onChooseNotesFolder: () => void
 }): React.JSX.Element {
@@ -45,6 +51,21 @@ export function PortfolioWorkbenchMenu({
           <Pencil aria-hidden="true" />
           {translate('portfolio.renameWorkbench', 'Rename workbench')}
         </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuLabel>
+          {translate('portfolio.stewardAgentChoice', 'Steward agent (next session)')}
+        </DropdownMenuLabel>
+        <DropdownMenuRadioGroup
+          value={stewardAgent}
+          onValueChange={(value) => {
+            if (value === 'codex' || value === 'claude') {
+              onStewardAgentChange(value)
+            }
+          }}
+        >
+          <DropdownMenuRadioItem value="codex">Codex</DropdownMenuRadioItem>
+          <DropdownMenuRadioItem value="claude">Claude</DropdownMenuRadioItem>
+        </DropdownMenuRadioGroup>
         <DropdownMenuSeparator />
         <DropdownMenuLabel>{translate('portfolio.myNotes', 'My notes')}</DropdownMenuLabel>
         <DropdownMenuItem onSelect={onOpenNotes}>

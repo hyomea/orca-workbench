@@ -11,7 +11,8 @@ it('refreshes the steward instructions and keeps the user’s own notes', async 
   const directory = await mkdtemp(join(tmpdir(), 'orca-steward-'))
   try {
     const store = new PortfolioStore(join(directory, 'workbench', 'portfolio.json'))
-    const { path } = await preparePortfolioSteward(store)
+    const { path, agent } = await preparePortfolioSteward(store)
+    expect(agent).toBe('claude')
     expect(path).toBe(join(directory, 'workbench', 'steward'))
     await writeFile(join(path, 'CLAUDE.md'), 'stale')
     await writeFile(join(path, 'steward-notes.md'), 'Prefer Codex for reviews.')
@@ -29,6 +30,32 @@ it('refreshes the steward instructions and keeps the user’s own notes', async 
     expect(settings.permissions.allow.some((rule: string) => rule.includes('terminal send'))).toBe(
       false
     )
+  } finally {
+    await rm(directory, { recursive: true, force: true })
+  }
+})
+
+it('prepares Codex instructions when this Workbench selects Codex', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'orca-steward-'))
+  try {
+    const store = new PortfolioStore(join(directory, 'workbench', 'portfolio.json'))
+    await store.update(0, (state) =>
+      applyPortfolioCommand(
+        state,
+        PortfolioCommand.parse({ kind: 'steward.agent', agent: 'codex' }),
+        'agent-choice',
+        1
+      )
+    )
+    const { path, agent } = await preparePortfolioSteward(store, 'orca-dev')
+    expect(agent).toBe('codex')
+    expect(await readFile(join(path, 'AGENTS.md'), 'utf8')).toContain(
+      "Read `steward-notes.md` for the user's standing instructions."
+    )
+    expect(await readFile(join(path, 'AGENTS.md'), 'utf8')).toContain('workbench apply')
+    await writeFile(join(path, 'steward-notes.md'), 'My instructions')
+    await preparePortfolioSteward(store, 'orca-dev')
+    expect(await readFile(join(path, 'steward-notes.md'), 'utf8')).toBe('My instructions')
   } finally {
     await rm(directory, { recursive: true, force: true })
   }

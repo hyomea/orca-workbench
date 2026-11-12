@@ -6,17 +6,18 @@ import { DEV_COMMAND_NAME } from '../cli/cli-install-constants'
 
 const OWN_NOTES = 'steward-notes.md'
 
-// Orca owns CLAUDE.md so its instructions track the CLI; the user's additions live in OWN_NOTES.
+// Orca owns the agent instruction files; the user's additions live in OWN_NOTES.
 const stewardInstructions = (
   personalNotes: string,
   name: string | undefined,
-  cli: string
+  cli: string,
+  agent: 'codex' | 'claude'
 ): string => `# Orca Workbench steward
 
 Orca regenerates this file each time the steward opens. Put your own standing instructions in
-\`${OWN_NOTES}\`, which is imported below and never overwritten.
+\`${OWN_NOTES}\`, which is never overwritten.
 
-@${OWN_NOTES}
+${agent === 'claude' ? `@${OWN_NOTES}` : `Read \`${OWN_NOTES}\` for the user's standing instructions.`}
 
 ## Role
 ${name ? `\nYour name is ${name}. The user also calls you the workbench coordinator.\n` : ''}
@@ -24,8 +25,7 @@ You are the user's steward for Orca Workbench (the Workbench page): initiatives,
 features, roles, tasks, test plans, and initiative notes. An initiative is a business goal
 across repositories; stored records and flags call it a project (\`projectId\`,
 \`--project\`). You plan work from tickets, keep the records accurate, start tasks in
-workspaces, and report status. You run with the same
-permissions the user's Claude Code has outside Orca.
+workspaces, and report status. You run with the user's own agent permissions.
 
 This folder only holds your instructions. Read repositories where they live; do not copy code
 here.
@@ -199,14 +199,20 @@ export async function refreshPortfolioSteward(store: PortfolioStore, cli: string
 export async function preparePortfolioSteward(
   store: PortfolioStore,
   cli = 'orca'
-): Promise<{ path: string }> {
+): Promise<{ path: string; agent: 'codex' | 'claude' }> {
   const path = portfolioStewardDirectory(store)
   await mkdir(path, { recursive: true })
   const folder = await readPersonalNotesFolder(store)
-  const { stewardName } = await store.read()
+  const { stewardName, stewardAgent } = await store.read()
+  const agent = stewardAgent ?? 'claude'
   await writeFile(
     join(path, 'CLAUDE.md'),
-    stewardInstructions(personalNotesSection(folder), stewardName, cli),
+    stewardInstructions(personalNotesSection(folder), stewardName, cli, 'claude'),
+    { mode: 0o600 }
+  )
+  await writeFile(
+    join(path, 'AGENTS.md'),
+    stewardInstructions(personalNotesSection(folder), stewardName, cli, 'codex'),
     { mode: 0o600 }
   )
   // Project-scoped, so these rules apply only to steward sessions. Users add theirs in settings.local.json.
@@ -225,5 +231,5 @@ export async function preparePortfolioSteward(
       throw error
     }
   })
-  return { path }
+  return { path, agent }
 }

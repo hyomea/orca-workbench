@@ -8,13 +8,14 @@ vi.mock('@/lib/agent-session/launch/new-tab/launch-agent-in-new-tab', () => ({
 }))
 vi.mock('./portfolio-folder-workspace', () => ({ activateLocalFolderWorkspace: vi.fn() }))
 
-const { stewardRunning } = await import('./portfolio-steward-actions')
+const { stewardRunning, runningCoordinatorMatchesAgent } =
+  await import('./portfolio-steward-actions')
 
 const LEAF = '4f5c2a1e-8b9d-4c3e-a2f1-0d9e8c7b6a50'
 
 function state(
-  tabs: { id: string; contentType: string }[],
-  statuses: Record<string, { paneKey: string; restoredUnconfirmed?: boolean }>
+  tabs: { id: string; contentType: string; agentSessionAgent?: string }[],
+  statuses: Record<string, { paneKey: string; restoredUnconfirmed?: boolean; agentType?: string }>
 ) {
   return {
     unifiedTabsByWorktree: { steward: tabs },
@@ -36,6 +37,16 @@ it('starts a new steward when its workspace only has a shell left', () => {
       'steward'
     )
   ).toBe(false)
+})
+
+it('does not reuse a Claude steward session after Codex is selected', () => {
+  const active = state(
+    [{ id: 'chat', contentType: 'agent-session', agentSessionAgent: 'claude' }],
+    {}
+  )
+  expect(stewardRunning(active, 'steward')).toBe(true)
+  expect(runningCoordinatorMatchesAgent(active, 'steward', 'codex')).toBe(false)
+  expect(runningCoordinatorMatchesAgent(active, 'steward', 'claude')).toBe(true)
 })
 
 it('returns to a steward that is running in a terminal or a chat tab', () => {

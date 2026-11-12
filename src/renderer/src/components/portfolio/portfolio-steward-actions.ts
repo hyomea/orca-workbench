@@ -29,16 +29,34 @@ export function stewardRunning(
   })
 }
 
+export function runningCoordinatorMatchesAgent(
+  state: Pick<AppState, 'unifiedTabsByWorktree' | 'agentStatusByPaneKey'>,
+  worktreeId: string,
+  agent: 'codex' | 'claude' | 'opencode'
+): boolean {
+  const tabs = state.unifiedTabsByWorktree[worktreeId] ?? []
+  const active = tabs.filter((tab) => tab.contentType === 'agent-session')
+  const tabIds = new Set(tabs.map((tab) => tab.id))
+  const statuses = Object.values(state.agentStatusByPaneKey).filter((entry) => {
+    const tabId = parseAgentStatusPaneIdentity(entry.paneKey)?.tabId
+    return !entry.restoredUnconfirmed && tabId !== undefined && tabIds.has(tabId)
+  })
+  return (
+    active.every((tab) => tab.agentSessionAgent === agent) &&
+    statuses.every((entry) => entry.agentType === agent)
+  )
+}
+
 // One steward workspace per workbench; reopening returns to a running steward instead of starting another.
 // A prompt (the user pressed a button that asks the steward something) goes to the running chat,
 // or starts a new one with it.
 export async function openPortfolioSteward(prompt?: string): Promise<void> {
-  const { path } = z
-    .object({ path: z.string().min(1) })
+  const { path, agent } = z
+    .object({ path: z.string().min(1), agent: z.enum(['codex', 'claude']) })
     .parse(
       await callRuntimeRpc({ kind: 'local' }, 'portfolio.prepareSteward', activeWorkbenchParams())
     )
-  await openCoordinatorChat(path, 'claude', prompt)
+  await openCoordinatorChat(path, agent, prompt, true)
 }
 
 // The outcome's own coordinator, in its own folder: starting it records the hand-off, and
@@ -58,10 +76,21 @@ export async function openOutcomeCoordinator(workItemId: string): Promise<void> 
 async function openCoordinatorChat(
   path: string,
   agent: 'codex' | 'claude' | 'opencode',
-  prompt?: string
+  prompt?: string,
+  protectAgentSwitch = false
 ): Promise<void> {
   const worktreeId = await activateLocalFolderWorkspace(path, 'folder')
-  if (stewardRunning(useAppStore.getState(), worktreeId)) {
+  const state = useAppStore.getState()
+  if (stewardRunning(state, worktreeId)) {
+    if (protectAgentSwitch && !runningCoordinatorMatchesAgent(state, worktreeId, agent)) {
+      throw new Error(
+        translate(
+          'portfolio.stewardAgentInUse',
+          'Close the current coordinator session before opening {{agent}}.',
+          { agent: agent === 'codex' ? 'Codex' : agent === 'claude' ? 'Claude' : 'OpenCode' }
+        )
+      )
+    }
     if (prompt) {
       await sendToSteward(worktreeId, prompt)
     }

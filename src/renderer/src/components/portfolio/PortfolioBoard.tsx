@@ -103,6 +103,8 @@ export function PortfolioBoard({
         disabled={busy}
         onRefresh={onRefresh}
         onRename={() => setComposer('organization')}
+        stewardAgent={state.stewardAgent ?? 'claude'}
+        onStewardAgentChange={(agent) => void onSave({ kind: 'steward.agent', agent })}
         onOpenNotes={onOpenPersonalNotes}
         onChooseNotesFolder={onChoosePersonalNotesFolder}
       />

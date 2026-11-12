@@ -25014,6 +25014,8 @@
     "stateSignedOff": "Signed off",
     "stateSignOff": "Ready for sign-off",
     "workbenchActions": "More Workbench actions",
+    "stewardAgentChoice": "Steward agent (next session)",
+    "stewardAgentInUse": "Close the current coordinator session before opening {{agent}}.",
     "tasksPlanned_one": "{{count}} task planned",
     "tasksPlanned_other": "{{count}} tasks planned",
     "noTasksPlanned": "No tasks yet",

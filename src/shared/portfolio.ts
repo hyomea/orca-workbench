@@ -121,6 +121,7 @@ export const PortfolioState = z.object({
   organization: Name,
   // The steward (the user's coordinator agent) by the personal name the user gave it.
   stewardName: Name.optional(),
+  stewardAgent: z.enum(['codex', 'claude']).optional(),
   projects: z.array(PortfolioProjectInput.extend({ id: Id })),
   roles: z.array(PortfolioRoleInput.extend({ id: Id })),
   tasks: z.array(PortfolioTask)
@@ -184,6 +185,7 @@ export const PortfolioCommand = z.discriminatedUnion('kind', [
   ...PortfolioTaskSubmissionCommands,
   z.object({ kind: z.literal('organization.rename'), name: Name }),
   z.object({ kind: z.literal('steward.rename'), name: Name.nullable() }),
+  z.object({ kind: z.literal('steward.agent'), agent: z.enum(['codex', 'claude']) }),
   z.object({ kind: z.literal('project.create'), project: PortfolioProjectInput }),
   z.object({
     kind: z.literal('project.update'),
@@ -251,6 +253,9 @@ export function applyPortfolioCommand(
       } else {
         delete state.stewardName
       }
+      return
+    case 'steward.agent':
+      state.stewardAgent = command.agent
       return
     case 'project.create':
       state.projects.push({
