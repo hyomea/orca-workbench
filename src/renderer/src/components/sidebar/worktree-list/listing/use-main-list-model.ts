@@ -16,10 +16,8 @@ import {
 } from '@/lib/vm-create-hidden-checkouts'
 import '../../../../../../shared/folder-workspaces/folder-workspace-execution-host'
 import { getFolderWorkspaceHostId } from '../../../../../../shared/folder-workspaces/folder-workspace-host-id'
-import type { FolderWorkspace } from '../../../../../../shared/folder-workspaces/folder-workspace-types'
 import {
   getLocalExecutionHostLabel,
-  parseExecutionHostId,
   type ExecutionHostId
 } from '../../../../../../shared/execution-host'
 import { getHostDisplayLabelOverrides } from '../../../../../../shared/host-setting-overrides'
@@ -39,7 +37,6 @@ import {
 } from '../../../../../../shared/sidebar-list/host-filtering'
 import { mergeDraggedHostSectionOrder } from '../../../../../../shared/sidebar-list/host-section-order'
 import type { HostSectionRow } from '../../../../../../shared/sidebar-list/host-section-rows'
-import type { Worktree } from '../../../../../../shared/worktree/types'
 import { getWorktreeHostIdentity } from '../../../../../../shared/worktree/host-qualified-identity'
 import { sidebarWorkspaceRowFilters } from '../controls/sidebar-filter-actions'
 import type { SidebarListModel, SidebarListModelArgs } from './sidebar-list-model'
@@ -51,29 +48,23 @@ import { useEffectiveCollapsedGroups } from './use-collapsed-groups'
 import { useSidebarExternalWorktreeCards } from './use-external-worktree-cards'
 import { useOrderHeldWhileEngaged, useProjectRecencyHeldWhileEngaged } from './use-order-hold'
 import { useReusedArrayIdentity } from './use-reused-array-identity'
+import { folderRecordKey, windowFolderRecordOf, windowRecordOf } from './window-feed-records'
+import {
+  visibleSidebarRepo,
+  visibleSidebarSetup,
+  withoutStewardSidebarWorkspaces
+} from './steward-sidebar-visibility'
 
 // The window renders its own collapse, so planning never re-runs on a toggle.
 const PLANNED_UNCOLLAPSED: ReadonlySet<string> = new Set()
 
-function folderRecordKey(id: string, hostId: string | null | undefined): string {
-  return `${parseExecutionHostId(hostId)?.id ?? ''}\0${id}`
-}
-
-// Main's rows answer for the list; the window's own records answer for what a card shows.
-function windowRecordOf(records: ReadonlyMap<string, Worktree>, worktree: Worktree): Worktree {
-  return records.get(getWorktreeHostIdentity(worktree)) ?? worktree
-}
-
-function windowFolderRecordOf(
-  records: ReadonlyMap<string, FolderWorkspace>,
-  folder: FolderWorkspace
-): FolderWorkspace {
-  return records.get(folderRecordKey(folder.id, folder.executionHostId)) ?? folder
-}
-
 /** Use the phone’s builder over main’s domains, adding desktop state and pending writes; cards read window records. */
 export function useMainSidebarListModel(args: SidebarListModelArgs): SidebarListModel {
-  const { filterState, sortBy, groupBy, repos, defaultHostId, settings } = args
+  const { filterState, sortBy, groupBy, defaultHostId, settings } = args
+  const repos = useMemo(
+    () => args.repos.filter((repo) => visibleSidebarRepo(repo, args.hiddenLocalPaths)),
+    [args.repos, args.hiddenLocalPaths]
+  )
   useSidebarListSession()
   const feed = useDesktopSidebarFeed()
   const pending = useSyncExternalStore(subscribeSidebarPendingLayer, readSidebarPendingLayer)
@@ -87,7 +78,7 @@ export function useMainSidebarListModel(args: SidebarListModelArgs): SidebarList
   )
   const workspaceHostOrder = useAppStore((s) => s.workspaceHostOrder)
   const setWorkspaceHostOrder = useAppStore((s) => s.setWorkspaceHostOrder)
-  const domains = useMemo(
+  const rawDomains = useMemo(
     () =>
       withWindowCreations(
         withoutHiddenVmCheckouts(
@@ -112,9 +103,22 @@ export function useMainSidebarListModel(args: SidebarListModelArgs): SidebarList
       args.worktreeLineageById
     ]
   )
+  const domains = useMemo(
+    () => withoutStewardSidebarWorkspaces(rawDomains, args.hiddenLocalPaths),
+    [rawDomains, args.hiddenLocalPaths]
+  )
   const catalog = useMemo(
-    () => ({ repos, projectGroups: args.projectGroups, projectGrouping: args.projectGrouping }),
-    [repos, args.projectGroups, args.projectGrouping]
+    () => ({
+      repos,
+      projectGroups: args.projectGroups,
+      projectGrouping: {
+        ...args.projectGrouping,
+        projectHostSetups: args.projectGrouping.projectHostSetups.filter((setup) =>
+          visibleSidebarSetup(setup, args.hiddenLocalPaths)
+        )
+      }
+    }),
+    [repos, args.projectGroups, args.projectGrouping, args.hiddenLocalPaths]
   )
   const view: SidebarFeedView = useMemo(
     () => ({

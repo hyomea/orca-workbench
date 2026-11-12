@@ -43,6 +43,7 @@ import { useWorktreeStatusMutations } from '../drag/use-status-mutations'
 import { shouldFiltersHideAllRows } from './sidebar-empty-state-gate'
 import { buildWorktreeManualOrderCatalog } from '../drag/worktree-manual-order-catalog'
 import { useWorkspaceBoardStatuses } from '../../workspace-status/presentation/use-workspace-board-statuses'
+import { useStewardSidebarHiddenPaths } from './steward-sidebar-visibility'
 import { ProjectsCollapseAllButton } from '../controls/ProjectsCollapseAllButton'
 import { useProjectsCollapseShortcut } from '../controls/use-projects-collapse-shortcut'
 import { useProjectsCollapseAllAnnouncement } from '../controls/use-projects-collapse-all-announcement'
@@ -87,6 +88,7 @@ const WorktreeList = React.memo(function WorktreeList({
   const repoMap = useRepoMap()
   const worktreeMap = useWorktreeMap()
   const repos = useAppStore((s) => s.repos)
+  const hiddenLocalPaths = useStewardSidebarHiddenPaths()
   const worktreeLineageById = useAppStore((s) => s.worktreeLineageById)
   const workspaceLineageByChildKey = useAppStore((s) => s.workspaceLineageByChildKey)
   const crossStoreChildrenByFolderId = useAppStore(selectCrossStoreFolderChildrenById)
@@ -159,7 +161,8 @@ const WorktreeList = React.memo(function WorktreeList({
     projectGrouping,
     detectedWorktreesByRepo,
     prCache,
-    agentSendTargetWorktreeId
+    agentSendTargetWorktreeId,
+    hiddenLocalPaths
   })
   const visibleProjectRepoIdsBySection = useMemo(
     () => new Map(rowModel.occurrencePlan.sections.map(({ key, group }) => [key, group.repoIds])),

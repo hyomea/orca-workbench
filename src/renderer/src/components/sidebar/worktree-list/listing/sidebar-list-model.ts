@@ -40,6 +40,7 @@ export type SidebarListModelArgs = {
   detectedWorktreesByRepo: AppState['detectedWorktreesByRepo']
   prCache: AppState['prCache'] | null
   agentSendTargetWorktreeId: string | null
+  hiddenLocalPaths: ReadonlySet<string>
 }
 
 export type SidebarListModel = {
