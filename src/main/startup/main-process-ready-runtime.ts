@@ -1,5 +1,6 @@
 import { app, nativeTheme } from 'electron'
 import { randomUUID } from 'node:crypto'
+import { DEFAULT_WORKBENCH_ID } from '../../shared/rpc-contract/portfolio-params'
 import { performance } from 'node:perf_hooks'
 import { AgentBrowserBridge } from '../browser/agent-browser/agent-browser-bridge'
 import { EmulatorBridge } from '../emulator/emulator-bridge'
@@ -124,7 +125,8 @@ export async function initializeReadyRuntimeServices(): Promise<void> {
           workbenches.map((workbench) =>
             refreshPortfolioSteward(
               workbenchStore(userData, workbench.id),
-              portfolioStewardCli(app.isPackaged)
+              portfolioStewardCli(app.isPackaged),
+              workbench.id === DEFAULT_WORKBENCH_ID
             )
           )
         )

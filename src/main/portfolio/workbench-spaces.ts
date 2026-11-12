@@ -95,7 +95,7 @@ export async function removeWorkbench(userData: string, id: string): Promise<voi
       if (
         entry === 'portfolio.json' ||
         /^portfolio\.json\.v\d+\.bak$/.test(entry) ||
-        ['steward', 'coordinators', 'design-attachments', 'note-files'].includes(entry)
+        ['coordinators', 'design-attachments', 'note-files'].includes(entry)
       ) {
         await rm(join(root, entry), { recursive: true, force: true })
       }

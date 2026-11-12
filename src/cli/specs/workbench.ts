@@ -13,6 +13,12 @@ export const WORKBENCH_COMMAND_SPECS: CommandSpec[] = [
     notes: ['Each workbench keeps its own initiatives, roles, and coordinator.']
   },
   {
+    path: ['workbench', 'create'],
+    summary: 'Create a named workbench',
+    usage: 'orca workbench create --name <name> [--json]',
+    allowedFlags: [...LOCAL_COMMAND_FLAGS, 'name']
+  },
+  {
     path: ['workbench', 'status'],
     summary: 'Show Workbench initiatives, features, work items, tasks, and pending proposals',
     usage: 'orca workbench status [--project <id>] [--workbench <id>] [--json]',

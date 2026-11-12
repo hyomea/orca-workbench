@@ -6,6 +6,41 @@ import { DEV_COMMAND_NAME } from '../cli/cli-install-constants'
 
 const OWN_NOTES = 'steward-notes.md'
 
+const globalStewardInstructions = (
+  personalNotes: string,
+  cli: string,
+  agent: 'codex' | 'claude'
+): string => `# Orca Workbench steward
+
+Orca regenerates this file each time the steward opens. Put standing instructions in
+\`${OWN_NOTES}\`, which is never overwritten.
+
+${agent === 'claude' ? `@${OWN_NOTES}` : `Read \`${OWN_NOTES}\` for the user's standing instructions.`}
+
+## Role
+
+You are the global Workbench steward. You help the user draft new workbenches across repositories.
+This folder is shared by the Workbench library, not attached to a named workbench. Keep each
+named workbench's initiatives, outcomes, roles, and tasks in that workbench's records.
+
+Run Orca's CLI as \`${cli}\` by that bare name. Start by reading \`${cli} workbench list\` and
+\`${cli} repo list --json\`. When the user wants a new workbench, discuss its name, purpose,
+repositories, initial initiatives, and agent roles. Show a concrete draft and ask for missing
+decisions. Once the user asks you to save it, use \`${cli} workbench create --name <name> --json\`.
+Use the returned id with \`--workbench <id>\` for every later \`workbench status\` or
+\`workbench apply\` command. Read \`${cli} workbench schema --json\` before applying commands;
+never guess field names. The default workbench holds legacy data and your agent preference;
+do not treat it as the destination for a new draft.
+
+Read repositories where they live. Follow each repository's AGENTS.md / CLAUDE.md and the
+user's global instructions. You run with the user's own agent permissions. Do not commit,
+push, or start task agents unless the user asks.
+
+## Personal notes
+
+${personalNotes}
+`
+
 // Orca owns the agent instruction files; the user's additions live in OWN_NOTES.
 const stewardInstructions = (
   personalNotes: string,
@@ -185,20 +220,25 @@ export function portfolioStewardCli(isPackaged: boolean): string {
 
 // The instructions belong to the running build, but a steward session can also be reopened from
 // its own tab; refresh an existing steward folder at startup instead of only from the button.
-export async function refreshPortfolioSteward(store: PortfolioStore, cli: string): Promise<void> {
+export async function refreshPortfolioSteward(
+  store: PortfolioStore,
+  cli: string,
+  global = false
+): Promise<void> {
   const exists = await stat(portfolioStewardDirectory(store)).then(
     () => true,
     () => false
   )
   if (exists) {
-    await preparePortfolioSteward(store, cli)
+    await preparePortfolioSteward(store, cli, global)
   }
 }
 
 // cli is the bare command that reaches this app's CLI: orca, or orca-dev in a development build.
 export async function preparePortfolioSteward(
   store: PortfolioStore,
-  cli = 'orca'
+  cli = 'orca',
+  global = false
 ): Promise<{ path: string; agent: 'codex' | 'claude' }> {
   const path = portfolioStewardDirectory(store)
   await mkdir(path, { recursive: true })
@@ -207,12 +247,16 @@ export async function preparePortfolioSteward(
   const agent = stewardAgent ?? 'claude'
   await writeFile(
     join(path, 'CLAUDE.md'),
-    stewardInstructions(personalNotesSection(folder), stewardName, cli, 'claude'),
+    global
+      ? globalStewardInstructions(personalNotesSection(folder), cli, 'claude')
+      : stewardInstructions(personalNotesSection(folder), stewardName, cli, 'claude'),
     { mode: 0o600 }
   )
   await writeFile(
     join(path, 'AGENTS.md'),
-    stewardInstructions(personalNotesSection(folder), stewardName, cli, 'codex'),
+    global
+      ? globalStewardInstructions(personalNotesSection(folder), cli, 'codex')
+      : stewardInstructions(personalNotesSection(folder), stewardName, cli, 'codex'),
     { mode: 0o600 }
   )
   // Project-scoped, so these rules apply only to steward sessions. Users add theirs in settings.local.json.

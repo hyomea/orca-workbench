@@ -4,6 +4,7 @@ export const WORKBENCH_HANDLER_GROUP: HandlerGroup = {
   name: 'workbench',
   keys: [
     'workbench list',
+    'workbench create',
     'workbench status',
     'workbench schema',
     'workbench apply',

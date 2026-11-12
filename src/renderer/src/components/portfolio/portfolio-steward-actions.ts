@@ -50,12 +50,13 @@ export function runningCoordinatorMatchesAgent(
 // One steward workspace per workbench; reopening returns to a running steward instead of starting another.
 // A prompt (the user pressed a button that asks the steward something) goes to the running chat,
 // or starts a new one with it.
-export async function openPortfolioSteward(prompt?: string): Promise<void> {
+export async function openPortfolioSteward(
+  prompt?: string,
+  workbenchId = activeWorkbenchParams().workbenchId
+): Promise<void> {
   const { path, agent } = z
     .object({ path: z.string().min(1), agent: z.enum(['codex', 'claude']) })
-    .parse(
-      await callRuntimeRpc({ kind: 'local' }, 'portfolio.prepareSteward', activeWorkbenchParams())
-    )
+    .parse(await callRuntimeRpc({ kind: 'local' }, 'portfolio.prepareSteward', { workbenchId }))
   await openCoordinatorChat(path, agent, prompt, true)
 }
 

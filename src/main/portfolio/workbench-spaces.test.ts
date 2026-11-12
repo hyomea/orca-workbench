@@ -43,6 +43,8 @@ it('clears the default workbench without removing named workbenches or shared no
   await writeFile(join(root, 'portfolio.json'), '{}')
   await writeFile(join(root, 'portfolio.json.v1.bak'), 'backup')
   await writeFile(join(root, 'personal-notes.json'), '{"folder":"/notes"}')
+  await mkdir(join(root, 'steward'))
+  await writeFile(join(root, 'steward', 'steward-notes.md'), 'Global instructions')
   await mkdir(join(root, 'design-attachments'))
   await writeFile(join(root, 'design-attachments', 'image.png'), 'image')
 
@@ -60,4 +62,7 @@ it('clears the default workbench without removing named workbenches or shared no
     code: 'ENOENT'
   })
   expect(await readFile(join(root, 'personal-notes.json'), 'utf8')).toBe('{"folder":"/notes"}')
+  expect(await readFile(join(root, 'steward', 'steward-notes.md'), 'utf8')).toBe(
+    'Global instructions'
+  )
 })

@@ -9,6 +9,7 @@ import { folderWorkspaceRepoId } from '../../../../../shared/folder-workspaces/f
 import { applyPortfolioCommand } from '../../../../../shared/portfolio'
 import { applyPortfolioBatch } from '../../../../../shared/portfolio-batch'
 import {
+  DEFAULT_WORKBENCH_ID,
   PortfolioAttachDesign,
   PortfolioBatchParams,
   PortfolioExportNotes,
@@ -107,7 +108,11 @@ export const PORTFOLIO_METHODS = [
     permission: 'workspace',
     params: PortfolioPrepareSteward,
     handler: (params) =>
-      preparePortfolioSteward(store(params), portfolioStewardCli(getAppEnvironment().isPackaged()))
+      preparePortfolioSteward(
+        store(params),
+        portfolioStewardCli(getAppEnvironment().isPackaged()),
+        !params.workbenchId || params.workbenchId === DEFAULT_WORKBENCH_ID
+      )
   }),
   defineMethod({
     // The user started the outcome's coordinator: its folder is written and the hand-off recorded.

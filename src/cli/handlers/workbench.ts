@@ -244,8 +244,18 @@ async function list(ctx: HandlerContext): Promise<void> {
   )
 }
 
+async function create(ctx: HandlerContext): Promise<void> {
+  rejectRemoteSelectionFlags(ctx.flags, LOCAL_ONLY)
+  const name = getRequiredStringFlag(ctx.flags, 'name')
+  const response = await ctx.client.call<PortfolioWorkbenchSummary>('portfolio.createWorkbench', {
+    name
+  })
+  printResult(response, ctx.json, (entry) => `Created workbench ${entry.name} [${entry.id}]`)
+}
+
 export const WORKBENCH_HANDLERS: Record<string, CommandHandler> = {
   'workbench list': list,
+  'workbench create': create,
   'workbench status': status,
   'workbench schema': schema,
   'workbench apply': apply,
