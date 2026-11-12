@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { useTranslation } from 'react-i18next'
 import { Bot, ChevronDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ButtonGroup } from '@/components/ui/button-group'
@@ -11,7 +10,7 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
-import { translate } from '@/i18n/i18n'
+import { useTranslate } from '@/i18n/use-translate'
 import type { PortfolioCommand, PortfolioState } from '../../../../shared/portfolio'
 import {
   PORTFOLIO_OUTCOME_COORDINATOR,
@@ -76,7 +75,7 @@ export function PortfolioBoard({
   setupActions: PortfolioSetupActions
   draftScope: string
 }): React.JSX.Element {
-  useTranslation()
+  const t = useTranslate()
   const [selectedProjectId, selectProject] = useRememberedInitiative()
   const [selectedTaskId, setSelectedTaskId] = useState('')
   const [taskWorkItemId, setTaskWorkItemId] = useState('')
@@ -105,10 +104,10 @@ export function PortfolioBoard({
         <Button variant="outline" size="sm" disabled={busy} onClick={() => onOpenSteward()}>
           <Bot aria-hidden="true" />
           {state.stewardName
-            ? translate('portfolio.openStewardNamed', '{{name}} · Coordinator', {
+            ? t('portfolio.openStewardNamed', '{{name}} · Coordinator', {
                 name: state.stewardName
               })
-            : translate('portfolio.openStewardChat', 'Steward chat')}
+            : t('portfolio.openStewardChat', 'Steward chat')}
         </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -116,15 +115,17 @@ export function PortfolioBoard({
               variant="outline"
               size="sm"
               disabled={busy}
-              aria-label={translate('portfolio.stewardAgentChoice', 'Steward agent (next session)')}
+              aria-label={t('portfolio.stewardAgentChoice', 'Steward agent (next session)')}
             >
-              {stewardAgent === 'codex' ? 'Codex' : 'Claude'}
+              {stewardAgent === 'codex'
+                ? t('portfolio.stewardAgentCodex', 'Codex')
+                : t('portfolio.stewardAgentClaude', 'Claude')}
               <ChevronDown aria-hidden="true" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>
-              {translate('portfolio.stewardAgentChoice', 'Steward agent (next session)')}
+              {t('portfolio.stewardAgentChoice', 'Steward agent (next session)')}
             </DropdownMenuLabel>
             <DropdownMenuRadioGroup
               value={stewardAgent}
@@ -134,8 +135,12 @@ export function PortfolioBoard({
                 }
               }}
             >
-              <DropdownMenuRadioItem value="codex">Codex</DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="claude">Claude</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="codex">
+                {t('portfolio.stewardAgentCodex', 'Codex')}
+              </DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="claude">
+                {t('portfolio.stewardAgentClaude', 'Claude')}
+              </DropdownMenuRadioItem>
             </DropdownMenuRadioGroup>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -213,8 +218,8 @@ export function PortfolioBoard({
           </PortfolioProjectBoard>
           <PortfolioPanel
             open={panel === 'context'}
-            title={translate('portfolio.contextAndNotes', 'Context & notes')}
-            description={translate(
+            title={t('portfolio.contextAndNotes', 'Context & notes')}
+            description={t(
               'portfolio.contextPanelHint',
               'What every agent on this initiative is told, and the notes they read.'
             )}
@@ -238,8 +243,8 @@ export function PortfolioBoard({
           </PortfolioPanel>
           <PortfolioPanel
             open={panel === 'agents'}
-            title={translate('portfolio.agents', 'Agents')}
-            description={translate(
+            title={t('portfolio.agents', 'Agents')}
+            description={t(
               'portfolio.agentsPanelHint',
               'The roles tasks are assigned to, each with its agent and responsibility.'
             )}
@@ -264,8 +269,8 @@ export function PortfolioBoard({
           </PortfolioPanel>
           <PortfolioPanel
             open={panel === 'features'}
-            title={translate('portfolio.featureCatalog', 'Feature catalog')}
-            description={translate(
+            title={t('portfolio.featureCatalog', 'Feature catalog')}
+            description={t(
               'portfolio.featuresHint',
               'The product capabilities this initiative maintains, each with its current specification. Outcomes that change a feature publish their specification here.'
             )}

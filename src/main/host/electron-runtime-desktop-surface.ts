@@ -1,5 +1,5 @@
 import { isResourceWindowVisible } from '../window/resource-view-admission'
-import { BrowserWindow, ipcMain, Notification, powerMonitor } from 'electron'
+import { BrowserWindow, dialog, ipcMain, Notification, powerMonitor } from 'electron'
 import { readDesktopAwayState } from '../notifications/desktop-away-state'
 import type { RuntimeDesktopSurface } from '../runtime/construction/runtime-desktop-surface'
 import { translateMain } from '../i18n/main-i18n'
@@ -36,6 +36,28 @@ export const electronRuntimeDesktopSurface: RuntimeDesktopSurface = {
   },
   removeIpcListener: (channel, listener) => {
     ipcMain.removeListener(channel, listener as Parameters<typeof ipcMain.removeListener>[1])
+  },
+  pickWorkbenchExportPath: async (defaultPath) => {
+    const parent = BrowserWindow.getFocusedWindow()
+    const options = {
+      defaultPath,
+      filters: [{ name: 'Orca Workbench', extensions: ['zip'] }]
+    }
+    const result = parent
+      ? await dialog.showSaveDialog(parent, options)
+      : await dialog.showSaveDialog(options)
+    return result.canceled ? null : result.filePath
+  },
+  pickWorkbenchImportPath: async () => {
+    const parent = BrowserWindow.getFocusedWindow()
+    const options = {
+      properties: ['openFile'],
+      filters: [{ name: 'Orca Workbench', extensions: ['zip'] }]
+    } satisfies Electron.OpenDialogOptions
+    const result = parent
+      ? await dialog.showOpenDialog(parent, options)
+      : await dialog.showOpenDialog(options)
+    return result.canceled ? null : (result.filePaths[0] ?? null)
   },
   // Only the phone icon source needs these codecs and fetcher.
   ...(ORCA_SIDEBAR_INPUTS_IS_MAIN

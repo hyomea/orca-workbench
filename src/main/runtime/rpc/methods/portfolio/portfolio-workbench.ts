@@ -1,4 +1,3 @@
-import { BrowserWindow, dialog } from 'electron'
 import { getAppEnvironment } from '../../../../../shared/app-environment'
 import {
   PortfolioCreateWorkbench,
@@ -17,6 +16,7 @@ import {
   importWorkbenchArchive
 } from '../../../../portfolio/workbench-transfer'
 import { defineMethod } from '../../core'
+import { getRuntimeDesktopSurface } from '../../../construction/runtime-desktop-surface'
 
 function userData(): string {
   return getAppEnvironment().getPath('userData')
@@ -52,7 +52,6 @@ export const PORTFOLIO_WORKBENCH_METHODS = [
       if (!workbench) {
         throw new Error('Workbench no longer exists. Refresh the list and try again.')
       }
-      const parent = BrowserWindow.getFocusedWindow()
       const safeName =
         Array.from(workbench.name, (char) =>
           char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127 ? '_' : char
@@ -61,18 +60,16 @@ export const PORTFOLIO_WORKBENCH_METHODS = [
           .replace(/[/\\:*?"<>|]/g, '_')
           .replace(/[. ]+$/g, '')
           .slice(0, 100) || 'workbench'
-      const options = {
-        defaultPath: `Orca-${safeName}.orca-workbench.zip`,
-        filters: [{ name: 'Orca Workbench', extensions: ['zip'] }]
+      const pickPath = getRuntimeDesktopSurface().pickWorkbenchExportPath
+      if (!pickPath) {
+        throw new Error('Workbench export requires an Orca desktop window.')
       }
-      const result = parent
-        ? await dialog.showSaveDialog(parent, options)
-        : await dialog.showSaveDialog(options)
-      if (result.canceled || !result.filePath) {
+      const filePath = await pickPath(`Orca-${safeName}.orca-workbench.zip`)
+      if (!filePath) {
         return null
       }
-      await exportWorkbenchArchive(userData(), params.workbenchId, result.filePath)
-      return result.filePath
+      await exportWorkbenchArchive(userData(), params.workbenchId, filePath)
+      return filePath
     }
   }),
   defineMethod({
@@ -80,18 +77,15 @@ export const PORTFOLIO_WORKBENCH_METHODS = [
     permission: 'workspace',
     params: PortfolioImportWorkbench,
     handler: async () => {
-      const parent = BrowserWindow.getFocusedWindow()
-      const options = {
-        properties: ['openFile'],
-        filters: [{ name: 'Orca Workbench', extensions: ['zip'] }]
-      } satisfies Electron.OpenDialogOptions
-      const result = parent
-        ? await dialog.showOpenDialog(parent, options)
-        : await dialog.showOpenDialog(options)
-      if (result.canceled || !result.filePaths[0]) {
+      const pickPath = getRuntimeDesktopSurface().pickWorkbenchImportPath
+      if (!pickPath) {
+        throw new Error('Workbench import requires an Orca desktop window.')
+      }
+      const filePath = await pickPath()
+      if (!filePath) {
         return null
       }
-      return importWorkbenchArchive(userData(), result.filePaths[0])
+      return importWorkbenchArchive(userData(), filePath)
     }
   })
 ]

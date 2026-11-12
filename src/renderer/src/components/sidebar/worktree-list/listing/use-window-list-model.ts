@@ -1,5 +1,6 @@
 import type { SidebarListModel, SidebarListModelArgs } from './sidebar-list-model'
 import { useMemo } from 'react'
+import { selectFolderWorkspaces } from '@/store/workspaces/catalog/workspace-record-fields'
 import { useSidebarExternalWorktreeCards } from './use-external-worktree-cards'
 import { useSidebarHostVisibleScope } from './use-host-visible-scope'
 import { useSidebarSectionRows } from './use-section-rows'
@@ -40,10 +41,11 @@ export function useWindowSidebarListModel(args: SidebarListModelArgs): SidebarLi
       ),
     [allVisibleWorktrees, args.hiddenLocalPaths]
   )
+  const allFolderWorkspaces = selectFolderWorkspaces(args)
   const folderWorkspaces = useMemo(
     () =>
-      args.folderWorkspaces.filter((folder) => visibleSidebarFolder(folder, args.hiddenLocalPaths)),
-    [args.folderWorkspaces, args.hiddenLocalPaths]
+      allFolderWorkspaces.filter((folder) => visibleSidebarFolder(folder, args.hiddenLocalPaths)),
+    [allFolderWorkspaces, args.hiddenLocalPaths]
   )
   const visibleScope = useSidebarHostVisibleScope({
     filterState,

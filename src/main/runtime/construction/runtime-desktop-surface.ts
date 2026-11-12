@@ -21,6 +21,8 @@ export type RuntimeDesktopSurface = {
   encodeRepoIconPng?(bytes: Uint8Array, maxEdge: number): Uint8Array | null
   /** A GET answering redirects with the 3xx, without proxy login; absent where fetch already does. */
   fetchRepoIcon?(url: string, init: RequestInit): Promise<Response>
+  pickWorkbenchExportPath?(defaultPath: string): Promise<string | null>
+  pickWorkbenchImportPath?(): Promise<string | null>
 }
 
 const inertDesktopSurface: RuntimeDesktopSurface = {
