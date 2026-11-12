@@ -1,7 +1,16 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Bot } from 'lucide-react'
+import { Bot, ChevronDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { ButtonGroup } from '@/components/ui/button-group'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu'
 import { translate } from '@/i18n/i18n'
 import type { PortfolioCommand, PortfolioState } from '../../../../shared/portfolio'
 import {
@@ -88,23 +97,53 @@ export function PortfolioBoard({
   )
   const observation = selectedTask ? portfolioTaskObservation(selectedTask, activity) : undefined
   const reviewComments = usePortfolioTaskReviewComments(selectedTask?.attempts.at(-1)?.worktreeId)
+  const stewardAgent = state.stewardAgent ?? 'claude'
   // The workbench's coordinator and menu sit on the initiative's title line.
   const actions = (
     <>
-      <Button variant="outline" size="sm" disabled={busy} onClick={() => onOpenSteward()}>
-        <Bot aria-hidden="true" />
-        {state.stewardName
-          ? translate('portfolio.openStewardNamed', '{{name}} · Coordinator', {
-              name: state.stewardName
-            })
-          : translate('portfolio.openSteward', 'Steward')}
-      </Button>
+      <ButtonGroup>
+        <Button variant="outline" size="sm" disabled={busy} onClick={() => onOpenSteward()}>
+          <Bot aria-hidden="true" />
+          {state.stewardName
+            ? translate('portfolio.openStewardNamed', '{{name}} · Coordinator', {
+                name: state.stewardName
+              })
+            : translate('portfolio.openStewardChat', 'Steward chat')}
+        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={busy}
+              aria-label={translate('portfolio.stewardAgentChoice', 'Steward agent (next session)')}
+            >
+              {stewardAgent === 'codex' ? 'Codex' : 'Claude'}
+              <ChevronDown aria-hidden="true" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuLabel>
+              {translate('portfolio.stewardAgentChoice', 'Steward agent (next session)')}
+            </DropdownMenuLabel>
+            <DropdownMenuRadioGroup
+              value={stewardAgent}
+              onValueChange={(agent) => {
+                if (agent === 'codex' || agent === 'claude') {
+                  void onSave({ kind: 'steward.agent', agent })
+                }
+              }}
+            >
+              <DropdownMenuRadioItem value="codex">Codex</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="claude">Claude</DropdownMenuRadioItem>
+            </DropdownMenuRadioGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </ButtonGroup>
       <PortfolioWorkbenchMenu
         disabled={busy}
         onRefresh={onRefresh}
         onRename={() => setComposer('organization')}
-        stewardAgent={state.stewardAgent ?? 'claude'}
-        onStewardAgentChange={(agent) => void onSave({ kind: 'steward.agent', agent })}
         onOpenNotes={onOpenPersonalNotes}
         onChooseNotesFolder={onChoosePersonalNotesFolder}
       />

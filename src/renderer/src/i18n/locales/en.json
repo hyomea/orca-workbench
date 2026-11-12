@@ -24827,6 +24827,7 @@
     "noteForAgents": "For agents",
     "noNotes": "No notes yet. Write one, or import Markdown files you already keep.",
     "openSteward": "Steward",
+    "openStewardChat": "Steward chat",
     "stewardLaunchFailed": "Could not start the steward chat.",
     "endExecutionNote": "What you checked",
     "endExecutionPlaceholder": "For example: the agent exited at a permission prompt; nothing was changed.",
