@@ -572,6 +572,7 @@ import {
   PortfolioProposeNote,
   PortfolioReadDesign,
   PortfolioRemoveDesign,
+  PortfolioRemoveWorkbench,
   PortfolioReportOutcome,
   PortfolioSetPersonalNotesFolder,
   PortfolioWorkbenches
@@ -1465,6 +1466,7 @@ export const RPC_PARAMS_BY_METHOD = {
   'portfolio.read': PortfolioPrepareSteward,
   'portfolio.readDesign': PortfolioReadDesign,
   'portfolio.removeDesign': PortfolioRemoveDesign,
+  'portfolio.removeWorkbench': PortfolioRemoveWorkbench,
   'portfolio.reportOutcome': PortfolioReportOutcome,
   'portfolio.setPersonalNotesFolder': PortfolioSetPersonalNotesFolder,
   'portfolio.workbenches': PortfolioWorkbenches,

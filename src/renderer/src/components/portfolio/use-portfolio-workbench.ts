@@ -12,7 +12,11 @@ import {
   folderWorkspaceToWorktree
 } from '../../../../shared/folder-workspaces/folder-workspace-worktree'
 import type { PortfolioWorkspace } from './PortfolioTaskDetail'
-import { noteWorkbenchName, useActiveWorkbenchId } from './workbench-selection'
+import {
+  noteWorkbenchName,
+  useActiveWorkbenchId,
+  useWorkbenchGeneration
+} from './workbench-selection'
 import { noteWorkbenchAgents } from './workbench-agent-names'
 
 export type PortfolioWorkbench = {
@@ -39,22 +43,29 @@ export function usePortfolioWorkbench(): PortfolioWorkbench {
   const folders = useAppStore(selectFolderWorkspaces)
   const groups = useAppStore((s) => s.projectGroups)
   const workbenchId = useActiveWorkbenchId()
+  const generation = useWorkbenchGeneration()
   // Another workbench's data never mixes in: the state shown belongs to the selected one.
-  const [shown, setShown] = useState(workbenchId)
-  if (shown !== workbenchId) {
-    setShown(workbenchId)
+  const shownKey = `${workbenchId}:${generation}`
+  const activeScope = useRef(shownKey)
+  activeScope.current = shownKey
+  const [shown, setShown] = useState(shownKey)
+  if (shown !== shownKey) {
+    setShown(shownKey)
     setState(null)
     setError('')
     setLoadError('')
   }
   const accept = useCallback(
     (value: unknown) => {
+      if (activeScope.current !== shownKey) {
+        return
+      }
       const next = parsePortfolioState(value)
       noteWorkbenchName(workbenchId, next.organization)
       noteWorkbenchAgents(workbenchId, next)
       setState((current) => (!current || next.revision >= current.revision ? next : current))
     },
-    [workbenchId]
+    [workbenchId, shownKey]
   )
   const refresh = useCallback(async () => {
     try {

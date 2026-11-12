@@ -1,10 +1,11 @@
 import { randomUUID } from 'node:crypto'
-import { readdir, stat } from 'node:fs/promises'
+import { readdir, rm, stat } from 'node:fs/promises'
 import { join } from 'node:path'
 import { applyPortfolioCommand } from '../../shared/portfolio'
 import { PORTFOLIO_OUTCOME_COORDINATOR } from '../../shared/portfolio-roles'
 import {
   DEFAULT_WORKBENCH_ID,
+  WorkbenchId,
   type PortfolioWorkbenchSummary
 } from '../../shared/rpc-contract/portfolio-params'
 import { PortfolioStore } from './portfolio-store'
@@ -78,4 +79,41 @@ export async function createWorkbench(
     )
   })
   return { id, name, stewardPath: portfolioStewardDirectory(store) }
+}
+
+export async function removeWorkbench(userData: string, id: string): Promise<void> {
+  WorkbenchId.parse(id)
+  const root = workbenchRoot(userData)
+  if (id === DEFAULT_WORKBENCH_ID) {
+    const entries = await readdir(root).catch((error: unknown) => {
+      if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
+        return []
+      }
+      throw error
+    })
+    for (const entry of entries) {
+      if (
+        entry === 'portfolio.json' ||
+        /^portfolio\.json\.v\d+\.bak$/.test(entry) ||
+        ['steward', 'coordinators', 'design-attachments', 'note-files'].includes(entry)
+      ) {
+        await rm(join(root, entry), { recursive: true, force: true })
+      }
+    }
+    return
+  }
+  const directory = join(root, 'spaces', id)
+  const exists = await stat(join(directory, 'portfolio.json')).then(
+    () => true,
+    (error: unknown) => {
+      if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
+        return false
+      }
+      throw error
+    }
+  )
+  if (!exists) {
+    throw new Error('Workbench no longer exists. Refresh the list and try again.')
+  }
+  await rm(directory, { recursive: true })
 }

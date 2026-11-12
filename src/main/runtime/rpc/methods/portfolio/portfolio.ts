@@ -12,6 +12,7 @@ import {
   PortfolioAttachDesign,
   PortfolioBatchParams,
   PortfolioCreateWorkbench,
+  PortfolioRemoveWorkbench,
   PortfolioWorkbenches,
   PortfolioExportNotes,
   PortfolioProposeNote,
@@ -33,6 +34,7 @@ import type { PortfolioStore } from '../../../../portfolio/portfolio-store'
 import {
   createWorkbench,
   listWorkbenches,
+  removeWorkbench,
   workbenchStore
 } from '../../../../portfolio/workbench-spaces'
 import { exportPortfolioNotes } from '../../../../portfolio/portfolio-note-files'
@@ -79,6 +81,12 @@ export const PORTFOLIO_METHODS = [
     permission: 'workspace',
     params: PortfolioCreateWorkbench,
     handler: (params) => createWorkbench(userData(), params.name)
+  }),
+  defineMethod({
+    name: 'portfolio.removeWorkbench',
+    permission: 'workspace',
+    params: PortfolioRemoveWorkbench,
+    handler: (params) => removeWorkbench(userData(), params.workbenchId)
   }),
   defineMethod({
     name: 'portfolio.attachDesign',

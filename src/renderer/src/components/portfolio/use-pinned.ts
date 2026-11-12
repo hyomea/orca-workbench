@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react'
 import { z } from 'zod'
-import { useActiveWorkbenchId } from './workbench-selection'
+import { useActiveWorkbenchId, useWorkbenchGeneration } from './workbench-selection'
 
 const Pins = z.array(z.string())
 
@@ -27,9 +27,14 @@ export function usePinned(kind: PortfolioPinKind): {
   toggle: (key: string) => void
 } {
   const workbenchId = useActiveWorkbenchId()
-  const [state, setState] = useState(() => ({ workbenchId, pinned: read(kind, workbenchId) }))
-  if (state.workbenchId !== workbenchId) {
-    setState({ workbenchId, pinned: read(kind, workbenchId) })
+  const generation = useWorkbenchGeneration()
+  const [state, setState] = useState(() => ({
+    workbenchId,
+    generation,
+    pinned: read(kind, workbenchId)
+  }))
+  if (state.workbenchId !== workbenchId || state.generation !== generation) {
+    setState({ workbenchId, generation, pinned: read(kind, workbenchId) })
   }
   const toggle = useCallback(
     (key: string) => {
@@ -46,13 +51,16 @@ export function usePinned(kind: PortfolioPinKind): {
         } catch {
           // The pins still apply until the page reloads.
         }
-        return { workbenchId: previous.workbenchId, pinned }
+        return { workbenchId: previous.workbenchId, generation: previous.generation, pinned }
       })
     },
     [kind]
   )
   return {
-    pinned: state.workbenchId === workbenchId ? state.pinned : read(kind, workbenchId),
+    pinned:
+      state.workbenchId === workbenchId && state.generation === generation
+        ? state.pinned
+        : read(kind, workbenchId),
     toggle
   }
 }

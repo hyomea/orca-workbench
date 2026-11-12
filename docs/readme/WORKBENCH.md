@@ -7,6 +7,8 @@ The [feature parity v1 design](FEATURE_PARITY_V1.md) describes the broader targe
 
 ## Workflow
 
+Create and switch Workbenches from the desktop sidebar. To remove a named Workbench, open its sidebar actions and choose **Remove workbench**, then confirm. To reset the built-in Workbench, choose **Clear workbench**; its empty entry remains. Both actions delete the selected Workbench's saved initiatives, tasks, design attachments, and coordinator files. Other Workbenches, the shared personal notes setting, agent sessions, and workspaces remain.
+
 1. Open **Projects** and choose **New project**. Import a directory or select repositories and folder groups already in Orca. Nested repositories can be imported separately. Imports register workspaces immediately, even if project setup is later canceled.
 2. Choose **Import and analyze** to import the selected directories and generate a draft in one step, or **Draft objective with AI** for sources already in Orca. Review the proposed understanding and objective, and add corrections in Chinese or English. Choose the response language and refine the draft as needed. **Confirm and save** creates the project. **Start with an idea** works without directories; **Write manually** skips AI.
 3. Create organization roles, then assign a role when creating a task.

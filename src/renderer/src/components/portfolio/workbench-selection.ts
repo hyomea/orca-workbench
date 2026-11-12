@@ -20,13 +20,22 @@ function storedActive(): string {
 }
 
 // Which workbench the Workbench and Tasks pages show, and the list the sidebar offers.
-const selection = createStore<{ activeId: string; list: PortfolioWorkbenchSummary[] }>(() => ({
+const selection = createStore<{
+  activeId: string
+  list: PortfolioWorkbenchSummary[]
+  generation: number
+}>(() => ({
   activeId: storedActive(),
-  list: []
+  list: [],
+  generation: 0
 }))
 
 export function useActiveWorkbenchId(): string {
   return useStore(selection, (s) => s.activeId)
+}
+
+export function useWorkbenchGeneration(): number {
+  return useStore(selection, (s) => s.generation)
 }
 
 export function useWorkbenchList(): PortfolioWorkbenchSummary[] {
@@ -66,6 +75,23 @@ export async function createWorkbench(name: string): Promise<void> {
   )
   await refreshWorkbenchList()
   selectWorkbench(created.id)
+}
+
+export async function removeWorkbench(id: string): Promise<void> {
+  await callRuntimeRpc({ kind: 'local' }, 'portfolio.removeWorkbench', { workbenchId: id })
+  try {
+    for (const key of [
+      `orca.workbench.initiative.${id}`,
+      `orca.workbench.pinnedTracks.${id}`,
+      `orca.workbench.pinnedOutcomes.${id}`
+    ]) {
+      window.localStorage.removeItem(key)
+    }
+  } catch {
+    // The saved Workbench is gone even when this window cannot clear view preferences.
+  }
+  await refreshWorkbenchList()
+  selection.setState((current) => ({ generation: current.generation + 1 }))
 }
 
 // The page renames a workbench through its data; keep the sidebar's name in step.

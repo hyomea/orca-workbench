@@ -1,5 +1,5 @@
 import React from 'react'
-import { FolderKanban, Plus } from 'lucide-react'
+import { Ellipsis, FolderKanban, Plus, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAppStore } from '@/store'
 import { useTranslate } from '@/i18n/use-translate'
@@ -11,6 +11,26 @@ import {
   useWorkbenchList
 } from '@/components/portfolio/workbench-selection'
 import { followWorkbenchAgents } from '@/components/portfolio/workbench-agent-names'
+import {
+  DEFAULT_WORKBENCH_ID,
+  type PortfolioWorkbenchSummary
+} from '../../../../shared/rpc-contract/portfolio-params'
+import { removeWorkbench } from '@/components/portfolio/workbench-selection'
+import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from '@/components/ui/dialog'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu'
 
 // Workbench, with each workbench (such as the user's organization) one level below it.
 export function SidebarWorkbenchNav(): React.JSX.Element {
@@ -22,6 +42,8 @@ export function SidebarWorkbenchNav(): React.JSX.Element {
   const [naming, setNaming] = React.useState(false)
   const [name, setName] = React.useState('')
   const [error, setError] = React.useState('')
+  const [deleteTarget, setDeleteTarget] = React.useState<PortfolioWorkbenchSummary | null>(null)
+  const [removing, setRemoving] = React.useState(false)
   const onPage = activeView === 'portfolio'
   // Also keeps this list current, and names the agent sessions Workbench started.
   React.useEffect(() => followWorkbenchAgents(), [])
@@ -44,6 +66,22 @@ export function SidebarWorkbenchNav(): React.JSX.Element {
       setError(failure instanceof Error ? failure.message : String(failure))
     }
   }
+  const confirmRemove = async (): Promise<void> => {
+    if (!deleteTarget) {
+      return
+    }
+    setRemoving(true)
+    try {
+      await removeWorkbench(deleteTarget.id)
+      setDeleteTarget(null)
+      setError('')
+    } catch (failure) {
+      setError(failure instanceof Error ? failure.message : String(failure))
+      setDeleteTarget(null)
+    } finally {
+      setRemoving(false)
+    }
+  }
   return (
     <div>
       <div className="group flex items-center rounded-md text-[13px] font-medium text-worktree-sidebar-foreground/60 hover:bg-worktree-sidebar-foreground/8">
@@ -64,24 +102,53 @@ export function SidebarWorkbenchNav(): React.JSX.Element {
           <Plus className="size-3.5" />
         </button>
       </div>
+      {error && !naming && (
+        <p role="alert" className="px-2 py-1 text-xs text-destructive">
+          {error}
+        </p>
+      )}
       <ul aria-label={t('portfolio.workbenches', 'Workbenches')} className="space-y-0.5">
         {list.map((entry) => {
           const current = onPage && entry.id === activeId
           return (
-            <li key={entry.id}>
+            <li
+              key={entry.id}
+              className="group flex items-center rounded-md hover:bg-worktree-sidebar-foreground/8"
+            >
               <button
                 type="button"
                 onClick={() => open(entry.id)}
                 aria-current={current ? 'page' : undefined}
                 className={cn(
-                  'flex w-full items-center rounded-md py-1 pr-2 pl-8 text-left text-[13px] transition-colors',
+                  'flex min-w-0 flex-1 items-center rounded-md py-1 pr-1 pl-8 text-left text-[13px] transition-colors',
                   current
                     ? 'bg-worktree-sidebar-accent font-medium text-worktree-sidebar-accent-foreground'
-                    : 'text-worktree-sidebar-foreground/60 hover:bg-worktree-sidebar-foreground/8'
+                    : 'text-worktree-sidebar-foreground/60'
                 )}
               >
                 <span className="min-w-0 flex-1 truncate">{entry.name}</span>
               </button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    aria-label={t('portfolio.workbenchItemActions', 'Actions for {{name}}', {
+                      name: entry.name
+                    })}
+                    className="mr-1 rounded p-0.5 text-worktree-sidebar-foreground/55 hover:text-worktree-sidebar-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-worktree-sidebar-ring"
+                  >
+                    <Ellipsis className="size-3.5" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem variant="destructive" onSelect={() => setDeleteTarget(entry)}>
+                    <Trash2 aria-hidden="true" />
+                    {entry.id === DEFAULT_WORKBENCH_ID
+                      ? t('portfolio.clearWorkbench', 'Clear workbench')
+                      : t('portfolio.removeWorkbench', 'Remove workbench')}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </li>
           )
         })}
@@ -117,6 +184,47 @@ export function SidebarWorkbenchNav(): React.JSX.Element {
           </li>
         )}
       </ul>
+      <Dialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => {
+          if (!open && !removing) {
+            setDeleteTarget(null)
+          }
+        }}
+      >
+        <DialogContent size="compact">
+          <DialogHeader>
+            <DialogTitle size="compact">
+              {deleteTarget?.id === DEFAULT_WORKBENCH_ID
+                ? t('portfolio.clearWorkbench', 'Clear workbench')
+                : t('portfolio.removeWorkbench', 'Remove workbench')}
+            </DialogTitle>
+            <DialogDescription>
+              {deleteTarget?.id === DEFAULT_WORKBENCH_ID
+                ? t(
+                    'portfolio.clearWorkbenchConfirm',
+                    'Clear {{name}} and its saved Workbench data? This cannot be undone. The default workbench, other workbenches, personal notes settings, agent sessions, and workspaces remain.',
+                    { name: deleteTarget?.name ?? '' }
+                  )
+                : t(
+                    'portfolio.removeWorkbenchConfirm',
+                    'Remove {{name}} and its saved Workbench data? This cannot be undone. Agent sessions and workspaces remain.',
+                    { name: deleteTarget?.name ?? '' }
+                  )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" disabled={removing} onClick={() => setDeleteTarget(null)}>
+              {t('portfolio.cancel', 'Cancel')}
+            </Button>
+            <Button variant="destructive" disabled={removing} onClick={() => void confirmRemove()}>
+              {deleteTarget?.id === DEFAULT_WORKBENCH_ID
+                ? t('portfolio.clearWorkbench', 'Clear workbench')
+                : t('portfolio.removeWorkbench', 'Remove workbench')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

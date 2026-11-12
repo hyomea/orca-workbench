@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react'
-import { useActiveWorkbenchId } from './workbench-selection'
+import { useActiveWorkbenchId, useWorkbenchGeneration } from './workbench-selection'
 
 function storageKey(workbenchId: string): string {
   return `orca.workbench.initiative.${workbenchId}`
@@ -17,20 +17,26 @@ function read(workbenchId: string): string {
 // or removed one falls back to the first initiative.
 export function useRememberedInitiative(): [string, (id: string) => void] {
   const workbenchId = useActiveWorkbenchId()
-  const [state, setState] = useState(() => ({ workbenchId, id: read(workbenchId) }))
-  if (state.workbenchId !== workbenchId) {
-    setState({ workbenchId, id: read(workbenchId) })
+  const generation = useWorkbenchGeneration()
+  const [state, setState] = useState(() => ({ workbenchId, generation, id: read(workbenchId) }))
+  if (state.workbenchId !== workbenchId || state.generation !== generation) {
+    setState({ workbenchId, generation, id: read(workbenchId) })
   }
   const select = useCallback(
     (id: string) => {
-      setState({ workbenchId, id })
+      setState({ workbenchId, generation, id })
       try {
         window.localStorage.setItem(storageKey(workbenchId), id)
       } catch {
         // The choice holds until the page reloads.
       }
     },
-    [workbenchId]
+    [workbenchId, generation]
   )
-  return [state.workbenchId === workbenchId ? state.id : read(workbenchId), select]
+  return [
+    state.workbenchId === workbenchId && state.generation === generation
+      ? state.id
+      : read(workbenchId),
+    select
+  ]
 }
