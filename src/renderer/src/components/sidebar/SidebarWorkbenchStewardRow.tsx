@@ -40,28 +40,27 @@ export function SidebarWorkbenchStewardRow(): React.JSX.Element {
     )
   }
 
-  const chooseAgent = async (next: 'codex' | 'claude'): Promise<void> => {
+  const chooseAgent = (next: 'codex' | 'claude'): void => {
     if (next === agent || changingAgent) {
       return
     }
     setError('')
     setChangingAgent(true)
-    try {
-      const scope = { workbenchId: DEFAULT_WORKBENCH_ID }
-      const state = parsePortfolioState(
-        await callRuntimeRpc({ kind: 'local' }, 'portfolio.read', scope)
-      )
-      await callRuntimeRpc({ kind: 'local' }, 'portfolio.mutate', {
-        ...scope,
-        revision: state.revision,
-        command: { kind: 'steward.agent', agent: next }
+    const scope = { workbenchId: DEFAULT_WORKBENCH_ID }
+    void callRuntimeRpc({ kind: 'local' }, 'portfolio.read', scope)
+      .then((value) => {
+        const state = parsePortfolioState(value)
+        return callRuntimeRpc({ kind: 'local' }, 'portfolio.mutate', {
+          ...scope,
+          revision: state.revision,
+          command: { kind: 'steward.agent', agent: next }
+        })
       })
-      setAgent(next)
-    } catch (failure) {
-      setError(failure instanceof Error ? failure.message : String(failure))
-    } finally {
-      setChangingAgent(false)
-    }
+      .then(() => setAgent(next))
+      .catch((failure: unknown) =>
+        setError(failure instanceof Error ? failure.message : String(failure))
+      )
+      .finally(() => setChangingAgent(false))
   }
 
   return (
@@ -100,7 +99,7 @@ export function SidebarWorkbenchStewardRow(): React.JSX.Element {
               value={agent}
               onValueChange={(next) => {
                 if (next === 'codex' || next === 'claude') {
-                  void chooseAgent(next)
+                  chooseAgent(next)
                 }
               }}
             >
